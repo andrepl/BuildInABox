@@ -14,12 +14,15 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.material.EnderChest;
 import org.bukkit.metadata.FixedMetadataValue;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 
 import com.sk89q.worldedit.CuboidClipboard;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.EmptyClipboardException;
+import com.sk89q.worldedit.IncompleteRegionException;
+import com.sk89q.worldedit.LocalEntity;
 import com.sk89q.worldedit.MaxChangedBlocksException;
 
 import com.sk89q.worldedit.LocalSession;
@@ -29,6 +32,7 @@ import com.sk89q.worldedit.blocks.BlockType;
 import com.sk89q.worldedit.bukkit.BukkitWorld;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import com.sk89q.worldedit.data.DataException;
+import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.schematic.SchematicFormat;
 
 public class BuildingPlan {
@@ -122,15 +126,27 @@ public class BuildingPlan {
         es.enableQueue();
         CuboidClipboard cc = null;
         try {
-            cc = session.getClipboard();
-        } catch (EmptyClipboardException e) {
-            player.sendMessage("Clipboard is empty.");
+            com.sk89q.worldedit.LocalPlayer wp = we.wrapPlayer(player);
+            Region region = session.getSelection(wp.getWorld());
+            Vector min = region.getMinimumPoint();
+            Vector max = region.getMaximumPoint();
+            Vector pos = session.getPlacementPosition(wp);
+
+            cc = new CuboidClipboard(
+                    max.subtract(min).add(new Vector(1, 1, 1)),
+                    min, min.subtract(pos));
+            cc.copy(es);
+            es.flushQueue();
+        } catch (IncompleteRegionException e) {
+            player.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "You need to make a region selection first.");
             return null;
         }
-        cc.copy(es);
         Vector chestOffset = findEnderChest(cc);
+        if (chestOffset == null) {
+            player.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "Selection does not contain an enderchest.");
+            return null;
+        }
         EnderChest ec = (EnderChest) Material.ENDER_CHEST.getNewData((byte)cc.getPoint(new Vector(-chestOffset.getBlockX(), -chestOffset.getBlockY(), -chestOffset.getBlockZ())).getData());
-        plugin.getLogger().info("Chest facing: " + ec.getFacing());
         if (!ec.getFacing().equals(BlockFace.NORTH)) {
             cc.rotate2D(getRotationDegrees(ec.getFacing(), BlockFace.NORTH));
             chestOffset = findEnderChest(cc);

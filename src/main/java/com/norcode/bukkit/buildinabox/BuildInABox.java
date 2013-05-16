@@ -115,9 +115,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
             }
             buildingName = args[1];
             BuildingPlan plan = BuildingPlan.fromClipboard(this, player, buildingName);
-            if (plan == null) {
-                sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "Error saving schematic.");
-            } else {
+            if (plan != null) {
                 sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.GREEN + "Building plan " + ChatColor.WHITE + plan.getName() + ChatColor.GREEN + " saved!");
                 saveConfig();
             }
@@ -253,7 +251,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
             ItemMeta meta = event.getItemInHand().getItemMeta();
             if (meta != null && meta.hasLore() && meta.getLore().contains("Build-in-a-Box")) {
                 String buildingName = meta.getDisplayName();
-                final BuildingPlan plan = buildingPlans.get(buildingName);
+                final BuildingPlan plan = buildingPlans.get(buildingName.toLowerCase());
                 if (plan == null) {
                     event.getPlayer().sendMessage("Unknown Building plan: " + buildingName);
                     return;
