@@ -1,2 +1,25 @@
+# Output extra logging
 debug: true
+
+# Automatically update the plugin
+# true - Automatically download and apply updates
+# false - do not check for updates.
+# notify-only - check for updates, but do not download or install them
 auto-update: true
+
+# Prevent breaking blocks which belong to a building.
+protect-buildings: true
+
+# time in seconds to unlock someone elses building.
+unlock-time: 10
+
+# time in seconds to unlock your own building
+unlock-time-own: 5
+
+# time in seconds to lock a building
+lock-time: 5
+
+# maximum distance you can be from the enderchest which you are 
+# locking/unlocking before the attempt is cancelled.
+max-locking-distance: 5
+ 

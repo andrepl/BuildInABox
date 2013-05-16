@@ -5,8 +5,7 @@ name: BuildInABox
 
 commands:
   biab:
-    permission: biab.admin
-    usage: "/<command> give [<player>] <buildingname>"
+    usage: "/<command> [give [<player>]|save] <buildingname>"
     description: give a player a Build-in-a-Box Building.
 
 permissions:

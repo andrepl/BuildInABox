@@ -106,9 +106,13 @@ public class BuildInABox extends JavaPlugin implements Listener {
     @Override
     public boolean onCommand(CommandSender sender, Command command,
             String label, String[] args) {
-        String buildingName = args[0].toLowerCase();
+        String action = args[0].toLowerCase();
         Player player = (Player) sender;
-        if (buildingName.equalsIgnoreCase("save")) {
+        String buildingName;
+        if (action.equalsIgnoreCase("save")) {
+            if (!sender.hasPermission("biab.save")) {
+                sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "You don't have permission to do that.");
+            }
             buildingName = args[1];
             BuildingPlan plan = BuildingPlan.fromClipboard(this, player, buildingName);
             if (plan == null) {
@@ -118,22 +122,57 @@ public class BuildInABox extends JavaPlugin implements Listener {
                 saveConfig();
             }
             return true;
-        } else {
+        } else if (action.equalsIgnoreCase("list")) {
+            if (!sender.hasPermission("biab.list")) {
+                sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "You don't have permission to do that.");
+            }
+
+            for (BuildingPlan plan: buildingPlans.values()) {
+                sender.sendMessage(ChatColor.GOLD + " * " + ChatColor.WHITE + plan.getName());
+            }
+            return true;
+        } else if (action.equalsIgnoreCase("give")) {
+            if (!sender.hasPermission("biab.give")) {
+                sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "You don't have permission to do that.");
+            }
+            Player targetPlayer = null;
+            if (args.length == 3) {
+                List<Player> playerMatches = getServer().matchPlayer(args[1]);
+                if (playerMatches.size() == 0) {
+                    sender.sendMessage("Unknown Player: " + args[1]);
+                } else if (playerMatches.size() > 1) {
+                    sender.sendMessage("Ambiguous Player name: " + args[1]);
+                } else {
+                    targetPlayer = playerMatches.get(0);
+                }
+            } else {
+                if (!(sender instanceof Player)) {
+                    sender.sendMessage("This command must be run by a player, or target a player.");
+                    return true;
+                }
+                targetPlayer = (Player) sender;
+            }
+            buildingName = args[1];
             ItemStack chest = new ItemStack(Material.ENDER_CHEST);
             ItemMeta meta = getServer().getItemFactory().getItemMeta(chest.getType());
-            BuildingPlan plan = buildingPlans.get(args[0].toLowerCase());
+            BuildingPlan plan = buildingPlans.get(buildingName);
             if (plan != null) {
                 meta.setDisplayName(plan.getName());
                 ArrayList<String> lore = new ArrayList<String>();
                 lore.add("Build-in-a-Box");
                 meta.setLore(lore);
                 chest.setItemMeta(meta);
-                player.getInventory().addItem(chest);
+                HashMap<Integer, ItemStack> wontFit = targetPlayer.getInventory().addItem(chest);
+                if (wontFit.size() > 0) {
+                    targetPlayer.getWorld().dropItem(targetPlayer.getLocation(), chest);
+                }
+                sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.GREEN + "Gave " + ChatColor.WHITE + plan.getName() + ChatColor.GREEN + " to " + targetPlayer.getName());
             } else {
-                player.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "Unknown building plan: '" + args[0] + "'");
+                sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "Unknown building plan: '" + args[0] + "'");
             }
             return true;
         }
+        return false;
     }
 
     public void debug(String s) {
