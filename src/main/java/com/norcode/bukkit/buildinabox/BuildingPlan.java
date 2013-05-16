@@ -271,6 +271,10 @@ public class BuildingPlan {
                                 }
                                 inven.clear();
                             }
+                        } else if (loc.getBlock().hasMetadata("biab-block")) {
+                            loc.getBlock().removeMetadata("biab-block", plugin);
+                        } else if (loc.getBlock().hasMetadata("buildInABox")) {
+                            loc.getBlock().removeMetadata("buildInABox", plugin);
                         }
                         loc.getBlock().setTypeIdAndData(0,(byte) 0, false);
                     }
