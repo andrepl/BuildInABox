@@ -7,16 +7,11 @@ import java.util.Random;
 
 import net.minecraft.server.v1_5_R3.Packet61WorldEvent;
 
-import org.bukkit.craftbukkit.v1_5_R3.CraftServer;
-import org.bukkit.craftbukkit.v1_5_R3.CraftWorld;
-
 import org.bukkit.craftbukkit.v1_5_R3.entity.CraftPlayer;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.block.BlockState;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -128,8 +123,6 @@ public class BuildChest {
             private int x;
             private int y;
             private int z;
-            private BaseBlock bb;
-            private Packet61WorldEvent packet;
             private List<Player> nearby = null;
             public void run() {
                 ticks ++;

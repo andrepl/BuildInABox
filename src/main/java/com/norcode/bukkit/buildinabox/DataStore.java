@@ -16,7 +16,6 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.plugin.java.JavaPlugin;
 
 public class DataStore {
 
@@ -43,7 +42,6 @@ public class DataStore {
         reloadConfig();
         ConfigurationSection cfg = null;
         World w;
-        Location loc;
         Block b;
         BuildingPlan p;
         Set<String> keysToRemove = new HashSet<String>();
@@ -133,11 +131,4 @@ public class DataStore {
             }
         }
     }
-
-    private void saveDefaultConfig() {
-        if (!configFile.exists()) {
-            this.plugin.saveResource(fileName, false);
-        }
-    }
- 
 }

@@ -20,9 +20,7 @@ import org.bukkit.Material;
 
 import com.sk89q.worldedit.CuboidClipboard;
 import com.sk89q.worldedit.EditSession;
-import com.sk89q.worldedit.EmptyClipboardException;
 import com.sk89q.worldedit.IncompleteRegionException;
-import com.sk89q.worldedit.LocalEntity;
 import com.sk89q.worldedit.MaxChangedBlocksException;
 
 import com.sk89q.worldedit.LocalSession;
@@ -48,6 +46,7 @@ public class BuildingPlan {
         return config.getName();
     }
 
+    @SuppressWarnings("incomplete-switch")
     private static int getRotationDegrees(BlockFace from, BlockFace to) {
         switch (from) {
         case NORTH:
@@ -248,9 +247,7 @@ public class BuildingPlan {
         CuboidClipboard clipboard = getRotatedClipboard(dir);
         EditSession editSession = new EditSession(new BukkitWorld(chestLoc.getWorld()), 500000);
         editSession.enableQueue();
-        Vector offset = clipboard.getOffset();
         Vector origin = new Vector(enderChest.getX(), enderChest.getY(), enderChest.getZ());
-        Location loc;
         try {
             clipboard.paste(editSession, origin, true, true);
             editSession.flushQueue();
@@ -258,7 +255,6 @@ public class BuildingPlan {
                 protectBlocks(enderChest, clipboard);
             }
         } catch (MaxChangedBlocksException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }

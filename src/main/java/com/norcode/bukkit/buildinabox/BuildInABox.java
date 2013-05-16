@@ -10,18 +10,14 @@ import net.h31ix.updater.Updater.UpdateType;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
-import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event.Result;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
@@ -49,6 +45,10 @@ public class BuildInABox extends JavaPlugin implements Listener {
         buildingChests = new DataStore(this, "data.yml");
         buildingChests.reload();
         getServer().getPluginManager().registerEvents(this, this);
+        if (getConfig().getBoolean("protect-buildings")) {
+            getServer().getPluginManager().registerEvents(new BlockProtectionListener(), this);
+        }
+
     }
 
     @Override
@@ -73,6 +73,8 @@ public class BuildInABox extends JavaPlugin implements Listener {
                         case SUCCESS:
                             player.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.WHITE + "An update has been downloaded and will take effect when the server restarts.");
                             break;
+                        default:
+                            // nava
                         }
                     }
                 }
@@ -154,7 +156,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
             }
             ItemStack chest = new ItemStack(Material.ENDER_CHEST);
             ItemMeta meta = getServer().getItemFactory().getItemMeta(chest.getType());
-            BuildingPlan plan = buildingPlans.get(buildingName);
+            BuildingPlan plan = buildingPlans.get(buildingName.toLowerCase());
             if (plan != null) {
                 meta.setDisplayName(plan.getName());
                 ArrayList<String> lore = new ArrayList<String>();
@@ -167,7 +169,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
                 }
                 sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.GREEN + "Gave " + ChatColor.WHITE + plan.getName() + ChatColor.GREEN + " to " + targetPlayer.getName());
             } else {
-                sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "Unknown building plan: '" + args[0] + "'");
+                sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "Unknown building plan: '" + buildingName + "'");
             }
             return true;
         }
@@ -238,12 +240,6 @@ public class BuildInABox extends JavaPlugin implements Listener {
         }
     }
 
-    @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
-    public void onBlockBreak(final BlockBreakEvent event) {
-        if (event.getBlock().hasMetadata("biab-block") || (event.getBlock().getType().equals(Material.ENDER_CHEST) && event.getBlock().hasMetadata("buildInABox"))) {
-            event.setCancelled(true);
-        }
-    }
 
     @EventHandler(ignoreCancelled=true)
     public void onBlockPlace(final BlockPlaceEvent event) {
