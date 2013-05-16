@@ -1,6 +1,6 @@
 author: metalhedd
 main: com.norcode.bukkit.buildinabox.BuildInABox
-version: 0.0.1
+version: 0.0.2
 name: BuildInABox
 
 commands:
