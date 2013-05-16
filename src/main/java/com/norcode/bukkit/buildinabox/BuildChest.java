@@ -3,7 +3,14 @@ package com.norcode.bukkit.buildinabox;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 
+import net.minecraft.server.v1_5_R3.Packet61WorldEvent;
+
+import org.bukkit.craftbukkit.v1_5_R3.CraftServer;
+import org.bukkit.craftbukkit.v1_5_R3.CraftWorld;
+
+import org.bukkit.craftbukkit.v1_5_R3.entity.CraftPlayer;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -14,6 +21,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.material.EnderChest;
+import org.bukkit.scheduler.BukkitTask;
+
+import com.sk89q.worldedit.CuboidClipboard;
+import com.sk89q.worldedit.Vector;
+import com.sk89q.worldedit.blocks.BaseBlock;
 
 public class BuildChest {
     final static long PREVIEW_DURATION = 20*4;
@@ -24,6 +36,8 @@ public class BuildChest {
     private String lockedBy = null;
     private LockingTask lockingTask = null;
 
+    private BukkitTask buildAnimationTask = null;
+    
     public BuildChest(BuildInABox plugin, Location loc, BuildingPlan plan, String lockedBy) {
         this.plugin = plugin;
         this.location = loc;
@@ -70,7 +84,7 @@ public class BuildChest {
         if (previewing && location.getBlock().getType().equals(Material.ENDER_CHEST)) {
             plan.clearPreview(player.getName(), location.getBlock());
             location.getBlock().setType(Material.AIR);
-            location.getWorld().dropItem(location.add(0.5, 0.5, 0.5), toItemStack());
+            location.getWorld().dropItem(new Location(location.getWorld(), location.getX() + 0.5, location.getY() + 0.5, location.getZ() + 0.5), toItemStack());
             plugin.getDataStore().removeChest(this);
             previewing = false;
         }
@@ -105,14 +119,72 @@ public class BuildChest {
             plan.clearPreview(player.getName(), location.getBlock());
             previewing = false;
         }
-
+        buildAnimationTask = plugin.getServer().getScheduler().runTaskTimer(plugin, new Runnable() {
+            private int ticks = 0;
+            private CuboidClipboard clipboard = getPlan().getRotatedClipboard(getEnderChest().getFacing());
+            private Random rand = new Random();
+            private Location point;
+            private HashSet<Vector> alreadyShown = new HashSet<Vector>();
+            private int x;
+            private int y;
+            private int z;
+            private BaseBlock bb;
+            private Packet61WorldEvent packet;
+            private List<Player> nearby = null;
+            public void run() {
+                ticks ++;
+                if (ticks == 40) {
+                    if (buildAnimationTask != null) {
+                        buildAnimationTask.cancel();
+                        plugin.getLogger().info("Stopping Animation.");
+                        buildAnimationTask = null;
+                        return;
+                    }
+                }
+                for (int i=0;i<10;i++) {
+                    x = rand.nextInt(clipboard.getSize().getBlockX());
+                    y = rand.nextInt(clipboard.getSize().getBlockY());
+                    z = rand.nextInt(clipboard.getSize().getBlockZ());
+                    Vector vec = new Vector(x,y,z);
+                    if (alreadyShown.contains(vec)) {
+                        continue;
+                    } else {
+                        alreadyShown.add(vec);
+                    }
+                    BaseBlock bb = clipboard.getPoint(vec);
+                    point = new Location(
+                        location.getWorld(),
+                        location.getX() + clipboard.getOffset().getBlockX() + x, 
+                        location.getY() + clipboard.getOffset().getBlockY() + y, 
+                        location.getZ() + clipboard.getOffset().getBlockZ() + z
+                    );
+                    Packet61WorldEvent packet = new Packet61WorldEvent(2001, point.getBlockX(), point.getBlockY(), point.getBlockZ(), bb.getType(), false);
+                    if (nearby == null) {
+                        nearby = new ArrayList<Player>();
+                        for (Player p: location.getWorld().getPlayers()) {
+                            try {
+                                if (p.getLocation().distance(location) < 32) {
+                                    nearby.add(p);
+                                }
+                            } catch (IllegalArgumentException ex) {
+                            }
+                        }
+                    }
+                    for (Player p: nearby) {
+                        ((CraftPlayer)p).getHandle().playerConnection.sendPacket(packet);
+                    }
+                    point.getBlock().setTypeIdAndData(bb.getType(), (byte) bb.getData(), false);
+                }
+            }
+        }, 0, 1);
         plugin.getServer().getScheduler().runTaskLater(plugin, new Runnable() {
             public void run() {
                 plan.build(location.getBlock());
             }
-        }, 20);
+        }, 40);
         this.previewing = false;
     }
+
 
     public void unlock(Player player) {
         long total = plugin.getConfig().getLong("unlock-time", 10);
@@ -133,7 +205,7 @@ public class BuildChest {
         if (!isLocked()) {
             plan.pickup(this.getLocation().getBlock());
             location.getBlock().setType(Material.AIR);
-            location.getWorld().dropItem(location.add(0.5, 0.5, 0.5), toItemStack());
+            location.getWorld().dropItem(new Location(location.getWorld(), location.getX() + 0.5, location.getY() + 0.5, location.getZ() + 0.5), toItemStack());
             plugin.getDataStore().removeChest(this);
         } else {
             player.sendMessage(ChatColor.GOLD + getPlan().getName() + " is locked by " + ChatColor.GOLD + getLockedBy());
