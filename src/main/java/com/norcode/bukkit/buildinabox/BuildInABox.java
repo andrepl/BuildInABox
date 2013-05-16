@@ -145,14 +145,15 @@ public class BuildInABox extends JavaPlugin implements Listener {
                 } else {
                     targetPlayer = playerMatches.get(0);
                 }
+                buildingName = args[2];
             } else {
                 if (!(sender instanceof Player)) {
                     sender.sendMessage("This command must be run by a player, or target a player.");
                     return true;
                 }
+                buildingName = args[1];
                 targetPlayer = (Player) sender;
             }
-            buildingName = args[1];
             ItemStack chest = new ItemStack(Material.ENDER_CHEST);
             ItemMeta meta = getServer().getItemFactory().getItemMeta(chest.getType());
             BuildingPlan plan = buildingPlans.get(buildingName);
