@@ -121,6 +121,18 @@ public class BuildInABox extends JavaPlugin implements Listener {
             return true;
         }
         String action = args[0].toLowerCase();
+        if (args.length == 1) {
+            if (action.equals("save")) {
+                if (sender.hasPermission("biab.save")) {
+                    sender.sendMessage("/biab save [building] - save the current worldedit selection as a building plan.");
+                }
+            } else if (action.equals("give")) {
+                if (sender.hasPermission("biab.give")) {
+                    sender.sendMessage("/biab give [player] [building] - give a player a build-in-a-box chest.");
+                }
+            }
+            return true;
+        }
         Player player = (Player) sender;
         String buildingName;
         if (action.equalsIgnoreCase("save")) {
