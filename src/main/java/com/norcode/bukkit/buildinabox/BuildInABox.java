@@ -108,6 +108,18 @@ public class BuildInABox extends JavaPlugin implements Listener {
     @Override
     public boolean onCommand(CommandSender sender, Command command,
             String label, String[] args) {
+        if (args.length == 0) {
+            if (!sender.hasPermission("biab.give") && !sender.hasPermission("biab.save")) {
+                sender.sendMessage("You don't have permission to use any BIAB Commands.");
+                return true;
+            }
+            if (sender.hasPermission("biab.give")) {
+                sender.sendMessage("/biab give [player] [building] - give a player a build-in-a-box chest.");
+            }
+            if (sender.hasPermission("biab.save")) {
+                sender.sendMessage("/biab save [building] - save the current worldedit selection as a building plan.");
+            }
+        }
         String action = args[0].toLowerCase();
         Player player = (Player) sender;
         String buildingName;
