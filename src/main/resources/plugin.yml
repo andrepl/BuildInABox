@@ -1,0 +1,21 @@
+author: metalhedd
+main: com.norcode.bukkit.buildinabox.BuildInABox
+version: 0.0.1
+name: BuildInABox
+
+commands:
+  biab:
+    permission: biab.admin
+    usage: "/<command> give [<player>] <buildingname>"
+    description: give a player a Build-in-a-Box Building.
+
+permissions:
+  biab.admin:
+    default: op
+    children:
+      biab.give: true
+      biab.save: true
+  biab.give:
+    default: op
+  biab.save:
+    default: op
