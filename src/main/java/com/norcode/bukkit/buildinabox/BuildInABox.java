@@ -215,6 +215,12 @@ public class BuildInABox extends JavaPlugin implements Listener {
         if (event.getClickedBlock().getType().equals(Material.ENDER_CHEST)) {
             if (event.getClickedBlock().hasMetadata("buildInABox")) {
                 BuildChest bc = (BuildChest) event.getClickedBlock().getMetadata("buildInABox").get(0).value();
+                if (bc.isBuilding()) {
+                    event.setCancelled(true);
+                    event.setUseInteractedBlock(Result.DENY);
+                    event.setUseItemInHand(Result.DENY);
+                    return;
+                }
                 bc.updateActivity();
                 if (bc.isPreviewing()) {
                     if (event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {

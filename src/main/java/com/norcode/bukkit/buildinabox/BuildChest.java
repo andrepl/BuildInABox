@@ -45,7 +45,7 @@ public class BuildChest {
     private LockingTask lockingTask = null;
     private BukkitTask buildTask = null;
     private ChestData data;
-
+    private boolean building = false;
     public BuildChest(ChestData data) {
         this.plugin = BuildInABox.getInstance();
         this.data = data;
@@ -133,6 +133,7 @@ public class BuildChest {
             plan.clearPreview(player.getName(), getBlock());
             previewing = false;
         }
+        building = true;
         player.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.GRAY + BuildInABox.getMsg("building", plan.getName()));
         final World world = player.getWorld();
         final int blocksPerTick = plugin.getConfig().getInt("pickup-animation.blocks-per-tick", 5);
@@ -206,6 +207,7 @@ public class BuildChest {
                         data.clearTileEntities();
                         buildTask.cancel();
                         plugin.getDataStore().saveChest(data);
+                        building = false;
                         return;
                     }
                 }
@@ -238,6 +240,7 @@ public class BuildChest {
         }
         final BukkitWorld bukkitWorld = new BukkitWorld(player.getWorld());
         if (!isLocked()) {
+            building = true;
             data.clearTileEntities();
             buildTask = plugin.getServer().getScheduler().runTaskTimer(plugin, new BuildingTask(this, plan.getRotatedClipboard(getEnderChest().getFacing())) {
                 public void run() {
@@ -318,6 +321,7 @@ public class BuildChest {
                             data.setReplacedBlocks(null);
                             plugin.getDataStore().saveChest(data);
                             buildTask.cancel();
+                            building = false;
                             return;
                         }
                     }
@@ -444,5 +448,9 @@ public class BuildChest {
     public void updateActivity() {
         data.setLastActivity(System.currentTimeMillis());
         plugin.getDataStore().saveChest(data);
+    }
+
+    public boolean isBuilding() {
+        return building;
     }
 }
