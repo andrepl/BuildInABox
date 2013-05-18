@@ -120,7 +120,7 @@ public class BuildChest {
             }, PREVIEW_DURATION);
         } else {
             endPreview(player);
-            player.sendMessage(ChatColor.GOLD + getPlan().getName() + " won't fit here.");
+            player.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + BuildInABox.getMsg("building-wont-fit", plan.getName()));
         }
     }
 
@@ -133,7 +133,7 @@ public class BuildChest {
             plan.clearPreview(player.getName(), getBlock());
             previewing = false;
         }
-        player.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.GRAY + " Building... ");
+        player.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.GRAY + BuildInABox.getMsg("building", plan.getName()));
         final World world = player.getWorld();
         final int blocksPerTick = plugin.getConfig().getInt("pickup-animation.blocks-per-tick", 5);
         data.setLocation(getLocation());
@@ -183,7 +183,6 @@ public class BuildChest {
                 BaseBlock bb;
                 for (int i=0;i<blocksPerTick;i++) {
                     if (moveCursor()) {
-                        BuildInABox.getInstance().debug("Building @ " + cursor + " ==> " + worldCursor);
                         bb = clipboard.getPoint(cursor);
                         if (bb.getType() == 0) continue; // skip air blocks;
                         if (cursor.getBlockY() < -clipboard.getOffset().getBlockY()) {
@@ -248,12 +247,8 @@ public class BuildChest {
                             bb = clipboard.getPoint(cursor);
                             if (bb.getType() == 0) continue; // skip air blocks;
                             if (bb.getType() == Material.ENDER_CHEST.getId()) {
-                                BuildInABox.getInstance().debug("Found EnderChest@" + cursor + "...");
                                 if (worldCursor.getBlock().hasMetadata("buildInABox")) {
-                                    BuildInABox.getInstance().debug("... Skipping");
                                     continue;
-                                } else {
-                                    BuildInABox.getInstance().debug("not a biab, processing.");
                                 }
                             }
                             if (bb instanceof TileEntityBlock) {
@@ -330,7 +325,7 @@ public class BuildChest {
                 }
             }, 1, 1);
         } else {
-            player.sendMessage(ChatColor.GOLD + getPlan().getName() + " is locked by " + ChatColor.GOLD + getLockedBy());
+            player.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + BuildInABox.getMsg("building-is-locked", getPlan().getName(), getLockedBy()));
         }
     }
 
@@ -346,15 +341,15 @@ public class BuildChest {
         }
 
         protected String getCancelMessage() {
-            return ChatColor.RED + "Locking attempt cancelled.";
+            return ChatColor.RED + BuildInABox.getMsg("lock-cancelled-self");
         }
 
         protected String getSuccessMessage() {
-            return ChatColor.GREEN + "Successfully Locked " + getPlan().getName() + ".";
+            return ChatColor.GREEN + BuildInABox.getMsg("lock-success-self", getPlan().getName());
         }
 
         protected String getProgressMessage(int percentage) {
-            return ChatColor.GOLD + "Locking " + getPlan().getName() + "... " + percentage + "%";
+            return ChatColor.GOLD + BuildInABox.getMsg("lock-progress", getPlan().getName(), percentage + "%");
         }
 
         protected String getLockedBy() {
@@ -400,7 +395,7 @@ public class BuildChest {
                     data.setLastActivity(System.currentTimeMillis());
                     plugin.getDataStore().saveChest(data);
                     lockingTask = null;
-                    player.sendMessage(getSuccessMessage());
+                    player.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + getSuccessMessage());
                 }
             }
         }
@@ -413,17 +408,17 @@ public class BuildChest {
 
         @Override
         public String getCancelMessage() {
-            return ChatColor.RED + "Unlock attempt Cancelled.";
+            return ChatColor.RED + BuildInABox.getMsg("unlock-cancelled-self");
         }
 
         @Override
         public String getSuccessMessage() {
-            return ChatColor.GREEN + "Successfully Unlocked " + getPlan().getName() + ".";
+            return ChatColor.GREEN + BuildInABox.getMsg("unlock-success-self", getPlan().getName());
         }
 
         @Override
         public String getProgressMessage(int percentage) {
-            return ChatColor.GOLD + "Unlocking " + getPlan().getName() + "... " + percentage + "%";
+            return ChatColor.GOLD + BuildInABox.getMsg("unlock-progress", getPlan().getName(), percentage);
         }
 
         @Override
@@ -434,13 +429,13 @@ public class BuildChest {
 
     public String[] getDescription() {
         List<String> desc = new ArrayList<String>(2);
-        desc.add(ChatColor.GOLD + getPlan().getName() + " - " + (previewing ? ChatColor.GREEN + "PREVIEW" : (isLocked() ? ChatColor.RED + "LOCKED " + ChatColor.WHITE + "[" + ChatColor.GOLD + data.getLockedBy() + ChatColor.WHITE + "]" : ChatColor.GREEN + "UNLOCKED")));
+        desc.add(ChatColor.GOLD + getPlan().getName() + " - " + (previewing ? ChatColor.GREEN + BuildInABox.getMsg("preview") : (isLocked() ? ChatColor.RED + BuildInABox.getMsg("locked") + ChatColor.WHITE + " [" + ChatColor.GOLD + data.getLockedBy() + ChatColor.WHITE + "]" : ChatColor.GREEN + BuildInABox.getMsg("unlocked"))));
         if (previewing) {
-            desc.add(ChatColor.GOLD + "Left click to cancel " + ChatColor.WHITE + "|" + ChatColor.GOLD + " Right click to confirm");
+            desc.add(ChatColor.GOLD + BuildInABox.getMsg("left-click-to-cancel") + ChatColor.WHITE + " | " + ChatColor.GOLD + BuildInABox.getMsg("right-click-to-confirm"));
         } else if (isLocked()) {
-            desc.add(ChatColor.GOLD + "Right click twice to unlock");
+            desc.add(ChatColor.GOLD + BuildInABox.getMsg("right-click-twice-to-unlock"));
         } else {
-            desc.add(ChatColor.GOLD + "Left click twice to pick up " + ChatColor.WHITE + "|" + ChatColor.GOLD + " Right click twice to lock");
+            desc.add(ChatColor.GOLD + BuildInABox.getMsg("left-click-twice-to-pickup") + ChatColor.WHITE + " | " + ChatColor.GOLD + BuildInABox.getMsg("right-click-twice-to-lock"));
         }
         String[] sa = new String[desc.size()];
         return desc.toArray(sa);

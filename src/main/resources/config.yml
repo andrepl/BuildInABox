@@ -1,6 +1,9 @@
 # Output extra logging
 debug: true
 
+# Language selection (from lang/<language>.yml)
+language: english
+
 # Automatically update the plugin
 # true - Automatically download and apply updates
 # false - do not check for updates.

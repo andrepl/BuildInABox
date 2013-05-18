@@ -1,6 +1,7 @@
 package com.norcode.bukkit.buildinabox;
 
 import java.io.File;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,6 +40,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
     private Action lastClickType = null;
     private boolean debugMode = false;
     private BukkitTask inventoryScanTask = null;
+    private ConfigAccessor messages = null;
     @Override
     public void onLoad() {
         instance = this;
@@ -52,6 +54,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
     public void onEnable() {
         saveDefaultConfig();
         reloadConfig();
+        loadMessage();
         doUpdater();
         new File(getDataFolder(), "schematics").mkdir();
         if (initializeDataStore()) {
@@ -87,6 +90,29 @@ public class BuildInABox extends JavaPlugin implements Listener {
                 }
             }, 20, 20);
         }
+    }
+
+    private void loadMessage() {
+        String lang = getConfig().getString("language", "english").toLowerCase();
+        File tDir = new File(getDataFolder(), "lang");
+        if (!tDir.exists()) {
+            tDir.mkdir();
+        }
+        File cfgFile = new File("lang", lang + ".yml");
+        debug("Using translation file: " + cfgFile.getPath());
+        messages = new ConfigAccessor(this, cfgFile.getPath());
+        messages.reloadConfig();
+    }
+
+    public static String getMsg(String key, Object... args) {
+        String tpl = instance.messages.getConfig().getString(key);
+        if (tpl == null) {
+            tpl = "[" + key + "] ";
+            for (int i=0;i< args.length;i++) {
+                tpl += "{"+i+"}, ";
+            }
+        }
+        return new MessageFormat(tpl).format(args);
     }
 
     public void removeCarryEffect(Player p) {
@@ -149,10 +175,10 @@ public class BuildInABox extends JavaPlugin implements Listener {
                         getLogger().info("Updater Result: " + updater.getResult());
                         switch (updater.getResult()) {
                         case UPDATE_AVAILABLE:
-                            player.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.WHITE + "An update is available at: http://dev.bukkit.org/server-mods/build-in-a-box/");
+                            player.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.WHITE + getMsg("update-available", "http://dev.bukkit.org/server-mods/build-in-a-box/"));
                             break;
                         case SUCCESS:
-                            player.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.WHITE + "An update has been downloaded and will take effect when the server restarts.");
+                            player.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.WHITE + getMsg("update-downloaded"));
                             break;
                         default:
                             // nothing
@@ -202,7 +228,11 @@ public class BuildInABox extends JavaPlugin implements Listener {
                     long now = System.currentTimeMillis();
                     if (bc.isLocking()) {
                         if (!bc.getLockingTask().lockingPlayer.equals(event.getPlayer().getName())) {
-                            event.getPlayer().sendMessage(bc.getLockingTask().lockingPlayer + "'s " + ((bc.getLockingTask() instanceof UnlockingTask) ? "unlock" : "locking") + " attempt was cancelled.");
+                            String msgKey = "lock-attempt-cancelled";
+                            if (bc.getLockingTask() instanceof UnlockingTask) {
+                                msgKey = "un" + msgKey;
+                            }
+                            event.getPlayer().sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.GRAY + getMsg(msgKey, bc.getLockingTask().lockingPlayer));
                         }
                         bc.getLockingTask().cancel();
                     } else if (now - lastClicked < 2000 && lastClickType.equals(event.getAction())) {
@@ -210,6 +240,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
                             // pick up
                             if (!bc.isLocked()) {
                                 bc.pickup(event.getPlayer());
+                                
                             }
                         } else if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
                             // lock/unlock

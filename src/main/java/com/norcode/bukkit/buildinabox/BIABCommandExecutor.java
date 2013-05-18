@@ -34,7 +34,7 @@ public class BIABCommandExecutor implements CommandExecutor {
             cmdList(sender, args);
             return true;
         }
-        sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "Unexpected argument: " + action);
+        sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + BuildInABox.getMsg("unexpected-argument", action));
         return true;
     }
     private void cmdList(CommandSender sender, LinkedList<String> args) {
@@ -43,18 +43,18 @@ public class BIABCommandExecutor implements CommandExecutor {
             try {
                 page = Integer.parseInt(args.peek());
             } catch (IllegalArgumentException ex) {
-                sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "Invalid Page: " + args.peek());
+                sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + BuildInABox.getMsg("invalid-page", args.peek()));
                 return;
             }
         }
         int numPages = (int) Math.ceil(plugin.getDataStore().getAllBuildingPlans().size() / 8.0f);
         if (numPages == 0) {
-            sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.GRAY + "There are no building plans saved yet.");
+            sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.GRAY + BuildInABox.getMsg("no-building-plans"));
             return;
         }
         List<BuildingPlan> plans = new ArrayList<BuildingPlan>(plugin.getDataStore().getAllBuildingPlans());
         List<String> lines = new ArrayList<String>();
-        lines.add(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.WHITE + "Available Building Plans [pg." + page + " of " + numPages + "]");
+        lines.add(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.WHITE + BuildInABox.getMsg("available-building-plans", page, numPages));
         for (int i=8*(page-1);i<8*(page);i++) {
             if (i<plans.size()) {
                 lines.add(ChatColor.GOLD + " * " + ChatColor.GRAY + plans.get(i).getName());
@@ -65,23 +65,23 @@ public class BIABCommandExecutor implements CommandExecutor {
 
     public void cmdSave(CommandSender sender, LinkedList<String> args) {
         if (!sender.hasPermission("biab.save")) {
-            sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "You don't have permission to do that.");
+            sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + BuildInABox.getMsg("no-permission"));
             return;
         } else if (!(sender instanceof Player)) {
-            sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "This command cannot be run from the console.");
+            sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + BuildInABox.getMsg("cannot-use-from-console"));
             return;
         }
         String buildingName = args.pop();
         BuildingPlan plan = BuildingPlan.fromClipboard(plugin, (Player) sender, buildingName);
         if (plan != null) {
-            sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.GREEN + "Building plan " + ChatColor.WHITE + plan.getName() + ChatColor.GREEN + " saved!");
+            sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.GREEN + BuildInABox.getMsg("building-plan-saved", buildingName));
             plugin.getDataStore().saveBuildingPlan(plan);
         }
     }
 
     public void cmdGive(CommandSender sender, LinkedList<String> args) {
         if (!sender.hasPermission("biab.give")) {
-            sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "You don't have permission to do that.");
+            sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + BuildInABox.getMsg("no-permission"));
             return;
         }
         Player targetPlayer = null;
@@ -91,13 +91,13 @@ public class BIABCommandExecutor implements CommandExecutor {
             if (matches.size() == 1) {
                 targetPlayer = matches.get(0);
             } else {
-                sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "Unknown Player: " + name);
+                sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + BuildInABox.getMsg("unknown-player", name));
                 return;
             }
         }
         if (targetPlayer == null) {
             if (!(sender instanceof Player)) {
-                sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "Cannot give a building to the console.");
+                sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + BuildInABox.getMsg("cannot-give-to-console"));
                 return;
             } else {
                 targetPlayer = (Player) sender;
@@ -107,7 +107,7 @@ public class BIABCommandExecutor implements CommandExecutor {
             String planName = args.pop().toLowerCase();
             BuildingPlan plan = plugin.getDataStore().getBuildingPlan(planName);
             if (plan == null) {
-                sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "Unknown Building Plan: " + planName + ".");
+                sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + BuildInABox.getMsg("unknown-building-plan", planName));
                 return;
             }
             ChestData data = plugin.getDataStore().createChest(plan.getName());
@@ -116,7 +116,7 @@ public class BIABCommandExecutor implements CommandExecutor {
                 targetPlayer.getWorld().dropItem(targetPlayer.getLocation(), stack);
             }
         } else {
-            sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.WHITE + "Usage: /biab give [<player>] <plan>");
+            sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.WHITE + BuildInABox.getMsg("cmd-give-usage"));
         }
     }
 }
