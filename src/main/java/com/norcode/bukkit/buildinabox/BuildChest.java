@@ -2,6 +2,7 @@ package com.norcode.bukkit.buildinabox;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -178,7 +179,7 @@ public class BuildChest {
         } catch (DataException e) {
             e.printStackTrace();
         }
-        buildTask = plugin.getServer().getScheduler().runTaskTimer(plugin, new BuildingTask(this, clipboard) {
+        buildTask = plugin.getServer().getScheduler().runTaskTimer(plugin, new BuildingTask(this, clipboard, BuildingTask.BOTTOM_UP) {
             @Override
             public void run() {
                 BaseBlock bb;
@@ -242,7 +243,7 @@ public class BuildChest {
         if (!isLocked()) {
             building = true;
             data.clearTileEntities();
-            buildTask = plugin.getServer().getScheduler().runTaskTimer(plugin, new BuildingTask(this, plan.getRotatedClipboard(getEnderChest().getFacing())) {
+            buildTask = plugin.getServer().getScheduler().runTaskTimer(plugin, new BuildingTask(this, plan.getRotatedClipboard(getEnderChest().getFacing()), BuildingTask.TOP_DOWN) {
                 public void run() {
                     BaseBlock bb;
                     for (int i=0;i<blocksPerTick;i++) {

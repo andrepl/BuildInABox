@@ -165,7 +165,6 @@ public class BuildInABox extends JavaPlugin implements Listener {
 
     @EventHandler(ignoreCancelled=true)
     public void onPlayerLogin(PlayerLoginEvent event) {
-
         if (event.getPlayer().hasPermission("biab.admin")) {
             final String playerName = event.getPlayer().getName();
             getServer().getScheduler().runTaskLaterAsynchronously(this, new Runnable() {

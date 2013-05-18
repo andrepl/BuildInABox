@@ -12,19 +12,25 @@ import com.sk89q.worldedit.Vector;
 import com.sk89q.worldedit.blocks.BaseBlock;
 
 public abstract class BuildingTask implements Runnable {
-    BlockVector cursor = new BlockVector(-1,0,0);
+    public static final int TOP_DOWN = -1;
+    public static final int BOTTOM_UP = 1;
+    
+    BlockVector cursor;
     CuboidClipboard clipboard;
     HashMap<BlockVector, BaseBlock> replacedBlocks = new HashMap<BlockVector, BaseBlock>();
     Location worldCursor;
     BlockVector origin;
-    ArrayList<BlockVector> xyPoints;
+    ArrayList<BlockVector> xzPoints;
     int ptr = -1;
-    public BuildingTask(BuildChest buildChest, CuboidClipboard clipboard) {
+    int buildDirection = 0;
+    public BuildingTask(BuildChest buildChest, CuboidClipboard clipboard, int buildDirection) {
+        this.buildDirection = buildDirection;
         this.clipboard = clipboard;
-        xyPoints = new ArrayList<BlockVector>(clipboard.getSize().getBlockX() * clipboard.getSize().getBlockY());
+        this.cursor = new BlockVector(0, (buildDirection == TOP_DOWN ? this.clipboard.getSize().getBlockY()-1:0), 0);
+        xzPoints = new ArrayList<BlockVector>(clipboard.getSize().getBlockX() * clipboard.getSize().getBlockZ());
         for (int x=0; x<this.clipboard.getSize().getBlockX();x++) {
             for (int z=0;z<this.clipboard.getSize().getBlockZ();z++) {
-                xyPoints.add(new BlockVector(x,0,z));
+                xzPoints.add(new BlockVector(x,0,z));
             }
         }
         Location cl = buildChest.getLocation();
@@ -37,15 +43,20 @@ public abstract class BuildingTask implements Runnable {
     boolean moveCursor() {
         int y = cursor.getBlockY();
         ptr++;
-        if (ptr >= xyPoints.size()) {
+        if (ptr >= xzPoints.size()) {
             ptr = 0;
-            y++;
-            if (y >= clipboard.getSize().getBlockY()) {
-                return false;
+            y += buildDirection;
+            switch (buildDirection) {
+            case TOP_DOWN:
+                if (y < 0) return false;
+                break;
+            case BOTTOM_UP:
+                if (y >= clipboard.getSize().getBlockY()) return false;
+                break;
             }
-            Collections.shuffle(xyPoints);
+            Collections.shuffle(xzPoints);
         }
-        BlockVector v = xyPoints.get(ptr);
+        BlockVector v = xzPoints.get(ptr);
         cursor = new BlockVector(v.getBlockX(),y,v.getBlockZ());
         worldCursor.setX(origin.getBlockX() + v.getBlockX());
         worldCursor.setY(origin.getBlockY() + y);
