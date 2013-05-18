@@ -7,6 +7,11 @@ debug: true
 # notify-only - check for updates, but do not download or install them
 auto-update: true
 
+# apply a potion effect while carrying a building.
+# this involves scanning inventories often. use with caution.
+carry-effect: true
+carry-effect-type: SLOW
+
 # Prevent breaking blocks which belong to a building.
 protect-buildings: true
 

@@ -162,7 +162,7 @@ public abstract class DataStore {
     }
 
     public ChestData fromItemStack(ItemStack stack) {
-        if (stack.getType().equals(Material.ENDER_CHEST)) {
+        if (stack != null && stack.getType().equals(Material.ENDER_CHEST)) {
             if (stack.hasItemMeta() && stack.getItemMeta().hasLore()) {
                 ItemMeta meta = stack.getItemMeta();
                 if (meta.getLore().get(0).equals(BuildInABox.LORE_HEADER)) {

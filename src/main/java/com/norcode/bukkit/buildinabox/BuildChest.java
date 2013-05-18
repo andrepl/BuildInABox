@@ -396,6 +396,8 @@ public class BuildChest {
                     plugin.getServer().getScheduler().runTaskLater(plugin, this, 20);
                 } else {
                     data.setLockedBy(getLockedBy());
+                    data.setLastActivity(System.currentTimeMillis());
+                    plugin.getDataStore().saveChest(data);
                     lockingTask = null;
                     player.sendMessage(getSuccessMessage());
                 }
@@ -441,5 +443,10 @@ public class BuildChest {
         }
         String[] sa = new String[desc.size()];
         return desc.toArray(sa);
+    }
+
+    public void updateActivity() {
+        data.setLastActivity(System.currentTimeMillis());
+        plugin.getDataStore().saveChest(data);
     }
 }

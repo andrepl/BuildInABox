@@ -249,6 +249,7 @@ public class BuildingPlan {
             clipboard = getRotatedClipboard(dir);
         }
         EditSession editSession = new EditSession(new BukkitWorld(chestLoc.getWorld()), 500000);
+        editSession.setFastMode(true);
         editSession.enableQueue();
         Vector origin = new Vector(enderChest.getX(), enderChest.getY(), enderChest.getZ());
         try {
@@ -292,5 +293,15 @@ public class BuildingPlan {
 
     public String getDescription() {
         return description;
+    }
+
+    public void applyCarryEffect(Player p) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    public void removeCarryEffect(Player player) {
+        // TODO Auto-generated method stub
+        
     }
 }

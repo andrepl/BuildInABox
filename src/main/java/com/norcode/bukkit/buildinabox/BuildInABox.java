@@ -19,8 +19,12 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitTask;
 
 import com.norcode.bukkit.buildinabox.BuildChest.UnlockingTask;
 import com.sk89q.worldedit.bukkit.BukkitWorld;
@@ -34,7 +38,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
     private long lastClicked = -1;
     private Action lastClickType = null;
     private boolean debugMode = false;
-
+    private BukkitTask inventoryScanTask = null;
     @Override
     public void onLoad() {
         instance = this;
@@ -53,11 +57,48 @@ public class BuildInABox extends JavaPlugin implements Listener {
         if (initializeDataStore()) {
             getServer().getPluginCommand("biab").setExecutor(new BIABCommandExecutor(this));
             getServer().getPluginManager().registerEvents(this, this);
+            getServer().getPluginManager().registerEvents(new ItemListener(this), this);
             if (getConfig().getBoolean("protect-buildings")) {
                 getServer().getPluginManager().registerEvents(new BlockProtectionListener(), this);
             }
         }
+        if (getConfig().getBoolean("carry-effect", true)) {
+            inventoryScanTask = getServer().getScheduler().runTaskTimer(this, new Runnable() {
+                List<String> playerNames = null;
+                int listIdx = 0;
+                public void run() {
+                    if (playerNames == null || listIdx >= playerNames.size()) {
+                        playerNames = new ArrayList<String>();
+                        for (Player p: getServer().getOnlinePlayers()) {
+                            playerNames.add(p.getName());
+                            listIdx = 0;
+                        }
+                    }
+                    if (listIdx < playerNames.size()) {
+                        Player p = getServer().getPlayer(playerNames.get(listIdx));
+                        ChestData data = null;
+                        boolean effect = false;
+                        if (p.isOnline() && !p.isDead()) {
+                            checkCarrying(p);
+                        }
+                        listIdx++;
+                    }
+                    
+                }
+            }, 20, 20);
+        }
+    }
 
+    public void removeCarryEffect(Player p) {
+        p.removeMetadata("biab-carryeffect", getInstance());
+        p.removePotionEffect(PotionEffectType.getByName(getConfig().getString("carry-effect-type")));
+    }
+    public boolean hasCarryEffect(Player p) {
+        return p.hasMetadata("biab-carryeffect");
+    }
+    public void applyCarryEffect(Player p) {
+        p.setMetadata("biab-carryeffect", new FixedMetadataValue(getInstance(), true));
+        p.addPotionEffect(new PotionEffect(PotionEffectType.getByName(getConfig().getString("carry-effect-type")), 1200, 1));
     }
 
     private boolean initializeDataStore() {
@@ -148,6 +189,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
         if (event.getClickedBlock().getType().equals(Material.ENDER_CHEST)) {
             if (event.getClickedBlock().hasMetadata("buildInABox")) {
                 BuildChest bc = (BuildChest) event.getClickedBlock().getMetadata("buildInABox").get(0).value();
+                bc.updateActivity();
                 if (bc.isPreviewing()) {
                     if (event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
                         // Cancel
@@ -204,9 +246,9 @@ public class BuildInABox extends JavaPlugin implements Listener {
             event.getPlayer().getInventory().setItemInHand(null);
             getServer().getScheduler().runTaskLater(this, new Runnable() {
                 public void run() {
-                    
                     if (event.getPlayer().isOnline()) {
                         bc.preview(event.getPlayer());
+                        checkCarrying(event.getPlayer());
                     }
                 }
             }, 1);
@@ -221,5 +263,23 @@ public class BuildInABox extends JavaPlugin implements Listener {
 
     public static BuildInABox getInstance() {
         return instance;
+    }
+
+    public void checkCarrying(Player p) {
+        ChestData data;
+        boolean effect = false;
+        for (ItemStack stack: p.getInventory().getContents()) {
+            data = getDataStore().fromItemStack(stack);
+            if (data != null) {
+                applyCarryEffect(p);
+                effect = true;
+                break;
+            }
+        }
+        if (effect) {
+            applyCarryEffect(p);
+        } else if (hasCarryEffect(p)) {
+            removeCarryEffect(p);
+        }
     }
 }
