@@ -434,13 +434,21 @@ public class BuildChest {
 
     public String[] getDescription() {
         List<String> desc = new ArrayList<String>(2);
-        desc.add(ChatColor.GOLD + getPlan().getName() + " - " + (previewing ? ChatColor.GREEN + BuildInABox.getMsg("preview") : (isLocked() ? ChatColor.RED + BuildInABox.getMsg("locked") + ChatColor.WHITE + " [" + ChatColor.GOLD + data.getLockedBy() + ChatColor.WHITE + "]" : ChatColor.GREEN + BuildInABox.getMsg("unlocked"))));
+        String header = ChatColor.GOLD + getPlan().getName();
+        if (previewing || plugin.getConfig().getBoolean("allow-locking", true)) {
+            header += " - " + (previewing ? ChatColor.GREEN + BuildInABox.getMsg("preview") : (isLocked() ? ChatColor.RED + BuildInABox.getMsg("locked") + ChatColor.WHITE + " [" + ChatColor.GOLD + data.getLockedBy() + ChatColor.WHITE + "]" : ChatColor.GREEN + BuildInABox.getMsg("unlocked")));
+        }
+        desc.add(header);
         if (previewing) {
             desc.add(ChatColor.GOLD + BuildInABox.getMsg("left-click-to-cancel") + ChatColor.WHITE + " | " + ChatColor.GOLD + BuildInABox.getMsg("right-click-to-confirm"));
         } else if (isLocked()) {
             desc.add(ChatColor.GOLD + BuildInABox.getMsg("right-click-twice-to-unlock"));
         } else {
-            desc.add(ChatColor.GOLD + BuildInABox.getMsg("left-click-twice-to-pickup") + ChatColor.WHITE + " | " + ChatColor.GOLD + BuildInABox.getMsg("right-click-twice-to-lock"));
+            String instructions = ChatColor.GOLD + BuildInABox.getMsg("left-click-twice-to-pickup");
+            if (plugin.getConfig().getBoolean("allow-locking", true)) {
+                instructions += ChatColor.WHITE + " | " + ChatColor.GOLD + BuildInABox.getMsg("right-click-twice-to-lock");
+            }
+            desc.add(instructions);
         }
         String[] sa = new String[desc.size()];
         return desc.toArray(sa);

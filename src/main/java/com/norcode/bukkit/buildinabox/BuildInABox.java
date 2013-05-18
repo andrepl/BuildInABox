@@ -249,10 +249,12 @@ public class BuildInABox extends JavaPlugin implements Listener {
                             }
                         } else if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
                             // lock/unlock
-                            if (bc.isLocked()) {
-                                bc.unlock(event.getPlayer());
-                            } else {
-                                bc.lock(event.getPlayer());
+                            if (getConfig().getBoolean("allow-locking", true)) {
+                                if (bc.isLocked()) {
+                                    bc.unlock(event.getPlayer());
+                                } else {
+                                    bc.lock(event.getPlayer());
+                                }
                             }
                         }
                         lastClicked = -1;

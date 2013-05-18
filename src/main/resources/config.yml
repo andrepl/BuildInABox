@@ -18,6 +18,9 @@ carry-effect-type: SLOW
 # Prevent breaking blocks which belong to a building.
 protect-buildings: true
 
+# allow players to lock buildings (and other players to unlock them)
+allow-locking: true
+
 # time in seconds to unlock someone elses building.
 unlock-time: 10
 
