@@ -28,3 +28,9 @@ lock-time: 5
 # locking/unlocking before the attempt is cancelled.
 max-locking-distance: 5
  
+# animation settings
+pickup-animation:
+  blocks-per-ticks: 20
+
+build-animation:
+  blocks-per-ticks: 5

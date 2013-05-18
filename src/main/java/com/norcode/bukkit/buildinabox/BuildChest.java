@@ -133,8 +133,9 @@ public class BuildChest {
             plan.clearPreview(player.getName(), getBlock());
             previewing = false;
         }
+        player.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.GRAY + " Building... ");
         final World world = player.getWorld();
-        final int blocksPerTick = 4;
+        final int blocksPerTick = plugin.getConfig().getInt("pickup-animation.blocks-per-tick", 5);
         data.setLocation(getLocation());
         data.setLastActivity(System.currentTimeMillis());
         plugin.getDataStore().saveChest(data);
@@ -231,7 +232,7 @@ public class BuildChest {
     }
 
     public void pickup(Player player) {
-        final int blocksPerTick = 10;
+        final int blocksPerTick = plugin.getConfig().getInt("build-animation.blocks-per-tick", 20);
         List<Player> nearby = new ArrayList<Player>();
         for (Player p: player.getWorld().getPlayers()) {
             nearby.add(p);
