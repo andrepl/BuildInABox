@@ -41,7 +41,7 @@ public class YamlDataStore extends DataStore {
             BuildingPlan plan = new BuildingPlan(plugin, 
                     sec.getString("name"), 
                     sec.getString("filename"), 
-                    sec.getString("description"));
+                    sec.getStringList("description"));
             this.plans.put(plan.getName().toLowerCase(), plan);
         }
 
@@ -60,6 +60,7 @@ public class YamlDataStore extends DataStore {
                 chests.put(id, new ChestData(id, sec.getString("plan"), sec.getString("locked-by"), sec.getLong("last-activity"), loc, tileEntities, replacedBlocks));
             }
         }
+        nextChestId = maxId;
     }
 
     @Override

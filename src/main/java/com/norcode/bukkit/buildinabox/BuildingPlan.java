@@ -3,14 +3,12 @@ package com.norcode.bukkit.buildinabox;
 import java.io.File;
 import java.io.IOException;
 import java.util.EnumSet;
+import java.util.List;
 
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.BlockState;
-import org.bukkit.block.Chest;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.Inventory;
+
 import org.bukkit.material.EnderChest;
 import org.bukkit.metadata.FixedMetadataValue;
 
@@ -36,12 +34,12 @@ import com.sk89q.worldedit.schematic.SchematicFormat;
 public class BuildingPlan {
     String name;
     String filename;
-    String description;
+    List<String> description;
     BuildInABox plugin;
     
-    private static final EnumSet<Material> coverableBlocks = EnumSet.of(Material.LONG_GRASS, Material.AIR, Material.RED_MUSHROOM, Material.BROWN_MUSHROOM, Material.DEAD_BUSH, Material.FIRE, Material.RED_ROSE, Material.YELLOW_FLOWER, Material.SAPLING);
+    private static final EnumSet<Material> coverableBlocks = EnumSet.of(Material.LONG_GRASS, Material.SNOW, Material.AIR, Material.RED_MUSHROOM, Material.BROWN_MUSHROOM, Material.DEAD_BUSH, Material.FIRE, Material.RED_ROSE, Material.YELLOW_FLOWER, Material.SAPLING);
     
-    public BuildingPlan(BuildInABox plugin, String name, String filename, String description) {
+    public BuildingPlan(BuildInABox plugin, String name, String filename, List<String> description) {
         this.plugin = plugin;
         this.name = name;
         this.filename = filename;
@@ -159,7 +157,7 @@ public class BuildingPlan {
         cc.setOffset(chestOffset);
         try {
             SchematicFormat.MCEDIT.save(cc, new File(new File(plugin.getDataFolder(), "schematics"), name + ".schematic"));
-            plan = new BuildingPlan(plugin, name, name+".schematic", "");
+            plan = new BuildingPlan(plugin, name, name+".schematic", null);
             plugin.getDataStore().saveBuildingPlan(plan);
         } catch (IOException e) {
             // TODO Auto-generated catch block
@@ -291,17 +289,8 @@ public class BuildingPlan {
         return filename;
     }
 
-    public String getDescription() {
+    public List<String> getDescription() {
         return description;
     }
 
-    public void applyCarryEffect(Player p) {
-        // TODO Auto-generated method stub
-        
-    }
-
-    public void removeCarryEffect(Player player) {
-        // TODO Auto-generated method stub
-        
-    }
 }

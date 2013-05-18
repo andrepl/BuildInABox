@@ -1,11 +1,11 @@
 author: metalhedd
 main: com.norcode.bukkit.buildinabox.BuildInABox
-version: 0.0.2
+version: 0.0.3
 name: BuildInABox
 
 commands:
   biab:
-    usage: "/<command> [give [<player>]|save] <buildingname>"
+    usage: "/<command> [list [<page>]|[give [<player>]|save] <buildingname>]"
     description: give a player a Build-in-a-Box Building.
 
 permissions:

@@ -150,6 +150,9 @@ public abstract class DataStore {
     public HashMap<BlockVector, BaseBlock> deserializeReplacedBlocks(String s) {
         final java.lang.reflect.Type type = new TypeToken<Map<String,Map<String,Integer>>>(){}.getType();
         HashMap<String, Map<String, Integer>> data = gson.fromJson(s, type);
+        if (data == null) {
+            return null;
+        }
         BlockVector v;
         BaseBlock bb;
         HashMap<BlockVector, BaseBlock> results = new HashMap<BlockVector, BaseBlock>();

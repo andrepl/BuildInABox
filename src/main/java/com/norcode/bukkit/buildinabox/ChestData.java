@@ -13,7 +13,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import com.sk89q.jnbt.CompoundTag;
 import com.sk89q.worldedit.BlockVector;
-import com.sk89q.worldedit.Vector;
 import com.sk89q.worldedit.blocks.BaseBlock;
 
 public class ChestData {
@@ -99,9 +98,15 @@ public class ChestData {
         List<String> lore = new ArrayList<String>();
         lore.add(BuildInABox.LORE_HEADER);
         lore.add(ChatColor.BLACK + Integer.toHexString(getId()));
-        meta.setLore(lore);
-        meta.setDisplayName(planName);
-        stack.setItemMeta(meta);
+        BuildingPlan plan = BuildInABox.getInstance().getDataStore().getBuildingPlan(planName);
+        if (plan != null) {
+            if (plan.getDescription() != null) {
+                lore.addAll(plan.getDescription());
+            }
+            meta.setLore(lore);
+            meta.setDisplayName(planName);
+            stack.setItemMeta(meta);
+        }
         return stack;
     }
 
