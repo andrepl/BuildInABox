@@ -1,5 +1,6 @@
 package com.norcode.bukkit.buildinabox;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -29,9 +30,39 @@ public class BIABCommandExecutor implements CommandExecutor {
         } else if (action.equals("save")) {
             cmdSave(sender, args);
             return true;
+        } else if (action.equals("list")) {
+            cmdList(sender, args);
+            return true;
         }
+        sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "Unexpected argument: " + action);
         return true;
     }
+    private void cmdList(CommandSender sender, LinkedList<String> args) {
+        int page = 1;
+        if (args.size() > 0) {
+            try {
+                page = Integer.parseInt(args.peek());
+            } catch (IllegalArgumentException ex) {
+                sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "Invalid Page: " + args.peek());
+                return;
+            }
+        }
+        int numPages = (int) Math.ceil(plugin.getDataStore().getAllBuildingPlans().size() / 8.0f);
+        if (numPages == 0) {
+            sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.GRAY + "There are no building plans saved yet.");
+            return;
+        }
+        List<BuildingPlan> plans = new ArrayList<BuildingPlan>(plugin.getDataStore().getAllBuildingPlans());
+        List<String> lines = new ArrayList<String>();
+        lines.add(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.WHITE + "Available Building Plans [pg." + page + " of " + numPages + "]");
+        for (int i=8*(page-1);i<8*(page);i++) {
+            if (i<plans.size()) {
+                lines.add(ChatColor.GOLD + " * " + ChatColor.GRAY + plans.get(i).getName());
+            }
+        }
+        sender.sendMessage(lines.toArray(new String[lines.size()]));
+    }
+
     public void cmdSave(CommandSender sender, LinkedList<String> args) {
         if (!sender.hasPermission("biab.save")) {
             sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "You don't have permission to do that.");

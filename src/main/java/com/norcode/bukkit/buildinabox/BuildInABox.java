@@ -33,6 +33,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
     private Updater updater = null;
     private long lastClicked = -1;
     private Action lastClickType = null;
+    private boolean debugMode = false;
 
     @Override
     public void onLoad() {
@@ -75,9 +76,13 @@ public class BuildInABox extends JavaPlugin implements Listener {
                 } else {
                     if (cd.getLocation() != null) {
                         BuildChest bc = new BuildChest(cd);
-                        bc.getBlock().setMetadata("buildInABox", new FixedMetadataValue(this, bc));
-                        debug("Protecting Building: " + bc);
-                        bc.protectBlocks();
+                        if (bc.getBlock().getType().equals(Material.ENDER_CHEST)) {
+                            bc.getBlock().setMetadata("buildInABox", new FixedMetadataValue(this, bc));
+                            if (getConfig().getBoolean("protect-buildings")) {
+                                debug("Protecting Building: " + bc);
+                                bc.protectBlocks();
+                            }
+                        }
                     }
                 }
             }
@@ -109,7 +114,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
                             player.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.WHITE + "An update has been downloaded and will take effect when the server restarts.");
                             break;
                         default:
-                            // nava
+                            // nothing
                         }
                     }
                 }
@@ -133,7 +138,9 @@ public class BuildInABox extends JavaPlugin implements Listener {
     }
 
     public void debug(String s) {
-        getLogger().info(s);
+        if (debugMode) {
+            getLogger().info(s);
+        }
     }
 
     @EventHandler(ignoreCancelled=true)
