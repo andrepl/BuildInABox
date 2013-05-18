@@ -1,5 +1,7 @@
 package com.norcode.bukkit.buildinabox;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 
 import org.bukkit.Location;
@@ -15,8 +17,16 @@ public abstract class BuildingTask implements Runnable {
     HashMap<BlockVector, BaseBlock> replacedBlocks = new HashMap<BlockVector, BaseBlock>();
     Location worldCursor;
     BlockVector origin;
+    ArrayList<BlockVector> xyPoints;
+    int ptr = -1;
     public BuildingTask(BuildChest buildChest, CuboidClipboard clipboard) {
         this.clipboard = clipboard;
+        xyPoints = new ArrayList<BlockVector>(clipboard.getSize().getBlockX() * clipboard.getSize().getBlockY());
+        for (int x=0; x<this.clipboard.getSize().getBlockX();x++) {
+            for (int z=0;z<this.clipboard.getSize().getBlockZ();z++) {
+                xyPoints.add(new BlockVector(x,0,z));
+            }
+        }
         Location cl = buildChest.getLocation();
         Vector off = clipboard.getOffset();
         origin = new BlockVector(cl.getBlockX() + off.getBlockX(), cl.getBlockY() + off.getBlockY(), cl.getBlockZ() + off.getBlockZ());
@@ -25,25 +35,21 @@ public abstract class BuildingTask implements Runnable {
 
     public abstract void run();
     boolean moveCursor() {
-        int x = cursor.getBlockX();
         int y = cursor.getBlockY();
-        int z = cursor.getBlockZ();
-        x ++;
-        if (x >= clipboard.getSize().getBlockX()) {
-            x = 0;
-            z ++;
-            if (z >= clipboard.getSize().getBlockZ()) {
-                z = 0;
-                y ++;
-                if (y >= clipboard.getSize().getBlockY()) {
-                    return false;
-                }
+        ptr++;
+        if (ptr >= xyPoints.size()) {
+            ptr = 0;
+            y++;
+            if (y >= clipboard.getSize().getBlockY()) {
+                return false;
             }
+            Collections.shuffle(xyPoints);
         }
-        cursor = new BlockVector(x,y,z);
-        worldCursor.setX(origin.getBlockX() + x);
+        BlockVector v = xyPoints.get(ptr);
+        cursor = new BlockVector(v.getBlockX(),y,v.getBlockZ());
+        worldCursor.setX(origin.getBlockX() + v.getBlockX());
         worldCursor.setY(origin.getBlockY() + y);
-        worldCursor.setZ(origin.getBlockZ() + z);
+        worldCursor.setZ(origin.getBlockZ() + v.getBlockZ());
         return true;
     }
 
