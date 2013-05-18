@@ -1,0 +1,33 @@
+update-available: "An update is available at: {0}"
+update-downloaded: An update has been downloaded and will take effect when the server restarts.
+lock-attempt-cancelled: "{0}''s locking attempt was cancelled."
+unlock-attempt-cancelled: "{0}''s unlocking attempt was cancelled."
+unknown-player: "Unknown player: {0}"
+cannot-give-to-console: You cannot give a building to the console.
+cannot-use-from-console: You cannot do that from the console.
+no-permission: You don''t have permission to do that.
+cmd-give-usage: "Usage: /biab give [<player>] <plan>"
+cmd-save-usage: "Usage: /biab save <plan>"
+unknown-building-plan: "Unknown building-plan: {0}"
+building-plan-saved: Building plan {0} successfully saved.
+available-building-plans: Available Building Plans [pg. {0} of {1}]
+no-building-plans: There are no building plans saved yet.
+invalid-page: "Invalid page number: {0}"
+unexpected-argument: "Unexpected argument: {0}"
+building: Building {0}...
+building-wont-fit: "{0} won''t fit here."
+building-is-locked: "{0} has been locked by {0}."
+unlock-cancelled-self: Unlock attempt cancelled.
+lock-cancelled-self: Lock attempt cancelled.
+lock-success-self: Successfully locked {0}.
+unlock-success-self: Successfully unlocked {0}.
+unlock-progress: Unlocking {0}... {1}%
+lock-progress: Locking {0}... {1}%
+left-click-to-cancel: Left click to cancel
+right-click-to-confirm: Right click to confirm
+right-click-twice-to-unlock: Right click twice to unlock
+left-click-twice-to-pickup: Left click twice to pick up
+right-click-twice-to-lock: Right click twice to unlock
+preview: PREVIEW
+locked: LOCKED
+unlocked: UNLOCKED
