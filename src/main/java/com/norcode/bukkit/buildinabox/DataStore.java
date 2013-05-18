@@ -1,134 +1,200 @@
 package com.norcode.bukkit.buildinabox;
 
-import java.io.File;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.logging.Level;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.zip.GZIPInputStream;
+
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.binary.StringUtils;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Player;
-import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
-public class DataStore {
+import org.bukkit.craftbukkit.libs.com.google.gson.Gson;
+import org.bukkit.craftbukkit.libs.com.google.gson.reflect.TypeToken;
 
-    private final String fileName;
-    private final BuildInABox plugin;
+import com.sk89q.jnbt.CompoundTag;
+import com.sk89q.jnbt.NBTInputStream;
+import com.sk89q.jnbt.NBTOutputStream;
+import com.sk89q.jnbt.Tag;
+import com.sk89q.worldedit.BlockVector;
+import com.sk89q.worldedit.blocks.BaseBlock;
 
-    private File configFile;
-    private FileConfiguration fileConfiguration;
+public abstract class DataStore {
 
-    public DataStore(BuildInABox plugin, String fileName) {
-        if (plugin == null)
-            throw new IllegalArgumentException("plugin cannot be null");
-        if (!plugin.isInitialized())
-            throw new IllegalArgumentException("plugin must be initialized");
-        this.plugin = plugin;
-        this.fileName = fileName;
+    protected static final Gson gson = new Gson();
+
+    public abstract void load();
+    public abstract void save();
+
+    public static String serializeLocation(Location loc) {
+        if (loc == null) {
+            return null;
+        }
+        return loc.getWorld().getName() + ";" + loc.getBlockX() + ";" + loc.getBlockY() + ";" + loc.getBlockZ();
     }
 
-    public void debug(String s) {
-        plugin.getLogger().info(s);
+    public static Location deserializeLocation(String s) {
+        if (s == null) {
+            return null;
+        }
+        String[] parts = s.split(";");
+        if (parts.length == 4) {
+            World world = BuildInABox.getInstance().getServer().getWorld(parts[0]);
+            return new Location(world, Integer.parseInt(parts[1]), Integer.parseInt(parts[2]), Integer.parseInt(parts[3]));
+        }
+        return null;
     }
 
-    public void reload() {
-        reloadConfig();
-        ConfigurationSection cfg = null;
-        World w;
-        Block b;
-        BuildingPlan p;
-        Set<String> keysToRemove = new HashSet<String>();
-        for (String key: getConfig().getKeys(false)) {
-            cfg = getConfig().getConfigurationSection(key);
-            String[] parts = key.split(";");
-            w = plugin.getServer().getWorld(parts[0]);
-            if (w == null) {
-                debug("Removing record in invalid world: " + parts[0]);
-                keysToRemove.add(key);
-                continue;
+    public String serializeVector(BlockVector v) {
+        if (v == null) {
+            return null;
+        }
+        return v.getBlockX() + ";" + v.getBlockY() + ";" + v.getBlockZ();
+    }
+
+    public BlockVector deserializeVector(String s) {
+        if (s == null) {
+            return null;
+        }
+        String[] parts = s.split(";");
+        try {
+            return new BlockVector(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
+        } catch (IllegalArgumentException ex) {
+        } catch (ArrayIndexOutOfBoundsException ex) {
+        }
+        return null;
+    }
+
+    public String serializeCompoundTag(CompoundTag tag) {
+        if (tag == null) {
+            return null;
+        }
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try {
+            NBTOutputStream stream = new NBTOutputStream(baos);
+            stream.writeTag(tag);
+            stream.close();
+            return new String(Base64.encodeBase64(baos.toByteArray()));
+        } catch (IOException e) {
+        }
+        return null;
+    }
+
+    public CompoundTag deserializeCompoundTag(String s) {
+        if (s == null) {
+            return null;
+        }
+        BuildInABox.getInstance().debug("Attempting to deserialize: " + s);
+        try {
+            NBTInputStream stream = new NBTInputStream(new GZIPInputStream(new ByteArrayInputStream(Base64.decodeBase64(s.getBytes()))));
+            Tag tag = stream.readTag();
+            if (tag instanceof CompoundTag) {
+                BuildInABox.getInstance().debug("Deserialized: " + tag);
+                return (CompoundTag) tag;
+            } else {
+                BuildInABox.getInstance().debug("Didn't Deserialize (not compound?): " + tag);
             }
-            b = w.getBlockAt(new Location(w, Integer.parseInt(parts[1]), Integer.parseInt(parts[2]), Integer.parseInt(parts[3])));
-            if (b.getType().equals(Material.ENDER_CHEST)) {
-                p = plugin.getPlan(cfg.getString("plan"));
-                BuildChest bc = new BuildChest(plugin, b.getLocation(), p, cfg.getString("locked-by"));
-                b.setMetadata("buildInABox", new FixedMetadataValue(plugin, bc));
-                if (plugin.getConfig().getBoolean("protect-buildings", false)) {
-                    bc.protectBlocks();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+    public String serializeTileEntities(HashMap<BlockVector, CompoundTag> ents) {
+        if (ents == null) {
+            return null;
+        }
+        HashMap<String, String> obj = new HashMap<String, String>();
+        for (Entry<BlockVector, CompoundTag> entry: ents.entrySet()) {
+            obj.put(serializeVector(entry.getKey()), serializeCompoundTag(entry.getValue()));
+        }
+        return gson.toJson(obj);
+    }
+
+    public HashMap<BlockVector, CompoundTag> deserializeTileEntities(String s) {
+        if (s == null) {
+            return null;
+        }
+        HashMap<BlockVector, CompoundTag> contents = new HashMap<BlockVector, CompoundTag>();
+        final java.lang.reflect.Type type = new TypeToken<Map<String, String>>(){}.getType();
+        HashMap<String, String> data = gson.fromJson(s, type);
+        for (String k: data.keySet()) {
+            contents.put(deserializeVector(k), deserializeCompoundTag(data.get(k)));
+        }
+        return contents;
+    }
+
+    public String serializeReplacedBlocks(HashMap<BlockVector, BaseBlock> replacedBlocks) {
+        HashMap<String, HashMap<String, Integer>> data = new HashMap<String, HashMap<String, Integer>>();
+        String key;
+        HashMap<String, Integer> bb;
+        for (Entry<BlockVector, BaseBlock> e: replacedBlocks.entrySet()) {
+            key = serializeVector(e.getKey());
+            bb = new HashMap<String, Integer>();
+            bb.put("t", e.getValue().getType());
+            bb.put("d", e.getValue().getData());
+            data.put(key, bb);
+        }
+        return gson.toJson(data);
+    }
+
+    public HashMap<BlockVector, BaseBlock> deserializeReplacedBlocks(String s) {
+        final java.lang.reflect.Type type = new TypeToken<Map<String,Map<String,Integer>>>(){}.getType();
+        HashMap<String, Map<String, Integer>> data = gson.fromJson(s, type);
+        BlockVector v;
+        BaseBlock bb;
+        HashMap<BlockVector, BaseBlock> results = new HashMap<BlockVector, BaseBlock>();
+        for (Entry<String, Map<String, Integer>> e: data.entrySet()) {
+            v = deserializeVector(e.getKey());
+            bb = new BaseBlock(e.getValue().get("t"), e.getValue().get("d"));
+            results.put(v, bb);
+        }
+        return results;
+    }
+
+    public ChestData fromItemStack(ItemStack stack) {
+        if (stack.getType().equals(Material.ENDER_CHEST)) {
+            if (stack.hasItemMeta() && stack.getItemMeta().hasLore()) {
+                ItemMeta meta = stack.getItemMeta();
+                if (meta.getLore().get(0).equals(BuildInABox.LORE_HEADER)) {
+                    if (meta.getLore().size() > 0) {
+                        try {
+                            return getChest(Integer.parseInt(meta.getLore().get(1).substring(2), 16));
+                        } catch (IllegalArgumentException ex) {
+                        }
+                    }
                 }
             }
         }
-
-        for (String k: keysToRemove) {
-            cfg.set(k, null);
-        }
+        return null;
     }
 
-    public void save() {
-        saveConfig();
-    }
-
-    public void removeChest(BuildChest chest) {
-        String key = chest.getLocation().getWorld().getName() + ";";
-        key += Integer.toString(chest.getLocation().getBlockX()) + ";";
-        key += Integer.toString(chest.getLocation().getBlockY()) + ";";
-        key += Integer.toString(chest.getLocation().getBlockZ());
-        chest.getLocation().getBlock().removeMetadata("buildInABox", plugin);
-        getConfig().set(key, null);
-    }
-
-    public BuildChest addChest(Block chest, BuildingPlan plan, Player player) {
-        String key = chest.getLocation().getWorld().getName() + ";";
-        key += Integer.toString(chest.getLocation().getBlockX()) + ";";
-        key += Integer.toString(chest.getLocation().getBlockY()) + ";";
-        key += Integer.toString(chest.getLocation().getBlockZ());
-        BuildChest bc = new BuildChest(plugin, chest.getLocation(), plan, player == null ? null : player.getName());
-        chest.setMetadata("buildInABox", new FixedMetadataValue(plugin, bc));
-        ConfigurationSection cfg = getConfig().createSection(key);
-        cfg.set("plan", plan.getName());
-        cfg.set("locked-by", bc.getLockedBy());
-        return bc;
-    }
-
-    private void reloadConfig() {
-        if (configFile == null) {
-            File dataFolder = plugin.getDataFolder();
-            if (dataFolder == null)
-                throw new IllegalStateException();
-            configFile = new File(dataFolder, fileName);
-        }
-        fileConfiguration = YamlConfiguration.loadConfiguration(configFile);
-
-        // Look for defaults in the jar
-        InputStream defConfigStream = plugin.getResource(fileName);
-        if (defConfigStream != null) {
-            YamlConfiguration defConfig = YamlConfiguration.loadConfiguration(defConfigStream);
-            fileConfiguration.setDefaults(defConfig);
-        }
-    }
-
-    private FileConfiguration getConfig() {
-        if (fileConfiguration == null) {
-            this.reloadConfig();
-        }
-        return fileConfiguration;
-    }
-
-    public void saveConfig() {
-        if (fileConfiguration == null || configFile == null) {
-            return;
-        } else {
-            try {
-                getConfig().save(configFile);
-            } catch (IOException ex) {
-                plugin.getLogger().log(Level.SEVERE, "Could not save config to " + configFile, ex);
+    public ChestData fromBlock(Block block) {
+        if (block.getType().equals(Material.ENDER_CHEST)) {
+            if (block.hasMetadata("buildInABox")) {
+                return (ChestData) block.getMetadata("buildInABox").get(0).value();
             }
         }
+        return null;
     }
+
+    public abstract ChestData getChest(int id);
+    public abstract ChestData createChest(String plan); 
+    public abstract void saveChest(ChestData data);
+    public abstract void deleteChest(int id);
+
+    public abstract BuildingPlan getBuildingPlan(String name);
+    public abstract void saveBuildingPlan(BuildingPlan plan);
+    public abstract void deleteBuildingPlan(BuildingPlan plan);
+    public abstract Collection<ChestData> getAllChests();
+    public abstract Collection<BuildingPlan> getAllBuildingPlans();
 }

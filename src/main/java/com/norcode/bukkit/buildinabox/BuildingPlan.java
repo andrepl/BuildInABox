@@ -34,20 +34,26 @@ import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.schematic.SchematicFormat;
 
 public class BuildingPlan {
-    ConfigurationSection config = null;
+    String name;
+    String filename;
+    String description;
     BuildInABox plugin;
+    
     private static final EnumSet<Material> coverableBlocks = EnumSet.of(Material.LONG_GRASS, Material.AIR, Material.RED_MUSHROOM, Material.BROWN_MUSHROOM, Material.DEAD_BUSH, Material.FIRE, Material.RED_ROSE, Material.YELLOW_FLOWER, Material.SAPLING);
-    public BuildingPlan(BuildInABox plugin, ConfigurationSection configurationSection) {
-        config = configurationSection;
+    
+    public BuildingPlan(BuildInABox plugin, String name, String filename, String description) {
         this.plugin = plugin;
+        this.name = name;
+        this.filename = filename;
+        this.description = description;
     }
 
     public String getName() {
-        return config.getName();
+        return this.name;
     }
 
     @SuppressWarnings("incomplete-switch")
-    private static int getRotationDegrees(BlockFace from, BlockFace to) {
+    public static int getRotationDegrees(BlockFace from, BlockFace to) {
         switch (from) {
         case NORTH:
             switch (to) {
@@ -153,14 +159,8 @@ public class BuildingPlan {
         cc.setOffset(chestOffset);
         try {
             SchematicFormat.MCEDIT.save(cc, new File(new File(plugin.getDataFolder(), "schematics"), name + ".schematic"));
-            ConfigurationSection cfgRoot = plugin.getConfig().getConfigurationSection("buildings");
-            if (cfgRoot == null) {
-                cfgRoot = plugin.getConfig().createSection("buildings");
-            }
-            ConfigurationSection cfg = cfgRoot.createSection(name);
-            cfg.set("filename", name+".schematic");
-            plan = new BuildingPlan(plugin, cfg);
-            plugin.registerPlan(name, plan);
+            plan = new BuildingPlan(plugin, name, name+".schematic", "");
+            plugin.getDataStore().saveBuildingPlan(plan);
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -172,7 +172,7 @@ public class BuildingPlan {
     }
 
     public File getSchematicFile() {
-        return new File(new File(plugin.getDataFolder(), "schematics"), config.getString("filename"));
+        return new File(new File(plugin.getDataFolder(), "schematics"), filename);
     }
 
     public CuboidClipboard getRotatedClipboard(BlockFace facing) {
@@ -196,6 +196,7 @@ public class BuildingPlan {
         CuboidClipboard clipboard = getRotatedClipboard(dir);
         Vector offset = clipboard.getOffset();
         Vector origin = new Vector(enderChest.getX(), enderChest.getY(), enderChest.getZ()).add(offset);
+        int chestY = -clipboard.getOffset().getBlockY();
         for (int x = 0; x < clipboard.getSize().getBlockX(); x++) {
             for (int y = 0; y < clipboard.getSize().getBlockY(); y++) {
                 for (int z = 0; z < clipboard.getSize().getBlockZ(); z++) {
@@ -203,7 +204,7 @@ public class BuildingPlan {
                     Location loc = new Location(player.getWorld(), v.getBlockX(), v.getBlockY(), v.getBlockZ());
                     BaseBlock bb = clipboard.getPoint(new Vector(x,y,z));
                     if (bb.getType() != 0) {
-                        if (coverableBlocks.contains(loc.getBlock().getType())) {
+                        if (coverableBlocks.contains(loc.getBlock().getType()) || y < chestY) {
                             player.sendBlockChange(loc, bb.getType(), (byte)bb.getData());
                         } else if (loc.equals(chestLoc)) {
                             // skip the enderchest.
@@ -240,11 +241,13 @@ public class BuildingPlan {
         }
     }
 
-    public void build(Block enderChest) {
+    public void build(Block enderChest, CuboidClipboard clipboard) {
         Location chestLoc = enderChest.getLocation();
         EnderChest ec = (EnderChest) Material.ENDER_CHEST.getNewData(chestLoc.getBlock().getData());
         BlockFace dir = ec.getFacing();
-        CuboidClipboard clipboard = getRotatedClipboard(dir);
+        if (clipboard == null) {
+            clipboard = getRotatedClipboard(dir);
+        }
         EditSession editSession = new EditSession(new BukkitWorld(chestLoc.getWorld()), 500000);
         editSession.enableQueue();
         Vector origin = new Vector(enderChest.getX(), enderChest.getY(), enderChest.getZ());
@@ -256,42 +259,6 @@ public class BuildingPlan {
             }
         } catch (MaxChangedBlocksException e) {
             e.printStackTrace();
-        }
-    }
-
-    public void pickup(Block enderChest) {
-        Location chestLoc = enderChest.getLocation();
-        EnderChest ec = (EnderChest) Material.ENDER_CHEST.getNewData(chestLoc.getBlock().getData());
-        BlockFace dir = ec.getFacing();
-        CuboidClipboard clipboard = getRotatedClipboard(dir);
-        Vector offset = clipboard.getOffset();
-        Vector origin = new Vector(enderChest.getX(), enderChest.getY(), enderChest.getZ()).add(offset);
-        for (int x = 0; x < clipboard.getSize().getBlockX(); x++) {
-            for (int y = 0; y < clipboard.getSize().getBlockY(); y++) {
-                for (int z = 0; z < clipboard.getSize().getBlockZ(); z++) {
-                    Vector v = new Vector(origin).add(x, y, z);
-                    Location loc = new Location(enderChest.getWorld(), v.getBlockX(), v.getBlockY(), v.getBlockZ());
-                    BaseBlock bb = clipboard.getPoint(new Vector(x,y,z));
-                    if (bb.getType() > 0) {
-                        if (BlockType.isContainerBlock(bb.getType())) {
-                            BlockState state = loc.getBlock().getState();
-                            if (state instanceof org.bukkit.inventory.InventoryHolder) {
-                                org.bukkit.inventory.InventoryHolder chest = (org.bukkit.inventory.InventoryHolder) state;
-                                Inventory inven = chest.getInventory();
-                                if (chest instanceof Chest) {
-                                    inven = ((Chest) chest).getBlockInventory();
-                                }
-                                inven.clear();
-                            }
-                        } else if (loc.getBlock().hasMetadata("biab-block")) {
-                            loc.getBlock().removeMetadata("biab-block", plugin);
-                        } else if (loc.getBlock().hasMetadata("buildInABox")) {
-                            loc.getBlock().removeMetadata("buildInABox", plugin);
-                        }
-                        loc.getBlock().setTypeIdAndData(0,(byte) 0, false);
-                    }
-                }
-            }
         }
     }
 
@@ -317,5 +284,13 @@ public class BuildingPlan {
             }
         }
 
+    }
+
+    public String getFilename() {
+        return filename;
+    }
+
+    public String getDescription() {
+        return description;
     }
 }

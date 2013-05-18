@@ -10,50 +10,85 @@ import net.h31ix.updater.Updater.UpdateType;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event.Result;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.norcode.bukkit.buildinabox.BuildChest.UnlockingTask;
+import com.sk89q.worldedit.bukkit.BukkitWorld;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 
 public class BuildInABox extends JavaPlugin implements Listener {
-
-    private HashMap<String, BuildingPlan> buildingPlans = new HashMap<String, BuildingPlan>();
-    private DataStore buildingChests = null;
+    public static final String LORE_HEADER = ChatColor.GOLD + "Build-in-a-Box";
+    private static BuildInABox instance;
+    private DataStore datastore = null;
     private Updater updater = null;
     private long lastClicked = -1;
     private Action lastClickType = null;
+
+    @Override
+    public void onLoad() {
+        instance = this;
+    }
+
+    public void onUnload() {
+        instance = null;
+    }
+
     @Override
     public void onEnable() {
         saveDefaultConfig();
         reloadConfig();
         doUpdater();
         new File(getDataFolder(), "schematics").mkdir();
-        loadBuildingPlans();
-        buildingChests = new DataStore(this, "data.yml");
-        buildingChests.reload();
-        getServer().getPluginManager().registerEvents(this, this);
-        if (getConfig().getBoolean("protect-buildings")) {
-            getServer().getPluginManager().registerEvents(new BlockProtectionListener(), this);
+        if (initializeDataStore()) {
+            getServer().getPluginCommand("biab").setExecutor(new BIABCommandExecutor(this));
+            getServer().getPluginManager().registerEvents(this, this);
+            if (getConfig().getBoolean("protect-buildings")) {
+                getServer().getPluginManager().registerEvents(new BlockProtectionListener(), this);
+            }
         }
 
     }
 
+    private boolean initializeDataStore() {
+        String storageType = getConfig().getString("storage-backend", "file").toLowerCase();
+        if (storageType.equals("file")) {
+            datastore = new YamlDataStore(this);
+            datastore.load();
+            long now = System.currentTimeMillis();
+            long expiry = getConfig().getLong("data-expiry", 1000*60*60*24*90L);
+            long tooOldTime = now - expiry;// if the chest hasn't been touched in 90 days expire the data
+            for (ChestData cd: new ArrayList<ChestData>(datastore.getAllChests())) {
+                debug("Checking Chest: " + cd.getId());
+                if (cd.getLastActivity() < tooOldTime) {
+                    debug("Chest Data is too old: " + cd.getLastActivity() + " vs " + tooOldTime);
+                    datastore.deleteChest(cd.getId());
+                } else {
+                    if (cd.getLocation() != null) {
+                        BuildChest bc = new BuildChest(cd);
+                        bc.getBlock().setMetadata("buildInABox", new FixedMetadataValue(this, bc));
+                        debug("Protecting Building: " + bc);
+                        bc.protectBlocks();
+                    }
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
     @Override
     public void onDisable() {
-        getDataStore().saveConfig();
+        getDataStore().save();
     }
 
     @EventHandler(ignoreCancelled=true)
@@ -93,126 +128,12 @@ public class BuildInABox extends JavaPlugin implements Listener {
         }
     }
 
-    public BuildingPlan getPlan(String name) {
-        return buildingPlans.get(name.toLowerCase());
-    }
-
     public WorldEditPlugin getWorldEdit() {
         return (WorldEditPlugin) this.getServer().getPluginManager().getPlugin("WorldEdit");
     }
 
-    public void registerPlan(String name, BuildingPlan plan) {
-        buildingPlans.put(name.toLowerCase(), plan);
-    }
-
-    @Override
-    public boolean onCommand(CommandSender sender, Command command,
-            String label, String[] args) {
-        if (args.length == 0) {
-            if (!sender.hasPermission("biab.give") && !sender.hasPermission("biab.save")) {
-                sender.sendMessage("You don't have permission to use any BIAB Commands.");
-            }
-            if (sender.hasPermission("biab.give")) {
-                sender.sendMessage("/biab give [player] [building] - give a player a build-in-a-box chest.");
-            }
-            if (sender.hasPermission("biab.save")) {
-                sender.sendMessage("/biab save [building] - save the current worldedit selection as a building plan.");
-            }
-            return true;
-        }
-        String action = args[0].toLowerCase();
-        if (args.length == 1) {
-            if (action.equals("save")) {
-                if (sender.hasPermission("biab.save")) {
-                    sender.sendMessage("/biab save [building] - save the current worldedit selection as a building plan.");
-                }
-            } else if (action.equals("give")) {
-                if (sender.hasPermission("biab.give")) {
-                    sender.sendMessage("/biab give [player] [building] - give a player a build-in-a-box chest.");
-                }
-            }
-            return true;
-        }
-        Player player = (Player) sender;
-        String buildingName;
-        if (action.equalsIgnoreCase("save")) {
-            if (!sender.hasPermission("biab.save")) {
-                sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "You don't have permission to do that.");
-            }
-            buildingName = args[1];
-            BuildingPlan plan = BuildingPlan.fromClipboard(this, player, buildingName);
-            if (plan != null) {
-                sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.GREEN + "Building plan " + ChatColor.WHITE + plan.getName() + ChatColor.GREEN + " saved!");
-                saveConfig();
-            }
-            return true;
-        } else if (action.equalsIgnoreCase("list")) {
-            if (!sender.hasPermission("biab.list")) {
-                sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "You don't have permission to do that.");
-            }
-
-            for (BuildingPlan plan: buildingPlans.values()) {
-                sender.sendMessage(ChatColor.GOLD + " * " + ChatColor.WHITE + plan.getName());
-            }
-            return true;
-        } else if (action.equalsIgnoreCase("give")) {
-            if (!sender.hasPermission("biab.give")) {
-                sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "You don't have permission to do that.");
-            }
-            Player targetPlayer = null;
-            if (args.length == 3) {
-                List<Player> playerMatches = getServer().matchPlayer(args[1]);
-                if (playerMatches.size() == 0) {
-                    sender.sendMessage("Unknown Player: " + args[1]);
-                } else if (playerMatches.size() > 1) {
-                    sender.sendMessage("Ambiguous Player name: " + args[1]);
-                } else {
-                    targetPlayer = playerMatches.get(0);
-                }
-                buildingName = args[2];
-            } else {
-                if (!(sender instanceof Player)) {
-                    sender.sendMessage("This command must be run by a player, or target a player.");
-                    return true;
-                }
-                buildingName = args[1];
-                targetPlayer = (Player) sender;
-            }
-            ItemStack chest = new ItemStack(Material.ENDER_CHEST);
-            ItemMeta meta = getServer().getItemFactory().getItemMeta(chest.getType());
-            BuildingPlan plan = buildingPlans.get(buildingName.toLowerCase());
-            if (plan != null) {
-                meta.setDisplayName(plan.getName());
-                ArrayList<String> lore = new ArrayList<String>();
-                lore.add("Build-in-a-Box");
-                meta.setLore(lore);
-                chest.setItemMeta(meta);
-                HashMap<Integer, ItemStack> wontFit = targetPlayer.getInventory().addItem(chest);
-                if (wontFit.size() > 0) {
-                    targetPlayer.getWorld().dropItem(targetPlayer.getLocation(), chest);
-                }
-                sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.GREEN + "Gave " + ChatColor.WHITE + plan.getName() + ChatColor.GREEN + " to " + targetPlayer.getName());
-            } else {
-                sender.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "Unknown building plan: '" + buildingName + "'");
-            }
-            return true;
-        }
-        return false;
-    }
-
     public void debug(String s) {
         getLogger().info(s);
-    }
-
-    public void loadBuildingPlans() {
-        buildingPlans.clear();
-        ConfigurationSection cfg = getConfig().getConfigurationSection("buildings");
-        if (cfg != null) {
-            for (String filename: cfg.getKeys(false)) {
-                debug("Loading Schematic: " + filename);
-                buildingPlans.put(filename.toLowerCase(), new BuildingPlan(this, cfg.getConfigurationSection(filename)));
-            }
-        }
     }
 
     @EventHandler(ignoreCancelled=true)
@@ -265,30 +186,33 @@ public class BuildInABox extends JavaPlugin implements Listener {
     }
 
 
-    @EventHandler(ignoreCancelled=true)
+    @EventHandler(ignoreCancelled=true, priority=EventPriority.MONITOR)
     public void onBlockPlace(final BlockPlaceEvent event) {
-        if (event.getItemInHand().getType().equals(Material.ENDER_CHEST)) {
-            ItemMeta meta = event.getItemInHand().getItemMeta();
-            if (meta != null && meta.hasLore() && meta.getLore().contains("Build-in-a-Box")) {
-                String buildingName = meta.getDisplayName();
-                final BuildingPlan plan = buildingPlans.get(buildingName.toLowerCase());
-                if (plan == null) {
-                    event.getPlayer().sendMessage("Unknown Building plan: " + buildingName);
-                    return;
-                }
-                final BuildChest bc = buildingChests.addChest(event.getBlock(), plan, null);
-                getServer().getScheduler().runTaskLater(this, new Runnable() {
-                    public void run() {
-                        if (event.getPlayer().isOnline()) {
-                            bc.preview(event.getPlayer());
-                        }
+        ChestData data = getDataStore().fromItemStack(event.getItemInHand());
+        if (data != null) {
+            data.setLocation(event.getBlock().getLocation());
+            data.setLastActivity(System.currentTimeMillis());
+            final BuildChest bc = new BuildChest(data);
+            event.getBlock().setMetadata("buildInABox", new FixedMetadataValue(this, bc));
+            event.getPlayer().getInventory().setItemInHand(null);
+            getServer().getScheduler().runTaskLater(this, new Runnable() {
+                public void run() {
+                    
+                    if (event.getPlayer().isOnline()) {
+                        bc.preview(event.getPlayer());
                     }
-                }, 1);
-            }
+                }
+            }, 1);
+        } else {
+            debug("Chest From Itemstack Failed.");
         }
     }
-    
+
     public DataStore getDataStore() {
-        return buildingChests;
+        return datastore;
+    }
+
+    public static BuildInABox getInstance() {
+        return instance;
     }
 }
