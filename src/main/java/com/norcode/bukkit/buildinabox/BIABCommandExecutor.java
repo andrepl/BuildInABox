@@ -115,6 +115,7 @@ public class BIABCommandExecutor implements TabExecutor {
             if (targetPlayer.getInventory().addItem(stack).size() > 0) {
                 targetPlayer.getWorld().dropItem(targetPlayer.getLocation(), stack);
             }
+            sender.sendMessage(BuildInABox.getSuccessMsg("cmd-give-success", data.getPlanName(), targetPlayer.getName()));
         } else {
             sender.sendMessage(BuildInABox.getNormalMsg("cmd-give-usage"));
         }
