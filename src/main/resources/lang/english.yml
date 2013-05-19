@@ -18,6 +18,8 @@ invalid-page: "Invalid page number: {0}"
 unexpected-argument: "Unexpected argument: {0}"
 building: Building {0}...
 building-complete: Building complete!
+removing: Removing {0}...
+removal-complete: Removal complete!
 building-wont-fit: "{0} won''t fit here."
 building-is-locked: "{0} has been locked by {0}."
 unlock-cancelled-self: Unlock attempt cancelled.

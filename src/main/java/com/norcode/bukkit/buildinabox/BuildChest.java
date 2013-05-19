@@ -242,12 +242,13 @@ public class BuildChest {
         lockingTask.run();
     }
 
-    public void pickup(Player player) {
+    public void pickup(final Player player) {
         final int blocksPerTick = plugin.getConfig().getInt("pickup-animation.blocks-per-tick", 20);
         List<Player> nearby = new ArrayList<Player>();
         for (Player p: player.getWorld().getPlayers()) {
             nearby.add(p);
         }
+        player.sendMessage(plugin.getNormalMsg("removing", this.getPlan().getName()));
         final BukkitWorld bukkitWorld = new BukkitWorld(player.getWorld());
         if (!isLocked()) {
             building = true;
@@ -336,6 +337,7 @@ public class BuildChest {
                             plugin.getDataStore().saveChest(data);
                             buildTask.cancel();
                             building = false;
+                            player.sendMessage(plugin.getSuccessMsg("removal-complete"));
                             return;
                         }
                     }
