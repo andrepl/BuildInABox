@@ -33,10 +33,33 @@ public class BIABCommandExecutor implements TabExecutor {
         } else if (action.equals("list")) {
             cmdList(sender, args);
             return true;
+        } else if (action.equals("delete")) {
+            cmdDelete(sender, args);
+            return true;
         }
         sender.sendMessage(BuildInABox.getErrorMsg("unexpected-argument", action));
         return true;
     }
+    private void cmdDelete(CommandSender sender, LinkedList<String> args) {
+        if (!sender.hasPermission("biab.delete")) {
+            sender.sendMessage(BuildInABox.getErrorMsg("no-permission"));
+            return;
+        }
+        if (args.size() == 1) {
+            String planName = args.pop();
+            BuildingPlan plan = BuildInABox.getInstance().getDataStore().getBuildingPlan(planName);
+            if (plan == null) {
+                sender.sendMessage(BuildInABox.getErrorMsg("unknown-building-plan", planName));
+            } else {
+                BuildInABox.getInstance().getDataStore().deleteBuildingPlan(plan);
+                sender.sendMessage(BuildInABox.getSuccessMsg("building-plan-deleted", planName));
+            }
+        } else {
+            sender.sendMessage(BuildInABox.getNormalMsg("cmd-delete-usage"));
+        }
+        
+    }
+
     private void cmdList(CommandSender sender, LinkedList<String> args) {
         int page = 1;
         if (args.size() > 0) {
@@ -120,13 +143,6 @@ public class BIABCommandExecutor implements TabExecutor {
             sender.sendMessage(BuildInABox.getNormalMsg("cmd-give-usage"));
         }
     }
-//
-//    @Override
-//    public List<String> onTabComplete(CommandSender sender, Command command,
-//            String label, String[] params) {
-//        BuildInABox.getInstance().debug("TAB:" + args);
-//        return new ArrayList<String>();
-//    }
 
     public List<String> onTabComplete(CommandSender sender, Command cmd,
             String label, String[] params) {

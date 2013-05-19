@@ -11,6 +11,7 @@ no-permission: You don''t have permission to do that.
 cmd-give-usage: "Usage: /biab give [<player>] <plan>"
 cmd-give-success: "{0} was given to {1}."
 cmd-save-usage: "Usage: /biab save <plan>"
+cmd-delete-usage: "Usage: /biab delete <plan>"
 unknown-building-plan: "Unknown building-plan: {0}"
 building-plan-saved: Building plan {0} successfully saved.
 available-building-plans: Available Building Plans [pg. {0} of {1}]

@@ -128,12 +128,6 @@ public class YamlDataStore extends DataStore {
     }
 
     @Override
-    public void deleteBuildingPlan(BuildingPlan plan) {
-        this.plans.remove(plan.getName().toLowerCase());
-        planCfg.getConfig().set(plan.getName(), null);
-    }
-
-    @Override
     public Collection<ChestData> getAllChests() {
         return chests.values();
     }
@@ -150,6 +144,13 @@ public class YamlDataStore extends DataStore {
 
     private void setDirty() {
         this.dirty = true;
+    }
+
+    @Override
+    public void deleteBuildingPlan(BuildingPlan plan) {
+        this.plans.remove(plan.getName().toLowerCase());
+        plan.getSchematicFile().delete();
+        this.planCfg.getConfig().set(plan.getName(), "");
     }
     
 }
