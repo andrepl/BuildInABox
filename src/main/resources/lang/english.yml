@@ -1,3 +1,5 @@
+world-edit-selection-needed: "You need to make a world-edit selection first."
+enderchest-not-found: "Selection does not contain an enderchest."
 update-available: "An update is available at: {0}"
 update-downloaded: An update has been downloaded and will take effect when the server restarts.
 lock-attempt-cancelled: "{0}''s locking attempt was cancelled."
@@ -15,6 +17,7 @@ no-building-plans: There are no building plans saved yet.
 invalid-page: "Invalid page number: {0}"
 unexpected-argument: "Unexpected argument: {0}"
 building: Building {0}...
+building-complete: Building complete!
 building-wont-fit: "{0} won''t fit here."
 building-is-locked: "{0} has been locked by {0}."
 unlock-cancelled-self: Unlock attempt cancelled.

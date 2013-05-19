@@ -1,5 +1,5 @@
 # Output extra logging
-debug: true
+debug: false
 
 # Language selection (from lang/<language>.yml)
 language: english
@@ -9,6 +9,10 @@ language: english
 # false - do not check for updates.
 # notify-only - check for updates, but do not download or install them
 auto-update: true
+
+# The time (in milliseconds) between 2 clicks on an enderchest for it to 
+# count as a double-click.
+double-click-interval: 2000
 
 # apply a potion effect while carrying a building.
 # this involves scanning inventories often. use with caution.
@@ -26,6 +30,10 @@ prevent-placing-enderchests: false
 # allow players to lock buildings (and other players to unlock them)
 allow-locking: true
 
+# allow players to unlock buildings that have been locked by other players.
+# (requires biab.unlock.others permission)
+allow-unlocking-others: true
+
 # time in seconds to unlock someone elses building.
 unlock-time: 10
 
@@ -41,7 +49,9 @@ max-locking-distance: 5
  
 # animation settings
 pickup-animation:
+  shuffle: true
   blocks-per-ticks: 20
 
 build-animation:
+  shuffle: true
   blocks-per-ticks: 5

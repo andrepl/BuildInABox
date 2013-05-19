@@ -14,6 +14,7 @@ import net.h31ix.updater.Updater.UpdateType;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event.Result;
 import org.bukkit.event.EventHandler;
@@ -109,6 +110,10 @@ public class BuildInABox extends JavaPlugin implements Listener {
         File cfgFile = new File("lang", lang + ".yml");
         debug("Using translation file: " + cfgFile.getPath());
         messages = new ConfigAccessor(this, cfgFile.getPath());
+        FileConfiguration cfg = messages.getConfig();
+        messages.saveDefaultConfig();
+        cfg.options().copyDefaults(true);
+        messages.saveConfig();
         messages.reloadConfig();
     }
 
@@ -182,10 +187,10 @@ public class BuildInABox extends JavaPlugin implements Listener {
                         getLogger().info("Updater Result: " + updater.getResult());
                         switch (updater.getResult()) {
                         case UPDATE_AVAILABLE:
-                            player.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.WHITE + getMsg("update-available", "http://dev.bukkit.org/server-mods/build-in-a-box/"));
+                            player.sendMessage(getNormalMsg("update-available", "http://dev.bukkit.org/server-mods/build-in-a-box/"));
                             break;
                         case SUCCESS:
-                            player.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.WHITE + getMsg("update-downloaded"));
+                            player.sendMessage(getNormalMsg("update-downloaded"));
                             break;
                         default:
                             // nothing
@@ -241,5 +246,17 @@ public class BuildInABox extends JavaPlugin implements Listener {
         } else if (hasCarryEffect(p)) {
             removeCarryEffect(p);
         }
+    }
+
+    public static String getNormalMsg(String key, Object... args) {
+        return ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.GRAY + getMsg(key, args);
+    }
+
+    public static String getErrorMsg(String key, Object... args) {
+        return ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + getMsg(key, args);
+    }
+
+    public static String getSuccessMsg(String key, Object... args) {
+        return ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.GREEN + getMsg(key, args);
     }
 }

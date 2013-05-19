@@ -33,12 +33,18 @@ public abstract class BuildingTask implements Runnable {
                 xzPoints.add(new BlockVector(x,0,z));
             }
         }
+        if (shouldShuffle()) {
+            Collections.shuffle(xzPoints);
+        }
         Location cl = buildChest.getLocation();
         Vector off = clipboard.getOffset();
         origin = new BlockVector(cl.getBlockX() + off.getBlockX(), cl.getBlockY() + off.getBlockY(), cl.getBlockZ() + off.getBlockZ());
         worldCursor = new Location(buildChest.getBlock().getWorld(), origin.getBlockX(), origin.getBlockY(), origin.getBlockZ());
     }
 
+    protected boolean shouldShuffle() {
+        return false;
+    }
     public abstract void run();
     boolean moveCursor() {
         int y = cursor.getBlockY();
@@ -54,7 +60,9 @@ public abstract class BuildingTask implements Runnable {
                 if (y >= clipboard.getSize().getBlockY()) return false;
                 break;
             }
-            Collections.shuffle(xzPoints);
+            if (shouldShuffle()) {
+                Collections.shuffle(xzPoints);
+            }
         }
         BlockVector v = xzPoints.get(ptr);
         cursor = new BlockVector(v.getBlockX(),y,v.getBlockZ());

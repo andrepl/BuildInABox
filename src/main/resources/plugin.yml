@@ -29,5 +29,7 @@ permissions:
     description: allow locking BIAB's
     default: true
   biab.unlock:
-    description: allow unlocking BIAB's
+    description: allow unlocking BIAB's locked by you
     default: true
+  biab.unlock.others:
+    description: allow unlocking BIAB's locked by other players.

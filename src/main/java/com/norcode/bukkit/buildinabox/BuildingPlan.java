@@ -140,12 +140,12 @@ public class BuildingPlan {
             cc.copy(es);
             es.flushQueue();
         } catch (IncompleteRegionException e) {
-            player.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "You need to make a region selection first.");
+            player.sendMessage(BuildInABox.getErrorMsg("world-edit-selection-needed"));
             return null;
         }
         Vector chestOffset = findEnderChest(cc);
         if (chestOffset == null) {
-            player.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + "Selection does not contain an enderchest.");
+            player.sendMessage(BuildInABox.getErrorMsg("enderchest-not-found"));
             return null;
         }
         EnderChest ec = (EnderChest) Material.ENDER_CHEST.getNewData((byte)cc.getPoint(new Vector(-chestOffset.getBlockX(), -chestOffset.getBlockY(), -chestOffset.getBlockZ())).getData());

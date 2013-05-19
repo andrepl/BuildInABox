@@ -124,7 +124,7 @@ public class BuildChest {
             }, PREVIEW_DURATION);
         } else {
             endPreview(player);
-            player.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + BuildInABox.getMsg("building-wont-fit", plan.getName()));
+            player.sendMessage(BuildInABox.getErrorMsg("building-wont-fit", plan.getName()));
         }
     }
 
@@ -132,13 +132,13 @@ public class BuildChest {
         plan.protectBlocks(getBlock(), null);
     }
 
-    public void build(Player player) {
+    public void build(final Player player) {
         if (previewing && getBlock().getType().equals(Material.ENDER_CHEST)) {
             plan.clearPreview(player.getName(), getBlock());
             previewing = false;
         }
         building = true;
-        player.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.GRAY + BuildInABox.getMsg("building", plan.getName()));
+        player.sendMessage(BuildInABox.getNormalMsg("building", plan.getName()));
         final World world = player.getWorld();
         final int blocksPerTick = plugin.getConfig().getInt("pickup-animation.blocks-per-tick", 5);
         data.setLocation(getLocation());
@@ -184,6 +184,11 @@ public class BuildChest {
         }
         buildTask = plugin.getServer().getScheduler().runTaskTimer(plugin, new BuildingTask(this, clipboard, BuildingTask.BOTTOM_UP) {
             @Override
+            protected boolean shouldShuffle() {
+                return BuildInABox.getInstance().getConfig().getBoolean("build-animation.shuffle", true);
+            }
+            
+            @Override
             public void run() {
                 BaseBlock bb;
                 for (int i=0;i<blocksPerTick;i++) {
@@ -210,6 +215,7 @@ public class BuildChest {
                         data.setReplacedBlocks(replacedBlocks);
                         data.clearTileEntities();
                         buildTask.cancel();
+                        player.sendMessage(BuildInABox.getSuccessMsg("building-complete"));
                         plugin.getDataStore().saveChest(data);
                         building = false;
                         return;
@@ -237,7 +243,7 @@ public class BuildChest {
     }
 
     public void pickup(Player player) {
-        final int blocksPerTick = plugin.getConfig().getInt("build-animation.blocks-per-tick", 20);
+        final int blocksPerTick = plugin.getConfig().getInt("pickup-animation.blocks-per-tick", 20);
         List<Player> nearby = new ArrayList<Player>();
         for (Player p: player.getWorld().getPlayers()) {
             nearby.add(p);
@@ -247,6 +253,10 @@ public class BuildChest {
             building = true;
             data.clearTileEntities();
             buildTask = plugin.getServer().getScheduler().runTaskTimer(plugin, new BuildingTask(this, plan.getRotatedClipboard(getEnderChest().getFacing()), BuildingTask.TOP_DOWN) {
+                @Override
+                protected boolean shouldShuffle() {
+                    return BuildInABox.getInstance().getConfig().getBoolean("pickup-animation.shuffle", true);
+                }
                 public void run() {
                     BaseBlock bb;
                     for (int i=0;i<blocksPerTick;i++) {
@@ -333,7 +343,7 @@ public class BuildChest {
                 }
             }, 1, 1);
         } else {
-            player.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + BuildInABox.getMsg("building-is-locked", getPlan().getName(), getLockedBy()));
+            player.sendMessage(BuildInABox.getErrorMsg("building-is-locked", getPlan().getName(), getLockedBy()));
         }
     }
 
@@ -349,15 +359,15 @@ public class BuildChest {
         }
 
         protected String getCancelMessage() {
-            return ChatColor.RED + BuildInABox.getMsg("lock-cancelled-self");
+            return BuildInABox.getErrorMsg("lock-cancelled-self");
         }
 
         protected String getSuccessMessage() {
-            return ChatColor.GREEN + BuildInABox.getMsg("lock-success-self", getPlan().getName());
+            return BuildInABox.getSuccessMsg("lock-success-self", getPlan().getName());
         }
 
         protected String getProgressMessage(int percentage) {
-            return ChatColor.GOLD + BuildInABox.getMsg("lock-progress", getPlan().getName(), percentage + "%");
+            return BuildInABox.getNormalMsg("lock-progress", getPlan().getName(), percentage);
         }
 
         protected String getLockedBy() {
@@ -403,7 +413,7 @@ public class BuildChest {
                     data.setLastActivity(System.currentTimeMillis());
                     plugin.getDataStore().saveChest(data);
                     lockingTask = null;
-                    player.sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + getSuccessMessage());
+                    player.sendMessage(getSuccessMessage());
                 }
             }
         }
@@ -416,17 +426,17 @@ public class BuildChest {
 
         @Override
         public String getCancelMessage() {
-            return ChatColor.RED + BuildInABox.getMsg("unlock-cancelled-self");
+            return BuildInABox.getErrorMsg("unlock-cancelled-self");
         }
 
         @Override
         public String getSuccessMessage() {
-            return ChatColor.GREEN + BuildInABox.getMsg("unlock-success-self", getPlan().getName());
+            return BuildInABox.getSuccessMsg("unlock-success-self", getPlan().getName());
         }
 
         @Override
         public String getProgressMessage(int percentage) {
-            return ChatColor.GOLD + BuildInABox.getMsg("unlock-progress", getPlan().getName(), percentage);
+            return BuildInABox.getNormalMsg("unlock-progress", getPlan().getName(), percentage);
         }
 
         @Override
