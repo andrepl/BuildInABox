@@ -21,6 +21,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.event.block.Action;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.material.EnderChest;
 import org.bukkit.scheduler.BukkitTask;
@@ -47,6 +48,8 @@ public class BuildChest {
     private BukkitTask buildTask = null;
     private ChestData data;
     private boolean building = false;
+    private long lastClicked = -1;
+    private Action lastClickType = null;
     public BuildChest(ChestData data) {
         this.plugin = BuildInABox.getInstance();
         this.data = data;
@@ -61,7 +64,7 @@ public class BuildChest {
         return lockingTask != null;
     }
 
-    LockingTask getLockingTask() {
+    public LockingTask getLockingTask() {
         return lockingTask;
     }
 
@@ -334,9 +337,9 @@ public class BuildChest {
         }
     }
 
-    class LockingTask implements Runnable {
+    public class LockingTask implements Runnable {
         public boolean cancelled = false;
-        String lockingPlayer;
+        public String lockingPlayer;
         long totalTime;
         long startTime;
         public LockingTask(String playerName, long totalTimeSeconds) {
@@ -406,7 +409,7 @@ public class BuildChest {
         }
     }
 
-    class UnlockingTask extends LockingTask {
+    public class UnlockingTask extends LockingTask {
         public UnlockingTask(String playerName, long totalTime) {
             super(playerName, totalTime);
         }
@@ -461,5 +464,21 @@ public class BuildChest {
 
     public boolean isBuilding() {
         return building;
+    }
+
+    public long getLastClicked() {
+        return lastClicked;
+    }
+
+    public Action getLastClickType() {
+        return lastClickType;
+    }
+
+    public void setLastClicked(long lastClicked) {
+        this.lastClicked = lastClicked;
+    }
+
+    public void setLastClickType(Action lastClickType) {
+        this.lastClickType = lastClickType;
     }
 }

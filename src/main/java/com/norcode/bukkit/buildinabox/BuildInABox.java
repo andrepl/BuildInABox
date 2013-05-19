@@ -4,7 +4,10 @@ import java.io.File;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+
+import javax.persistence.PersistenceException;
 
 import net.h31ix.updater.Updater;
 import net.h31ix.updater.Updater.UpdateType;
@@ -28,16 +31,21 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
 import com.norcode.bukkit.buildinabox.BuildChest.UnlockingTask;
+import com.norcode.bukkit.buildinabox.datastore.DataStore;
+import com.norcode.bukkit.buildinabox.datastore.YamlDataStore;
+import com.norcode.bukkit.buildinabox.listeners.BlockProtectionListener;
+import com.norcode.bukkit.buildinabox.listeners.ItemListener;
+import com.norcode.bukkit.buildinabox.listeners.PlayerListener;
+import com.norcode.bukkit.buildinabox.util.ConfigAccessor;
 import com.sk89q.worldedit.bukkit.BukkitWorld;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
+
 
 public class BuildInABox extends JavaPlugin implements Listener {
     public static final String LORE_HEADER = ChatColor.GOLD + "Build-in-a-Box";
     private static BuildInABox instance;
     private DataStore datastore = null;
     private Updater updater = null;
-    private long lastClicked = -1;
-    private Action lastClickType = null;
     private boolean debugMode = false;
     private BukkitTask inventoryScanTask = null;
     private ConfigAccessor messages = null;
@@ -59,7 +67,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
         new File(getDataFolder(), "schematics").mkdir();
         if (initializeDataStore()) {
             getServer().getPluginCommand("biab").setExecutor(new BIABCommandExecutor(this));
-            getServer().getPluginManager().registerEvents(this, this);
+            getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
             getServer().getPluginManager().registerEvents(new ItemListener(this), this);
             if (getConfig().getBoolean("protect-buildings")) {
                 getServer().getPluginManager().registerEvents(new BlockProtectionListener(), this);
@@ -206,92 +214,6 @@ public class BuildInABox extends JavaPlugin implements Listener {
     public void debug(String s) {
         if (debugMode) {
             getLogger().info(s);
-        }
-    }
-
-    @EventHandler(ignoreCancelled=true)
-    public void onPlayerInteract(PlayerInteractEvent event) {
-        if (event.getClickedBlock().getType().equals(Material.ENDER_CHEST)) {
-            if (event.getClickedBlock().hasMetadata("buildInABox")) {
-                BuildChest bc = (BuildChest) event.getClickedBlock().getMetadata("buildInABox").get(0).value();
-                if (bc.isBuilding()) {
-                    event.setCancelled(true);
-                    event.setUseInteractedBlock(Result.DENY);
-                    event.setUseItemInHand(Result.DENY);
-                    return;
-                }
-                bc.updateActivity();
-                if (bc.isPreviewing()) {
-                    if (event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
-                        // Cancel
-                        bc.endPreview(event.getPlayer());
-                    } else if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
-                        // build
-                        bc.build(event.getPlayer());
-                    }
-                } else {
-                    long now = System.currentTimeMillis();
-                    if (bc.isLocking()) {
-                        if (!bc.getLockingTask().lockingPlayer.equals(event.getPlayer().getName())) {
-                            String msgKey = "lock-attempt-cancelled";
-                            if (bc.getLockingTask() instanceof UnlockingTask) {
-                                msgKey = "un" + msgKey;
-                            }
-                            event.getPlayer().sendMessage(ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.GRAY + getMsg(msgKey, bc.getLockingTask().lockingPlayer));
-                        }
-                        bc.getLockingTask().cancel();
-                    } else if (now - lastClicked < 2000 && lastClickType.equals(event.getAction())) {
-                        if (event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
-                            // pick up
-                            if (!bc.isLocked()) {
-                                bc.pickup(event.getPlayer());
-                                
-                            }
-                        } else if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
-                            // lock/unlock
-                            if (getConfig().getBoolean("allow-locking", true)) {
-                                if (bc.isLocked()) {
-                                    bc.unlock(event.getPlayer());
-                                } else {
-                                    bc.lock(event.getPlayer());
-                                }
-                            }
-                        }
-                        lastClicked = -1;
-                        lastClickType = null;
-                    } else {
-                        lastClicked = now;
-                        lastClickType = event.getAction();
-                        event.getPlayer().sendMessage(bc.getDescription());
-                    }
-                }
-                event.setCancelled(true);
-                event.setUseInteractedBlock(Result.DENY);
-                event.setUseItemInHand(Result.DENY);
-            }
-        }
-    }
-
-
-    @EventHandler(ignoreCancelled=true, priority=EventPriority.MONITOR)
-    public void onBlockPlace(final BlockPlaceEvent event) {
-        ChestData data = getDataStore().fromItemStack(event.getItemInHand());
-        if (data != null) {
-            data.setLocation(event.getBlock().getLocation());
-            data.setLastActivity(System.currentTimeMillis());
-            final BuildChest bc = new BuildChest(data);
-            event.getBlock().setMetadata("buildInABox", new FixedMetadataValue(this, bc));
-            event.getPlayer().getInventory().setItemInHand(null);
-            getServer().getScheduler().runTaskLater(this, new Runnable() {
-                public void run() {
-                    if (event.getPlayer().isOnline()) {
-                        bc.preview(event.getPlayer());
-                        checkCarrying(event.getPlayer());
-                    }
-                }
-            }, 1);
-        } else {
-            debug("Chest From Itemstack Failed.");
         }
     }
 

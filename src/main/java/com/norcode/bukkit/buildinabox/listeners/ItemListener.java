@@ -1,4 +1,4 @@
-package com.norcode.bukkit.buildinabox;
+package com.norcode.bukkit.buildinabox.listeners;
 
 import java.util.List;
 
@@ -13,6 +13,9 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+
+import com.norcode.bukkit.buildinabox.BuildInABox;
+import com.norcode.bukkit.buildinabox.ChestData;
 
 public class ItemListener implements Listener {
     BuildInABox plugin;

@@ -1,4 +1,4 @@
-package com.norcode.bukkit.buildinabox;
+package com.norcode.bukkit.buildinabox.listeners;
 
 import java.util.Iterator;
 

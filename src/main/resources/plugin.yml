@@ -18,3 +18,16 @@ permissions:
     default: op
   biab.save:
     default: op
+
+  biab.place:
+    description: allow placing BIABs
+    default: true
+  biab.pickup:
+    description: allow picking up BIABs
+    default: true
+  biab.lock:
+    description: allow locking BIAB's
+    default: true
+  biab.unlock:
+    description: allow unlocking BIAB's
+    default: true

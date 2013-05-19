@@ -1,4 +1,4 @@
-package com.norcode.bukkit.buildinabox;
+package com.norcode.bukkit.buildinabox.util;
 
 import java.io.File;
 import java.io.IOException;

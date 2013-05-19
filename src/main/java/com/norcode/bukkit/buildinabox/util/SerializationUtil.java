@@ -1,4 +1,4 @@
-package com.norcode.bukkit.buildinabox;
+package com.norcode.bukkit.buildinabox.util;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

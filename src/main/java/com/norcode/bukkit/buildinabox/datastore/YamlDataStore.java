@@ -1,14 +1,16 @@
-package com.norcode.bukkit.buildinabox;
+package com.norcode.bukkit.buildinabox.datastore;
 import java.util.Collection;
 import java.util.HashMap;
 
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.inventory.ItemStack;
 
+import com.norcode.bukkit.buildinabox.BuildInABox;
+import com.norcode.bukkit.buildinabox.BuildingPlan;
+import com.norcode.bukkit.buildinabox.ChestData;
+import com.norcode.bukkit.buildinabox.util.ConfigAccessor;
 import com.sk89q.jnbt.CompoundTag;
 import com.sk89q.worldedit.BlockVector;
-import com.sk89q.worldedit.Vector;
 import com.sk89q.worldedit.blocks.BaseBlock;
 
 

@@ -1,4 +1,4 @@
-package com.norcode.bukkit.buildinabox;
+package com.norcode.bukkit.buildinabox.datastore;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -22,6 +22,9 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.craftbukkit.libs.com.google.gson.Gson;
 import org.bukkit.craftbukkit.libs.com.google.gson.reflect.TypeToken;
 
+import com.norcode.bukkit.buildinabox.BuildInABox;
+import com.norcode.bukkit.buildinabox.BuildingPlan;
+import com.norcode.bukkit.buildinabox.ChestData;
 import com.sk89q.jnbt.CompoundTag;
 import com.sk89q.jnbt.NBTInputStream;
 import com.sk89q.jnbt.NBTOutputStream;
@@ -134,32 +137,55 @@ public abstract class DataStore {
     }
 
     public String serializeReplacedBlocks(HashMap<BlockVector, BaseBlock> replacedBlocks) {
-        HashMap<String, HashMap<String, Integer>> data = new HashMap<String, HashMap<String, Integer>>();
-        String key;
-        HashMap<String, Integer> bb;
+        String repr = "";
         for (Entry<BlockVector, BaseBlock> e: replacedBlocks.entrySet()) {
-            key = serializeVector(e.getKey());
-            bb = new HashMap<String, Integer>();
-            bb.put("t", e.getValue().getType());
-            bb.put("d", e.getValue().getData());
-            data.put(key, bb);
+            repr += serializeVector(e.getKey()) + ":" + serializeBaseBlock(e.getValue()) + "|";
         }
-        return gson.toJson(data);
+        if (repr.length() > 1) {
+            repr = repr.substring(0,repr.length()-1);
+        }
+        return repr;
+    }
+
+    public String serializeBaseBlock(BaseBlock bb) {
+        String s = Integer.toString(bb.getType());
+        if (bb.getData() != 0) {
+            s += "|" + bb.getData();
+        }
+        return s;
+    }
+
+    public BaseBlock deserializeBaseBlock(String s) {
+        if (s.contains(",")) {
+            String[] parts = s.split(",");
+            return new BaseBlock(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
+        }
+        return new BaseBlock(Integer.parseInt(s));
     }
 
     public HashMap<BlockVector, BaseBlock> deserializeReplacedBlocks(String s) {
-        final java.lang.reflect.Type type = new TypeToken<Map<String,Map<String,Integer>>>(){}.getType();
-        HashMap<String, Map<String, Integer>> data = gson.fromJson(s, type);
-        if (data == null) {
-            return null;
-        }
-        BlockVector v;
-        BaseBlock bb;
         HashMap<BlockVector, BaseBlock> results = new HashMap<BlockVector, BaseBlock>();
-        for (Entry<String, Map<String, Integer>> e: data.entrySet()) {
-            v = deserializeVector(e.getKey());
-            bb = new BaseBlock(e.getValue().get("t"), e.getValue().get("d"));
-            results.put(v, bb);
+        if (s.startsWith("{")) {
+            // old format
+            final java.lang.reflect.Type type = new TypeToken<Map<String,Map<String,Integer>>>(){}.getType();
+            HashMap<String, Map<String, Integer>> data = gson.fromJson(s, type);
+            if (data == null) {
+                return null;
+            }
+            BlockVector v;
+            BaseBlock bb;
+            for (Entry<String, Map<String, Integer>> e: data.entrySet()) {
+                v = deserializeVector(e.getKey());
+                bb = new BaseBlock(e.getValue().get("t"), e.getValue().get("d"));
+                results.put(v, bb);
+            }
+        } else {
+            // new format
+            String[] bss;
+            for (String bs: s.split("|")) {
+                bss = bs.split(":");
+                results.put(deserializeVector(bss[0]), deserializeBaseBlock(bss[1]));
+            }
         }
         return results;
     }
