@@ -3,7 +3,9 @@ package com.norcode.bukkit.buildinabox;
 import java.io.File;
 import java.io.IOException;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -12,6 +14,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.material.EnderChest;
 import org.bukkit.metadata.FixedMetadataValue;
 
+import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 
@@ -259,7 +262,8 @@ public class BuildingPlan {
         }
     }
 
-    public void protectBlocks(Block enderChest, CuboidClipboard clipboard) {
+    public Set<Chunk> protectBlocks(Block enderChest, CuboidClipboard clipboard) {
+        HashSet<Chunk> loadedChunks = new HashSet<Chunk>();
         if (clipboard == null) {
             Location chestLoc = enderChest.getLocation();
             EnderChest ec = (EnderChest) Material.ENDER_CHEST.getNewData(chestLoc.getBlock().getData());
@@ -275,12 +279,13 @@ public class BuildingPlan {
                     if (clipboard.getPoint(new Vector(x,y,z)).getType() > 0) {
                         Vector v = origin.add(offset);
                         loc = new Location(enderChest.getWorld(), v.getBlockX()+x, v.getBlockY()+y, v.getBlockZ()+z);
+                        loadedChunks.add(loc.getChunk());
                         enderChest.getWorld().getBlockAt(loc).setMetadata("biab-block", new FixedMetadataValue(plugin, enderChest));
                     }
                 }
             }
         }
-
+        return loadedChunks;
     }
 
     public String getFilename() {

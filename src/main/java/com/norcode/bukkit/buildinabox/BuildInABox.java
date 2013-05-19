@@ -4,6 +4,7 @@ import java.io.File;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -13,6 +14,7 @@ import net.h31ix.updater.Updater;
 import net.h31ix.updater.Updater.UpdateType;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -146,6 +148,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
             long now = System.currentTimeMillis();
             long expiry = getConfig().getLong("data-expiry", 1000*60*60*24*90L);
             long tooOldTime = now - expiry;// if the chest hasn't been touched in 90 days expire the data
+            HashSet<Chunk> loadedChunks = new HashSet<Chunk>();
             for (ChestData cd: new ArrayList<ChestData>(datastore.getAllChests())) {
                 debug("Checking Chest: " + cd.getId());
                 if (cd.getLastActivity() < tooOldTime) {
@@ -158,11 +161,14 @@ public class BuildInABox extends JavaPlugin implements Listener {
                             bc.getBlock().setMetadata("buildInABox", new FixedMetadataValue(this, bc));
                             if (getConfig().getBoolean("protect-buildings")) {
                                 debug("Protecting Building: " + bc);
-                                bc.protectBlocks();
+                                loadedChunks.addAll(bc.protectBlocks());
                             }
                         }
                     }
                 }
+            }
+            for (Chunk c: loadedChunks) {
+                c.getWorld().unloadChunkRequest(c.getX(), c.getZ(), true);
             }
             return true;
         }

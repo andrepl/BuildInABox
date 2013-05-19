@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import net.minecraft.server.v1_5_R3.Packet61WorldEvent;
 
@@ -17,6 +18,7 @@ import org.bukkit.block.Chest;
 import org.bukkit.craftbukkit.v1_5_R3.entity.CraftPlayer;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -128,8 +130,8 @@ public class BuildChest {
         }
     }
 
-    public void protectBlocks() {
-        plan.protectBlocks(getBlock(), null);
+    public Set<Chunk> protectBlocks() {
+        return plan.protectBlocks(getBlock(), null);
     }
 
     public void build(final Player player) {
