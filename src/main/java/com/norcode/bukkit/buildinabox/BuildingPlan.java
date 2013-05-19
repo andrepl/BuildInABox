@@ -12,7 +12,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.material.EnderChest;
 import org.bukkit.metadata.FixedMetadataValue;
 
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 

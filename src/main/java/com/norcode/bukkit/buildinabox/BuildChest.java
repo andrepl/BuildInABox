@@ -217,6 +217,10 @@ public class BuildChest {
                         buildTask.cancel();
                         player.sendMessage(BuildInABox.getSuccessMsg("building-complete"));
                         plugin.getDataStore().saveChest(data);
+                        if (!plugin.getConfig().getBoolean("allow-pickup")) {
+                            plugin.getDataStore().deleteChest(data.getId());
+                            getBlock().removeMetadata("buildInABox", plugin);
+                        }
                         building = false;
                         return;
                     }
@@ -248,7 +252,7 @@ public class BuildChest {
         for (Player p: player.getWorld().getPlayers()) {
             nearby.add(p);
         }
-        player.sendMessage(plugin.getNormalMsg("removing", this.getPlan().getName()));
+        player.sendMessage(BuildInABox.getNormalMsg("removing", this.getPlan().getName()));
         final BukkitWorld bukkitWorld = new BukkitWorld(player.getWorld());
         if (!isLocked()) {
             building = true;
@@ -337,7 +341,7 @@ public class BuildChest {
                             plugin.getDataStore().saveChest(data);
                             buildTask.cancel();
                             building = false;
-                            player.sendMessage(plugin.getSuccessMsg("removal-complete"));
+                            player.sendMessage(BuildInABox.getSuccessMsg("removal-complete"));
                             return;
                         }
                     }

@@ -27,6 +27,11 @@ protect-buildings: true
 # permissions, to allow for a no-build world where players can still place BIAB's
 prevent-placing-enderchests: false
 
+# allow pickup
+# if false, players will not be able to pick up buildings once they are placed. the structure becomes
+# permanent and the enderchest becomes a normal enderchest.
+allow-pickup: true
+
 # allow players to lock buildings (and other players to unlock them)
 allow-locking: true
 

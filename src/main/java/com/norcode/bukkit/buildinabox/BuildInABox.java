@@ -48,7 +48,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
     private DataStore datastore = null;
     private Updater updater = null;
     private boolean debugMode = false;
-    private BukkitTask inventoryScanTask = null;
+    private BukkitTask inventoryScanTask;
     private ConfigAccessor messages = null;
     @Override
     public void onLoad() {
@@ -88,8 +88,6 @@ public class BuildInABox extends JavaPlugin implements Listener {
                     }
                     if (listIdx < playerNames.size()) {
                         Player p = getServer().getPlayer(playerNames.get(listIdx));
-                        ChestData data = null;
-                        boolean effect = false;
                         if (p.isOnline() && !p.isDead()) {
                             checkCarrying(p);
                         }
@@ -174,6 +172,9 @@ public class BuildInABox extends JavaPlugin implements Listener {
     @Override
     public void onDisable() {
         getDataStore().save();
+        if (inventoryScanTask != null) {
+            inventoryScanTask.cancel();
+        }
     }
 
     @EventHandler(ignoreCancelled=true)
