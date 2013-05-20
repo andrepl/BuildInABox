@@ -196,7 +196,10 @@ public class BuildChest {
                 for (int i=0;i<blocksPerTick;i++) {
                     if (moveCursor()) {
                         bb = clipboard.getPoint(cursor);
-                        if (bb.getType() == 0) continue; // skip air blocks;
+                        if (bb.getType() == 0) {
+                            i--;
+                            continue; // skip air blocks;
+                        }
                         if (cursor.getBlockY() < -clipboard.getOffset().getBlockY()) {
                             // store replaced Block
                             if (worldCursor.getBlock().getTypeId() != 0) {
