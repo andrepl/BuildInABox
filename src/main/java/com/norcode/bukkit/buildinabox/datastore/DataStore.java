@@ -12,6 +12,7 @@ import java.util.zip.GZIPInputStream;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.StringUtils;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -202,7 +203,7 @@ public abstract class DataStore {
         if (stack != null && stack.getTypeId() == BuildInABox.BLOCK_ID) {
             if (stack.hasItemMeta() && stack.getItemMeta().hasLore()) {
                 ItemMeta meta = stack.getItemMeta();
-                if (meta.getLore().get(0).equals(BuildInABox.LORE_HEADER)) {
+                if (meta.getLore().get(0).startsWith(BuildInABox.LORE_PREFIX) || meta.getLore().get(0).equals(ChatColor.GOLD + "Build-in-a-Box")) {
                     if (meta.getLore().size() > 0) {
                         try {
                             return getChest(Integer.parseInt(meta.getLore().get(1).substring(2), 16));

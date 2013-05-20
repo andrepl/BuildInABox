@@ -1,3 +1,5 @@
+display-name: "§6Build-in-a-Box"
+message-prefix: "§f[{0}§f]"
 world-edit-selection-needed: "You need to make a world-edit selection first."
 enderchest-not-found: "Selection does not contain an enderchest."
 update-available: "An update is available at: {0}"

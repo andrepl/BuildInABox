@@ -45,7 +45,8 @@ import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 
 
 public class BuildInABox extends JavaPlugin implements Listener {
-    public static final String LORE_HEADER = ChatColor.GOLD + "Build-in-a-Box";
+    public static String LORE_PREFIX = ChatColor.DARK_GREEN + "" + ChatColor.DARK_RED + "" + ChatColor.DARK_GRAY + "" + ChatColor.DARK_BLUE;
+    public static String LORE_HEADER = ChatColor.GOLD + "Build-in-a-Box";
     public static int BLOCK_ID = 130;
     private static BuildInABox instance;
     private DataStore datastore = null;
@@ -69,6 +70,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
         debugMode = getConfig().getBoolean("debug", false);
         BLOCK_ID = getConfig().getInt("chest-block", 130);
         loadMessage();
+        LORE_HEADER = getMsg("display-name"); 
         doUpdater();
         new File(getDataFolder(), "schematics").mkdir();
         if (initializeDataStore()) {
@@ -259,14 +261,14 @@ public class BuildInABox extends JavaPlugin implements Listener {
     }
 
     public static String getNormalMsg(String key, Object... args) {
-        return ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.GRAY + getMsg(key, args);
+        return getMsg("message-prefix", LORE_HEADER) + ChatColor.GRAY + getMsg(key, args);
     }
 
     public static String getErrorMsg(String key, Object... args) {
-        return ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.RED + getMsg(key, args);
+        return getMsg("message-prefix", LORE_HEADER) + ChatColor.RED + getMsg(key, args);
     }
 
     public static String getSuccessMsg(String key, Object... args) {
-        return ChatColor.GOLD + "[Build-in-a-Box] " + ChatColor.GREEN + getMsg(key, args);
+        return getMsg("message-prefix", LORE_HEADER) + ChatColor.GREEN + getMsg(key, args);
     }
 }
