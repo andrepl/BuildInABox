@@ -92,7 +92,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
                     }
                     if (listIdx < playerNames.size()) {
                         Player p = getServer().getPlayer(playerNames.get(listIdx));
-                        if (p.isOnline() && !p.isDead()) {
+                        if (p != null && p.isOnline() && !p.isDead()) {
                             checkCarrying(p);
                         }
                         listIdx++;

@@ -269,7 +269,10 @@ public class BuildChest {
                     for (int i=0;i<blocksPerTick;i++) {
                         if (moveCursor()) {
                             bb = clipboard.getPoint(cursor);
-                            if (bb.getType() == 0) continue; // skip air blocks;
+                            if (bb.getType() == 0) {
+                                i--;
+                                continue; // skip air blocks;
+                            }
                             if (bb.getType() == BuildInABox.BLOCK_ID) {
                                 if (worldCursor.getBlock().hasMetadata("buildInABox")) {
                                     continue;

@@ -156,7 +156,7 @@ public abstract class DataStore {
     }
 
     public BaseBlock deserializeBaseBlock(String s) {
-        if (s == null) {
+        if (s == null || s.equals("")) {
             return null;
         }
         if (s.contains(",")) {
@@ -168,7 +168,7 @@ public abstract class DataStore {
 
     public HashMap<BlockVector, BaseBlock> deserializeReplacedBlocks(String s) {
         HashMap<BlockVector, BaseBlock> results = new HashMap<BlockVector, BaseBlock>();
-        if (s == null) {
+        if (s == null || s.equals("")) {
             return null;
         }
         if (s.startsWith("{")) {
