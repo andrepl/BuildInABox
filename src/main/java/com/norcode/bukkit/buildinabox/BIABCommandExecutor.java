@@ -36,10 +36,14 @@ public class BIABCommandExecutor implements TabExecutor {
         } else if (action.equals("delete")) {
             cmdDelete(sender, args);
             return true;
+        } else if (action.toLowerCase().startsWith("setdesc")) {
+            cmdSetDescription(sender, args);
+            return true;
         }
         sender.sendMessage(BuildInABox.getErrorMsg("unexpected-argument", action));
         return true;
     }
+
     private void cmdDelete(CommandSender sender, LinkedList<String> args) {
         if (!sender.hasPermission("biab.delete")) {
             sender.sendMessage(BuildInABox.getErrorMsg("no-permission"));
@@ -60,6 +64,44 @@ public class BIABCommandExecutor implements TabExecutor {
         
     }
 
+    private void cmdSetDescription(CommandSender sender, LinkedList<String> args) {
+        if (!sender.hasPermission("biab.save")) {
+            sender.sendMessage(BuildInABox.getErrorMsg("no-permission"));
+            return;
+        }
+        if (args.size() < 2) {
+            sender.sendMessage(BuildInABox.getNormalMsg("cmd-setdesc-usage"));
+            return;
+        }
+        BuildingPlan plan = BuildInABox.getInstance().getDataStore().getBuildingPlan(args.peek());
+        if (plan == null) {
+            sender.sendMessage(BuildInABox.getErrorMsg("unknown-building-plan", args.peek()));
+            return;
+        }
+        args.pop();
+        plan.description = parseDescription(args);
+        BuildInABox.getInstance().getDataStore().saveBuildingPlan(plan);
+        sender.sendMessage(BuildInABox.getSuccessMsg("description-saved", plan.getName()));
+    }
+
+    private List<String> parseDescription(LinkedList<String> args) {
+        List<String> lines = new ArrayList<String>();
+        String line = "";
+        String w;
+        while (!args.isEmpty()) {
+            w = args.pop().trim();
+            if (w.equals("|")) {
+                lines.add(line);
+                line = "";
+            } else {
+                line += w + " ";
+            }
+        }
+        if (!line.equals(" ")) {
+            lines.add(line);
+        }
+        return lines;
+    }
     private void cmdList(CommandSender sender, LinkedList<String> args) {
         int page = 1;
         if (args.size() > 0) {
@@ -96,6 +138,9 @@ public class BIABCommandExecutor implements TabExecutor {
         }
         String buildingName = args.pop();
         BuildingPlan plan = BuildingPlan.fromClipboard(plugin, (Player) sender, buildingName);
+        if (args.size() > 0) {
+            plan.description = parseDescription(args);
+        }
         if (plan != null) {
             sender.sendMessage(BuildInABox.getSuccessMsg("building-plan-saved", buildingName));
             plugin.getDataStore().saveBuildingPlan(plan);
