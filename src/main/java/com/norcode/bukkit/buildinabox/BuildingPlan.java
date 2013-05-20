@@ -48,6 +48,18 @@ public class BuildingPlan {
         this.description = description;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setFilename(String filename) {
+        this.filename = filename;
+    }
+
+    public void setDescription(List<String> description) {
+        this.description = description;
+    }
+
     public String getName() {
         return this.name;
     }

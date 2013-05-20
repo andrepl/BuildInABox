@@ -66,6 +66,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
     public void onEnable() {
         saveDefaultConfig();
         reloadConfig();
+        debugMode = getConfig().getBoolean("debug", false);
         BLOCK_ID = getConfig().getInt("chest-block", 130);
         loadMessage();
         doUpdater();

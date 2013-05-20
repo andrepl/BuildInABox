@@ -188,9 +188,11 @@ public abstract class DataStore {
         } else {
             // new format
             String[] bss;
-            for (String bs: s.split("|")) {
+            for (String bs: s.split("\\|")) {
                 bss = bs.split(":");
-                results.put(deserializeVector(bss[0]), deserializeBaseBlock(bss[1]));
+                if (bss.length == 2) {
+                    results.put(deserializeVector(bss[0]), deserializeBaseBlock(bss[1]));
+                }
             }
         }
         return results;

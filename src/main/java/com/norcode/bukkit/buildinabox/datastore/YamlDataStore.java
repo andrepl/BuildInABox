@@ -40,11 +40,14 @@ public class YamlDataStore extends DataStore {
         // Load Plans
         for (String key: this.planCfg.getConfig().getKeys(false)) {
             sec = this.planCfg.getConfig().getConfigurationSection(key);
-            BuildingPlan plan = new BuildingPlan(plugin, 
-                    sec.getString("name"), 
-                    sec.getString("filename"), 
-                    sec.getStringList("description"));
-            this.plans.put(plan.getName().toLowerCase(), plan);
+            if (sec != null) {
+                BuildingPlan plan = new BuildingPlan(plugin, 
+                        sec.getString("name"), 
+                        sec.getString("filename"), 
+                        sec.getStringList("description"));
+                
+                this.plans.put(plan.getName().toLowerCase(), plan);
+            }
         }
 
         // Load Chests
