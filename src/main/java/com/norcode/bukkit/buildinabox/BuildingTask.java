@@ -45,6 +45,7 @@ public abstract class BuildingTask implements Runnable {
     protected boolean shouldShuffle() {
         return false;
     }
+
     public abstract void run();
     boolean moveCursor() {
         int y = cursor.getBlockY();

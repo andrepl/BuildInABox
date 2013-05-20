@@ -10,13 +10,13 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class ConfigAccessor {
- 
+
     private final String fileName;
     private final JavaPlugin plugin;
-    
+
     private File configFile;
     private FileConfiguration fileConfiguration;
- 
+
     public ConfigAccessor(JavaPlugin plugin, String fileName) {
         if (plugin == null)
             throw new IllegalArgumentException("plugin cannot be null");
@@ -25,7 +25,7 @@ public class ConfigAccessor {
         this.plugin = plugin;
         this.fileName = fileName;
     }
- 
+
     public void reloadConfig() {
         if (configFile == null) {
             File dataFolder = plugin.getDataFolder();
@@ -34,7 +34,7 @@ public class ConfigAccessor {
             configFile = new File(dataFolder, fileName);
         }
         fileConfiguration = YamlConfiguration.loadConfiguration(configFile);
- 
+
         // Look for defaults in the jar
         InputStream defConfigStream = plugin.getResource(fileName);
         if (defConfigStream != null) {
@@ -42,14 +42,14 @@ public class ConfigAccessor {
             fileConfiguration.setDefaults(defConfig);
         }
     }
- 
+
     public FileConfiguration getConfig() {
         if (fileConfiguration == null) {
             this.reloadConfig();
         }
         return fileConfiguration;
     }
- 
+
     public void saveConfig() {
         if (fileConfiguration == null || configFile == null) {
             return;
@@ -61,11 +61,10 @@ public class ConfigAccessor {
             }
         }
     }
-    
+
     public void saveDefaultConfig() {
         if (!configFile.exists()) {
             this.plugin.saveResource(fileName, false);
         }
     }
- 
 }

@@ -14,6 +14,7 @@ cmd-save-usage: "Usage: /biab save <plan>"
 cmd-delete-usage: "Usage: /biab delete <plan>"
 unknown-building-plan: "Unknown building-plan: {0}"
 building-plan-saved: Building plan {0} successfully saved.
+building-plan-deleted: Building plan {0} has been deleted.
 available-building-plans: Available Building Plans [pg. {0} of {1}]
 no-building-plans: There are no building plans saved yet.
 invalid-page: "Invalid page number: {0}"
