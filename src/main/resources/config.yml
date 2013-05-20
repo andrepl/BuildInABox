@@ -4,6 +4,9 @@ debug: false
 # Language selection (from lang/<language>.yml)
 language: english
 
+# Use this block ID Instead of enderchest.
+chest-block: 130 
+
 # Automatically update the plugin
 # true - Automatically download and apply updates
 # false - do not check for updates.

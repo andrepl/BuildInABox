@@ -46,6 +46,7 @@ import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 
 public class BuildInABox extends JavaPlugin implements Listener {
     public static final String LORE_HEADER = ChatColor.GOLD + "Build-in-a-Box";
+    public static int BLOCK_ID = 130;
     private static BuildInABox instance;
     private DataStore datastore = null;
     private Updater updater = null;
@@ -65,6 +66,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
     public void onEnable() {
         saveDefaultConfig();
         reloadConfig();
+        BLOCK_ID = getConfig().getInt("chest-block", 130);
         loadMessage();
         doUpdater();
         new File(getDataFolder(), "schematics").mkdir();
@@ -157,7 +159,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
                 } else {
                     if (cd.getLocation() != null) {
                         BuildChest bc = new BuildChest(cd);
-                        if (bc.getBlock().getType().equals(Material.ENDER_CHEST)) {
+                        if (bc.getBlock().getTypeId() == BLOCK_ID) {
                             bc.getBlock().setMetadata("buildInABox", new FixedMetadataValue(this, bc));
                             if (getConfig().getBoolean("protect-buildings")) {
                                 debug("Protecting Building: " + bc);

@@ -11,6 +11,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 
+import org.bukkit.material.Directional;
 import org.bukkit.material.EnderChest;
 import org.bukkit.metadata.FixedMetadataValue;
 
@@ -113,7 +114,7 @@ public class BuildingPlan {
             for (int y = 0; y < cc.getSize().getBlockY(); y++) {
                 for (int z = 0; z < cc.getSize().getBlockZ(); z++) {
                     Vector v = new Vector(x,y,z);
-                    if (cc.getPoint(v).getType() == Material.ENDER_CHEST.getId()) {
+                    if (cc.getPoint(v).getType() == BuildInABox.BLOCK_ID) {
                         return new Vector(-v.getBlockX(), -v.getBlockY(), -v.getBlockZ());
                     }
                 }
@@ -150,9 +151,10 @@ public class BuildingPlan {
             player.sendMessage(BuildInABox.getErrorMsg("enderchest-not-found"));
             return null;
         }
-        EnderChest ec = (EnderChest) Material.ENDER_CHEST.getNewData((byte)cc.getPoint(new Vector(-chestOffset.getBlockX(), -chestOffset.getBlockY(), -chestOffset.getBlockZ())).getData());
-        if (!ec.getFacing().equals(BlockFace.NORTH)) {
-            cc.rotate2D(getRotationDegrees(ec.getFacing(), BlockFace.NORTH));
+        
+        Directional md = (Directional) Material.getMaterial(BuildInABox.BLOCK_ID).getNewData((byte)cc.getPoint(new Vector(-chestOffset.getBlockX(), -chestOffset.getBlockY(), -chestOffset.getBlockZ())).getData());
+        if (!md.getFacing().equals(BlockFace.NORTH)) {
+            cc.rotate2D(getRotationDegrees(md.getFacing(), BlockFace.NORTH));
             chestOffset = findEnderChest(cc);
         }
         cc.setOffset(chestOffset);
@@ -242,7 +244,7 @@ public class BuildingPlan {
 
     public void build(Block enderChest, CuboidClipboard clipboard) {
         Location chestLoc = enderChest.getLocation();
-        EnderChest ec = (EnderChest) Material.ENDER_CHEST.getNewData(chestLoc.getBlock().getData());
+        EnderChest ec = (EnderChest) Material.getMaterial(BuildInABox.BLOCK_ID).getNewData(chestLoc.getBlock().getData());
         BlockFace dir = ec.getFacing();
         if (clipboard == null) {
             clipboard = getRotatedClipboard(dir);
@@ -266,7 +268,7 @@ public class BuildingPlan {
         HashSet<Chunk> loadedChunks = new HashSet<Chunk>();
         if (clipboard == null) {
             Location chestLoc = enderChest.getLocation();
-            EnderChest ec = (EnderChest) Material.ENDER_CHEST.getNewData(chestLoc.getBlock().getData());
+            EnderChest ec = (EnderChest) Material.getMaterial(BuildInABox.BLOCK_ID).getNewData(chestLoc.getBlock().getData());
             BlockFace dir = ec.getFacing();
             clipboard = getRotatedClipboard(dir);
         }

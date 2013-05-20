@@ -89,7 +89,7 @@ public class BuildChest {
     
     public void endPreview(final Player player) {
         Block b = getBlock();
-        if (b != null && previewing && b.getType().equals(Material.ENDER_CHEST)) {
+        if (b != null && previewing && b.getTypeId() == BuildInABox.BLOCK_ID) {
             plan.clearPreview(player.getName(), b);
             b.setType(Material.AIR);
             data.setLocation(null);
@@ -135,7 +135,7 @@ public class BuildChest {
     }
 
     public void build(final Player player) {
-        if (previewing && getBlock().getType().equals(Material.ENDER_CHEST)) {
+        if (previewing && getBlock().getTypeId() == BuildInABox.BLOCK_ID) {
             plan.clearPreview(player.getName(), getBlock());
             previewing = false;
         }
@@ -270,7 +270,7 @@ public class BuildChest {
                         if (moveCursor()) {
                             bb = clipboard.getPoint(cursor);
                             if (bb.getType() == 0) continue; // skip air blocks;
-                            if (bb.getType() == Material.ENDER_CHEST.getId()) {
+                            if (bb.getType() == BuildInABox.BLOCK_ID) {
                                 if (worldCursor.getBlock().hasMetadata("buildInABox")) {
                                     continue;
                                 }

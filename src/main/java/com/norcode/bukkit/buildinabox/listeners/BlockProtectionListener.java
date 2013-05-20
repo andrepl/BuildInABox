@@ -14,11 +14,13 @@ import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
+import com.norcode.bukkit.buildinabox.BuildInABox;
+
 public class BlockProtectionListener implements Listener {
 
     @EventHandler(ignoreCancelled=true)
     public void onBlockBreak(final BlockBreakEvent event) {
-        if (event.getBlock().hasMetadata("biab-block") || (event.getBlock().getType().equals(Material.ENDER_CHEST) && event.getBlock().hasMetadata("buildInABox"))) {
+        if (event.getBlock().hasMetadata("biab-block") || (event.getBlock().getTypeId() == BuildInABox.BLOCK_ID && event.getBlock().hasMetadata("buildInABox"))) {
             event.setCancelled(true);
         }
     }

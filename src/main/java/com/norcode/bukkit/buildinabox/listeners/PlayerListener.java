@@ -27,7 +27,7 @@ public class PlayerListener implements Listener {
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         Block block = event.getClickedBlock();
-        if (block.getType().equals(Material.ENDER_CHEST)) {
+        if (block.getTypeId() == BuildInABox.BLOCK_ID) {
             if (block.hasMetadata("buildInABox")) {
                 BuildChest bc = (BuildChest) block.getMetadata("buildInABox").get(0).value();
                 if (bc.isBuilding()) {
@@ -118,7 +118,7 @@ public class PlayerListener implements Listener {
 
     @EventHandler(ignoreCancelled=true)
     public void onPlaceEnderchest(final BlockPlaceEvent event) {
-        if (event.getBlock().getType().equals(Material.ENDER_CHEST)) {
+        if (event.getBlock().getTypeId() == BuildInABox.BLOCK_ID) {
             if (plugin.getConfig().getBoolean("prevent-placing-enderchests", false)) {
                 ChestData data = plugin.getDataStore().fromItemStack(event.getItemInHand());
                 if (data == null) {

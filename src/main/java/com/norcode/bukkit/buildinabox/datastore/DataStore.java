@@ -156,6 +156,9 @@ public abstract class DataStore {
     }
 
     public BaseBlock deserializeBaseBlock(String s) {
+        if (s == null) {
+            return null;
+        }
         if (s.contains(",")) {
             String[] parts = s.split(",");
             return new BaseBlock(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
@@ -165,6 +168,9 @@ public abstract class DataStore {
 
     public HashMap<BlockVector, BaseBlock> deserializeReplacedBlocks(String s) {
         HashMap<BlockVector, BaseBlock> results = new HashMap<BlockVector, BaseBlock>();
+        if (s == null) {
+            return null;
+        }
         if (s.startsWith("{")) {
             // old format
             final java.lang.reflect.Type type = new TypeToken<Map<String,Map<String,Integer>>>(){}.getType();
@@ -191,7 +197,7 @@ public abstract class DataStore {
     }
 
     public ChestData fromItemStack(ItemStack stack) {
-        if (stack != null && stack.getType().equals(Material.ENDER_CHEST)) {
+        if (stack != null && stack.getTypeId() == BuildInABox.BLOCK_ID) {
             if (stack.hasItemMeta() && stack.getItemMeta().hasLore()) {
                 ItemMeta meta = stack.getItemMeta();
                 if (meta.getLore().get(0).equals(BuildInABox.LORE_HEADER)) {
@@ -208,7 +214,7 @@ public abstract class DataStore {
     }
 
     public ChestData fromBlock(Block block) {
-        if (block.getType().equals(Material.ENDER_CHEST)) {
+        if (block.getTypeId() == BuildInABox.BLOCK_ID) {
             if (block.hasMetadata("buildInABox")) {
                 return (ChestData) block.getMetadata("buildInABox").get(0).value();
             }
