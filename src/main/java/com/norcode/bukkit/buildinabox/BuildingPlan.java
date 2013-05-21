@@ -2,6 +2,7 @@ package com.norcode.bukkit.buildinabox;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -317,6 +318,9 @@ public class BuildingPlan {
     }
 
     public List<String> getDescription() {
+        if (description == null) {
+            this.description = new ArrayList<String>();
+        }
         return description;
     }
 
