@@ -26,6 +26,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.block.Action;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.material.EnderChest;
+import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.scheduler.BukkitTask;
 
 import com.sk89q.jnbt.CompoundTag;
@@ -504,5 +505,25 @@ public class BuildChest {
 
     public void setLastClickType(Action lastClickType) {
         this.lastClickType = lastClickType;
+    }
+
+    public void unprotect() {
+        CuboidClipboard clipboard = getPlan().getRotatedClipboard(this.getEnderChest().getFacing());
+        Location loc = null;
+        Vector offset = clipboard.getOffset();
+        Vector origin = new Vector(getBlock().getX(), getBlock().getY(), getBlock().getZ());
+        for (int x=0;x<clipboard.getSize().getBlockX();x++) {
+            for (int y = 0;y<clipboard.getSize().getBlockY();y++) {
+                for (int z=0;z<clipboard.getSize().getBlockZ();z++) {
+                    if (clipboard.getPoint(new Vector(x,y,z)).getType() > 0) {
+                        Vector v = origin.add(offset);
+                        loc = new Location(getBlock().getWorld(), v.getBlockX()+x, v.getBlockY()+y, v.getBlockZ()+z);
+                        getBlock().getWorld().getBlockAt(loc).removeMetadata("biab-block", plugin);
+                        getBlock().getWorld().getBlockAt(loc).removeMetadata("buildInABox", plugin);
+                    }
+                }
+            }
+        }
+        getBlock().breakNaturally();
     }
 }

@@ -11,6 +11,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.metadata.FixedMetadataValue;
 
 public class BIABCommandExecutor implements TabExecutor {
     BuildInABox plugin;
@@ -39,9 +40,25 @@ public class BIABCommandExecutor implements TabExecutor {
         } else if (action.toLowerCase().startsWith("setdesc")) {
             cmdSetDescription(sender, args);
             return true;
+        } else if (action.toLowerCase().startsWith("permanent")) {
+            cmdPermanent(sender, args);
         }
         sender.sendMessage(BuildInABox.getErrorMsg("unexpected-argument", action));
         return true;
+    }
+
+    private void cmdPermanent(CommandSender sender, LinkedList<String> args) {
+        if (!sender.hasPermission("biab.permanent")) {
+            sender.sendMessage(BuildInABox.getErrorMsg("no-permission"));
+            return;
+        }
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(BuildInABox.getErrorMsg("cannot-use-from-console"));
+            return;
+        }
+        sender.sendMessage(BuildInABox.getNormalMsg("punch-to-make-permanent"));
+        ((Player)sender).setMetadata("biab-permanent-timeout", new FixedMetadataValue(plugin, System.currentTimeMillis()));
+        return;
     }
 
     private void cmdDelete(CommandSender sender, LinkedList<String> args) {
@@ -208,6 +225,12 @@ public class BIABCommandExecutor implements TabExecutor {
       }
       
       if (args.size() == 0) {
+          if ("permanent".startsWith(action) && sender.hasPermission("biab.permanent")) {
+              results.add("permanent");
+          }
+          if ("setdescription".startsWith(action) && sender.hasPermission("biab.save")) {
+              results.add("setdescription");
+          }
           if ("list".startsWith(action)) {
               results.add("list");
           } 

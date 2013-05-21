@@ -45,8 +45,10 @@ public class ItemListener implements Listener {
         if (!(event.getPlayer() instanceof Player)) return;
         for (ItemStack is: event.getInventory().getContents()) {
             ChestData data = BuildInABox.getInstance().getDataStore().fromItemStack(is);
-            data.setLastActivity(System.currentTimeMillis());
-            BuildInABox.getInstance().getDataStore().saveChest(data);
+            if (data != null) {
+                data.setLastActivity(System.currentTimeMillis());
+                BuildInABox.getInstance().getDataStore().saveChest(data);
+            }
         }
     }
 }

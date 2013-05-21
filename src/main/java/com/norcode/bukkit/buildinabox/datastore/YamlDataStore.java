@@ -79,7 +79,6 @@ public class YamlDataStore extends DataStore {
 
     @Override
     public ChestData getChest(int id) {
-        plugin.debug("Looking up chest " + id + " from " + chests);
         return this.chests.get(id);
     }
 

@@ -98,7 +98,7 @@ public class ChestData {
         List<String> lore = new ArrayList<String>();
         lore.add(BuildInABox.LORE_PREFIX + BuildInABox.LORE_HEADER);
         BuildingPlan plan = BuildInABox.getInstance().getDataStore().getBuildingPlan(planName);
-        lore.add(Integer.toHexString(getId()));
+        lore.add(ChatColor.BLACK + Integer.toHexString(getId()));
         if (plan != null) {
             if (plan.getDescription() != null) {
                 lore.addAll(plan.getDescription());

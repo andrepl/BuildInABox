@@ -3,6 +3,8 @@ package com.norcode.bukkit.buildinabox.datastore;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -213,30 +215,30 @@ public abstract class DataStore {
                             if (plan != null) {
                                 boolean update = false;
                                 if (!plan.getDisplayName().equals(meta.getDisplayName())) {
+                                    meta.setDisplayName(plan.getDisplayName());
                                     update = true;
                                 }
-                                List<String> newLore = new ArrayList<String>();
                                 if (!update) {
-                                    int l=0;
-                                    for (String line: meta.getLore()) {
-                                        if (l > 1) {
-                                            if (!line.equals(plan.getDescription().get(l-2))) {
-                                                line = plan.getDescription().get(l-2);
-                                                update = true;
-                                            }
+                                    if (!meta.getLore().subList(2, meta.getLore().size()).equals(plan.getDescription())) {
+                                        List<String> newLore = new ArrayList<String>();
+                                        for (int i=0;i<2;i++) {
+                                            newLore.add(meta.getLore().get(i));
                                         }
-                                        newLore.add(line);
-                                        l++;
+                                        newLore.addAll(plan.getDescription());
+                                        update = true;
                                     }
-                                    return data;
                                 }
                                 if (update) {
-                                    meta.setLore(newLore);
-                                    meta.setDisplayName(plan.getDisplayName());
+                                    BuildInABox.getInstance().debug("Updating itemstack: " + meta);
                                     stack.setItemMeta(meta);
+                                    return data;
                                 }
+                                return data;
                             }
                         } catch (IllegalArgumentException ex) {
+                            StringWriter errors = new StringWriter();
+                            ex.printStackTrace(new PrintWriter(errors));
+                            BuildInABox.getInstance().debug(errors.toString());
                         }
                     }
                 }
