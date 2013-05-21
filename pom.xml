@@ -3,6 +3,9 @@
   <groupId>com.norcode.bukkit.buildinabox</groupId>
   <artifactId>BuildInABox</artifactId>
   <version>0.1.4-SNAPSHOT</version>
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
   <repositories>
     <repository>
       <id>sk89q-repo</id>
