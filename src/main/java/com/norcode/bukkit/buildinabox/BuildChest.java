@@ -2,7 +2,6 @@ package com.norcode.bukkit.buildinabox;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +25,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.block.Action;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.material.EnderChest;
-import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.scheduler.BukkitTask;
 
 import com.sk89q.jnbt.CompoundTag;
@@ -36,7 +34,6 @@ import com.sk89q.worldedit.BlockVector;
 import com.sk89q.worldedit.CuboidClipboard;
 import com.sk89q.worldedit.Vector;
 import com.sk89q.worldedit.blocks.BaseBlock;
-import com.sk89q.worldedit.blocks.BlockType;
 import com.sk89q.worldedit.blocks.TileEntityBlock;
 import com.sk89q.worldedit.bukkit.BukkitWorld;
 import com.sk89q.worldedit.data.DataException;
@@ -200,7 +197,8 @@ public class BuildChest {
             @Override
             public void run() {
                 BaseBlock bb;
-                for (int i=0;i<blocksPerTick;i++) {
+                boolean disabled = plugin.getConfig().getBoolean("build-animation.disable", false);
+                for (int i=0;i<blocksPerTick||disabled;i++) {
                     if (moveCursor()) {
                         bb = clipboard.getPoint(cursor);
                         if (bb.getType() == 0) {
@@ -213,30 +211,40 @@ public class BuildChest {
                                 replacedBlocks.put(new BlockVector(cursor), new BaseBlock(worldCursor.getBlock().getTypeId(), worldCursor.getBlock().getData()));
                             }
                         }
-                        Packet61WorldEvent packet = new Packet61WorldEvent(2001, worldCursor.getBlockX(), worldCursor.getBlockY(), worldCursor.getBlockZ(), bb.getType(), false);
-                        for (Player p: nearby) {
-                            if (p.isOnline()) {
-                                ((CraftPlayer) p).getHandle().playerConnection.sendPacket(packet);
-                                p.sendBlockChange(worldCursor, bb.getType(), (byte) bb.getData());
+                        if (!disabled) {
+                            Packet61WorldEvent packet = new Packet61WorldEvent(2001, worldCursor.getBlockX(), worldCursor.getBlockY(), worldCursor.getBlockZ(), bb.getType(), false);
+                            for (Player p: nearby) {
+                                if (p.isOnline()) {
+                                    ((CraftPlayer) p).getHandle().playerConnection.sendPacket(packet);
+                                    p.sendBlockChange(worldCursor, bb.getType(), (byte) bb.getData());
+                                }
                             }
                         }
                     } else {
-                        BuildInABox.getInstance().debug("finished building...");
-                        // clipboard paste, save data etc.
-                        plan.build(getBlock(), clipboard);
-                        data.setReplacedBlocks(replacedBlocks);
-                        data.clearTileEntities();
-                        buildTask.cancel();
-                        player.sendMessage(BuildInABox.getSuccessMsg("building-complete"));
-                        plugin.getDataStore().saveChest(data);
-                        if (!plugin.getConfig().getBoolean("allow-pickup")) {
-                            plugin.getDataStore().deleteChest(data.getId());
-                            getBlock().removeMetadata("buildInABox", plugin);
-                        }
-                        building = false;
+                        finish();
                         return;
                     }
                 }
+            }
+            private void finish() {
+                BuildInABox.getInstance().debug("finished building...");
+                // clipboard paste, save data etc.
+                plan.build(getBlock(), clipboard);
+                data.setReplacedBlocks(replacedBlocks);
+                data.clearTileEntities();
+                buildTask.cancel();
+                player.sendMessage(BuildInABox.getSuccessMsg("building-complete"));
+                plugin.getDataStore().saveChest(data);
+                if (!plugin.getConfig().getBoolean("allow-pickup")) {
+                    plugin.getDataStore().deleteChest(data.getId());
+                    getBlock().removeMetadata("buildInABox", plugin);
+                }
+                int fireworksLevel = plugin.getConfig().getInt("build-animation.fireworks", 0);
+                if (fireworksLevel > 0) {
+                    launchFireworks(fireworksLevel);
+                }
+                building = false;
+                return;
             }
         }, 1, 1);
         
@@ -281,7 +289,7 @@ public class BuildChest {
             }
         }
         final int blocksPerTick = plugin.getConfig().getInt("pickup-animation.blocks-per-tick", 20);
-        List<Player> nearby = new ArrayList<Player>();
+        final List<Player> nearby = new ArrayList<Player>();
         for (Player p: player.getWorld().getPlayers()) {
             nearby.add(p);
         }
@@ -297,7 +305,8 @@ public class BuildChest {
                 }
                 public void run() {
                     BaseBlock bb;
-                    for (int i=0;i<blocksPerTick;i++) {
+                    boolean disabled = plugin.getConfig().getBoolean("pickup-animation.disable", false);
+                    for (int i=0;i<blocksPerTick||disabled;i++) {
                         if (moveCursor()) {
                             bb = clipboard.getPoint(cursor);
                             if (bb.getType() == 0) {
@@ -322,6 +331,14 @@ public class BuildChest {
                                   }
                                   inven.clear();
                               }
+                            }
+                            if (!disabled) {
+                                Packet61WorldEvent packet = new Packet61WorldEvent(2001, worldCursor.getBlockX(), worldCursor.getBlockY(), worldCursor.getBlockZ(), bb.getType(), false);
+                                for (Player p: nearby) {
+                                    if (p.isOnline()) {
+                                        ((CraftPlayer) p).getHandle().playerConnection.sendPacket(packet);
+                                    }
+                                }
                             }
                             if (cursor.getBlockY() < -clipboard.getOffset().getBlockY()) {
                                 if (data.getReplacedBlocks().containsKey(cursor)) {
@@ -376,6 +393,10 @@ public class BuildChest {
                             data.setReplacedBlocks(null);
                             plugin.getDataStore().saveChest(data);
                             buildTask.cancel();
+                            int fireworksLevel = plugin.getConfig().getInt("pickup-animation.fireworks", 0);
+                            if (fireworksLevel > 0) {
+                                launchFireworks(fireworksLevel);
+                            }
                             building = false;
                             player.sendMessage(BuildInABox.getSuccessMsg("removal-complete"));
                             return;

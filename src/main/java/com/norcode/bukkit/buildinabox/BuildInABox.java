@@ -73,7 +73,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
                 getServer().getPluginManager().registerEvents(new BlockProtectionListener(), this);
             }
         }
-        if (getConfig().getBoolean("carry-effect", true)) {
+        if (getConfig().getBoolean("carry-effect", false)) {
             inventoryScanTask = getServer().getScheduler().runTaskTimer(this, new Runnable() {
                 List<String> playerNames = null;
                 int listIdx = 0;

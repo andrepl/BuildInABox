@@ -1,6 +1,6 @@
 author: metalhedd
 main: com.norcode.bukkit.buildinabox.BuildInABox
-version: 0.1.3
+version: 0.1.4-SNAPSHOT
 name: BuildInABox
 softdepend: [Vault]
 commands:

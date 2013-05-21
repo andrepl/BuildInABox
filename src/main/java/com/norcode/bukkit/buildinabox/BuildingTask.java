@@ -5,7 +5,10 @@ import java.util.Collections;
 import java.util.HashMap;
 
 import org.bukkit.Location;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Firework;
 
+import com.norcode.bukkit.buildinabox.util.RandomFireworksGenerator;
 import com.sk89q.worldedit.BlockVector;
 import com.sk89q.worldedit.CuboidClipboard;
 import com.sk89q.worldedit.Vector;
@@ -27,6 +30,7 @@ public abstract class BuildingTask implements Runnable {
         this.buildDirection = buildDirection;
         this.clipboard = clipboard;
         this.cursor = new BlockVector(0, (buildDirection == TOP_DOWN ? this.clipboard.getSize().getBlockY()-1:0), 0);
+        
         xzPoints = new ArrayList<BlockVector>(clipboard.getSize().getBlockX() * clipboard.getSize().getBlockZ());
         for (int x=0; x<this.clipboard.getSize().getBlockX();x++) {
             for (int z=0;z<this.clipboard.getSize().getBlockZ();z++) {
@@ -73,4 +77,21 @@ public abstract class BuildingTask implements Runnable {
         return true;
     }
 
+    protected void launchFireworks(int fireworksLevel) {
+        for (int i=0;i<fireworksLevel;i++) {
+            BuildInABox.getInstance().getServer().getScheduler().runTaskLater(BuildInABox.getInstance(), new Runnable() {
+                public void run() {
+                    BlockVector vec;
+                    Firework fw;
+                    for (int ptc=0;ptc<20&&ptc<xzPoints.size();ptc++) {
+                        vec = xzPoints.get(ptc);
+                        worldCursor.setZ(origin.getBlockZ() + vec.getBlockZ());
+                        worldCursor.setX(origin.getBlockX() + vec.getBlockX());
+                        fw = (Firework) worldCursor.getWorld().spawnEntity(worldCursor, EntityType.FIREWORK);
+                        RandomFireworksGenerator.assignRandomFireworkMeta(fw);
+                    }
+                }
+            }, i*10);
+        }
+    }
 }

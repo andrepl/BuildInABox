@@ -63,9 +63,13 @@ max-locking-distance: 5
  
 # animation settings
 pickup-animation:
+  disable: false
   shuffle: true
+  fireworks: 0
   blocks-per-ticks: 20
 
 build-animation:
+  disable: false
   shuffle: true
+  fireworks: 0
   blocks-per-ticks: 5

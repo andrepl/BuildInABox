@@ -1,5 +1,5 @@
 display-name: "§6Build-in-a-Box"
-message-prefix: "§f[{0}§f]"
+message-prefix: "§f[{0}§f] "
 world-edit-selection-needed: "먼저 세계 편집 선택을해야합니다."
 punch-to-make-permanent: "한대 치시면 됨니다 엔더상자에."
 enderchest-not-found: "엔더상자에 포함되어있지 않습니다."
