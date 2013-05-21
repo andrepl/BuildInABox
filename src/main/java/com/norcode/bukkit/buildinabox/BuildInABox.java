@@ -12,6 +12,7 @@ import javax.persistence.PersistenceException;
 
 import net.h31ix.updater.Updater;
 import net.h31ix.updater.Updater.UpdateType;
+import net.milkbowl.vault.economy.Economy;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
@@ -28,6 +29,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -54,6 +56,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
     private boolean debugMode = false;
     private BukkitTask inventoryScanTask;
     private ConfigAccessor messages = null;
+    private Economy economy = null;
     @Override
     public void onLoad() {
         instance = this;
@@ -67,6 +70,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
     public void onEnable() {
         saveDefaultConfig();
         reloadConfig();
+        enableEconomy();
         debugMode = getConfig().getBoolean("debug", false);
         BLOCK_ID = getConfig().getInt("chest-block", 130);
         loadMessage();
@@ -104,6 +108,22 @@ public class BuildInABox extends JavaPlugin implements Listener {
                 }
             }, 20, 20);
         }
+    }
+
+    private void enableEconomy() {
+        RegisteredServiceProvider<Economy> economyProvider = getServer().getServicesManager().getRegistration(net.milkbowl.vault.economy.Economy.class);
+        if (economyProvider != null) {
+            economy = economyProvider.getProvider();
+            BuildInABox.getInstance().debug("Found Vault!");
+        }
+    }
+
+    public static Economy getEconomy() {
+        return instance.economy;
+    }
+
+    public static boolean hasEconomy() {
+        return instance.economy != null;
     }
 
     private void loadMessage() {
@@ -243,12 +263,12 @@ public class BuildInABox extends JavaPlugin implements Listener {
     }
 
     public void checkCarrying(Player p) {
+        if (!getConfig().getBoolean("carry-effect", false)) return;
         ChestData data;
         boolean effect = false;
         for (ItemStack stack: p.getInventory().getContents()) {
             data = getDataStore().fromItemStack(stack);
             if (data != null) {
-                applyCarryEffect(p);
                 effect = true;
                 break;
             }

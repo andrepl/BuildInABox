@@ -24,6 +24,7 @@ building-plan-deleted: Building plan {0} has been deleted.
 available-building-plans: Available Building Plans [pg. {0} of {1}]
 no-building-plans: There are no building plans saved yet.
 invalid-page: "Invalid page number: {0}"
+unsufficient-funds: "Sorry, you need at least {0}."
 unexpected-argument: "Unexpected argument: {0}"
 building: Building {0}...
 building-complete: Building complete!

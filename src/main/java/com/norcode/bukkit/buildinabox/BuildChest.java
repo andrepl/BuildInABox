@@ -136,10 +136,17 @@ public class BuildChest {
     }
 
     public void build(final Player player) {
-        if (previewing && getBlock().getTypeId() == BuildInABox.BLOCK_ID) {
-            plan.clearPreview(player.getName(), getBlock());
-            previewing = false;
+        double cost = plugin.getConfig().getDouble("build-cost", 0);
+        if (cost > 0 && BuildInABox.hasEconomy()) {
+            if (!BuildInABox.getEconomy().withdrawPlayer(player.getName(), cost).transactionSuccess()) {
+                player.sendMessage(BuildInABox.getErrorMsg("insufficient-funds", BuildInABox.getEconomy().format(cost)));
+                return;
+            }
         }
+        if (previewing) {
+            plan.clearPreview(player.getName(), getBlock());
+        }
+        previewing = false;
         building = true;
         player.sendMessage(BuildInABox.getNormalMsg("building", plan.getDisplayName()));
         final World world = player.getWorld();
@@ -148,7 +155,6 @@ public class BuildChest {
         data.setLastActivity(System.currentTimeMillis());
         plugin.getDataStore().saveChest(data);
         final List<Player> nearby = new ArrayList<Player>();
-        this.previewing = false;
         for (Player p: world.getPlayers()) {
             if (p.getLocation().distance(getLocation()) < 16) {
                 nearby.add(p);
@@ -242,17 +248,38 @@ public class BuildChest {
         if (data.getLockedBy().equals(player.getName())) {
             total = plugin.getConfig().getLong("unlock-time-own", 5);
         }
+        double cost = plugin.getConfig().getDouble("unlock-cost", 0);
+        if (cost > 0 && BuildInABox.hasEconomy()) {
+            if (!BuildInABox.getEconomy().withdrawPlayer(player.getName(), cost).transactionSuccess()) {
+                player.sendMessage(BuildInABox.getErrorMsg("insufficient-funds", BuildInABox.getEconomy().format(cost)));
+                return;
+            }
+        }
         lockingTask = new UnlockingTask(player.getName(), total);
         lockingTask.run();
     }
 
     public void lock(Player player) {
         long total = plugin.getConfig().getLong("lock-time", 10);
+        double cost = plugin.getConfig().getDouble("lock-cost", 0);
+        if (cost > 0 && BuildInABox.hasEconomy()) {
+            if (!BuildInABox.getEconomy().withdrawPlayer(player.getName(), cost).transactionSuccess()) {
+                player.sendMessage(BuildInABox.getErrorMsg("insufficient-funds", BuildInABox.getEconomy().format(cost)));
+                return;
+            }
+        }
         lockingTask = new LockingTask(player.getName(), total);
         lockingTask.run();
     }
 
     public void pickup(final Player player) {
+        double cost = plugin.getConfig().getDouble("pickup-cost", 0);
+        if (cost > 0 && BuildInABox.hasEconomy()) {
+            if (!BuildInABox.getEconomy().withdrawPlayer(player.getName(), cost).transactionSuccess()) {
+                player.sendMessage(BuildInABox.getErrorMsg("insufficient-funds", BuildInABox.getEconomy().format(cost)));
+                return;
+            }
+        }
         final int blocksPerTick = plugin.getConfig().getInt("pickup-animation.blocks-per-tick", 20);
         List<Player> nearby = new ArrayList<Player>();
         for (Player p: player.getWorld().getPlayers()) {
