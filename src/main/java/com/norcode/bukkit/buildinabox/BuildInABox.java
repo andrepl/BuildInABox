@@ -111,7 +111,10 @@ public class BuildInABox extends JavaPlugin implements Listener {
     }
 
     private void enableEconomy() {
-        RegisteredServiceProvider<Economy> economyProvider = getServer().getServicesManager().getRegistration(net.milkbowl.vault.economy.Economy.class);
+        if (getServer().getPluginManager().getPlugin("Vault") == null) {
+            return;
+        }
+        RegisteredServiceProvider<Economy> economyProvider = getServer().getServicesManager().getRegistration(Economy.class);
         if (economyProvider != null) {
             economy = economyProvider.getProvider();
             BuildInABox.getInstance().debug("Found Vault!");
