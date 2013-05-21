@@ -37,11 +37,15 @@ public class BIABCommandExecutor implements TabExecutor {
         } else if (action.equals("delete")) {
             cmdDelete(sender, args);
             return true;
+        } else if (action.toLowerCase().startsWith("setdisplayname")) {
+            cmdSetDisplayName(sender, args);
+            return true;
         } else if (action.toLowerCase().startsWith("setdesc")) {
             cmdSetDescription(sender, args);
             return true;
         } else if (action.toLowerCase().startsWith("permanent")) {
             cmdPermanent(sender, args);
+            return true;
         }
         sender.sendMessage(BuildInABox.getErrorMsg("unexpected-argument", action));
         return true;
@@ -57,7 +61,7 @@ public class BIABCommandExecutor implements TabExecutor {
             return;
         }
         sender.sendMessage(BuildInABox.getNormalMsg("punch-to-make-permanent"));
-        ((Player)sender).setMetadata("biab-permanent-timeout", new FixedMetadataValue(plugin, System.currentTimeMillis()));
+        ((Player)sender).setMetadata("biab-permanent-timeout", new FixedMetadataValue(plugin, System.currentTimeMillis()+3000));
         return;
     }
 
@@ -101,6 +105,33 @@ public class BIABCommandExecutor implements TabExecutor {
         sender.sendMessage(BuildInABox.getSuccessMsg("description-saved", plan.getName()));
     }
 
+    private void cmdSetDisplayName(CommandSender sender, LinkedList<String> args) {
+        if (!sender.hasPermission("biab.save")) {
+            sender.sendMessage(BuildInABox.getErrorMsg("no-permission"));
+            return;
+        }
+        if (args.size() < 2) {
+            sender.sendMessage(BuildInABox.getNormalMsg("cmd-setdisplayname-usage"));
+            return;
+        }
+        BuildingPlan plan = BuildInABox.getInstance().getDataStore().getBuildingPlan(args.peek());
+        if (plan == null) {
+            sender.sendMessage(BuildInABox.getErrorMsg("unknown-building-plan", args.peek()));
+            return;
+        }
+        args.pop();
+        String dn = "";
+        while (!args.isEmpty()) {
+            dn += args.pop() + " ";
+        }
+        dn = dn.trim();
+        if (dn.equals("")) {
+            dn = plan.getName();
+        }
+        plan.setDisplayName(dn);
+        BuildInABox.getInstance().getDataStore().saveBuildingPlan(plan);
+        sender.sendMessage(BuildInABox.getSuccessMsg("building-plan-saved", plan.getName()));
+    }
     private List<String> parseDescription(LinkedList<String> args) {
         List<String> lines = new ArrayList<String>();
         String line = "";
