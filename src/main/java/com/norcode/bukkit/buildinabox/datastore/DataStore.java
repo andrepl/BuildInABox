@@ -3,8 +3,10 @@ package com.norcode.bukkit.buildinabox.datastore;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.zip.GZIPInputStream;
@@ -204,9 +206,36 @@ public abstract class DataStore {
             if (stack.hasItemMeta() && stack.getItemMeta().hasLore()) {
                 ItemMeta meta = stack.getItemMeta();
                 if (meta.getLore().get(0).startsWith(BuildInABox.LORE_PREFIX) || meta.getLore().get(0).equals(ChatColor.GOLD + "Build-in-a-Box")) {
-                    if (meta.getLore().size() > 0) {
+                    if (meta.getLore().size() > 1) {
                         try {
-                            return getChest(Integer.parseInt(meta.getLore().get(1).substring(2), 16));
+                            ChestData data = getChest(Integer.parseInt(meta.getLore().get(1).substring(2), 16)); 
+                            BuildingPlan plan = getBuildingPlan(data.getPlanName());
+                            if (plan != null) {
+                                boolean update = false;
+                                if (!plan.getDisplayName().equals(meta.getDisplayName())) {
+                                    update = true;
+                                }
+                                List<String> newLore = new ArrayList<String>();
+                                if (!update) {
+                                    int l=0;
+                                    for (String line: meta.getLore()) {
+                                        if (l > 1) {
+                                            if (!line.equals(plan.getDescription().get(l-2))) {
+                                                line = plan.getDescription().get(l-2);
+                                                update = true;
+                                            }
+                                        }
+                                        newLore.add(line);
+                                        l++;
+                                    }
+                                    return data;
+                                }
+                                if (update) {
+                                    meta.setLore(newLore);
+                                    meta.setDisplayName(plan.getDisplayName());
+                                    stack.setItemMeta(meta);
+                                }
+                            }
                         } catch (IllegalArgumentException ex) {
                         }
                     }

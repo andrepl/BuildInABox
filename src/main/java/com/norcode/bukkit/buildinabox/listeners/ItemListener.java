@@ -43,6 +43,10 @@ public class ItemListener implements Listener {
     @EventHandler(ignoreCancelled=true, priority=EventPriority.MONITOR)
     public void onInventoryCloseEvent(InventoryCloseEvent event) {
         if (!(event.getPlayer() instanceof Player)) return;
-        plugin.checkCarrying((Player) event.getPlayer());
+        for (ItemStack is: event.getInventory().getContents()) {
+            ChestData data = BuildInABox.getInstance().getDataStore().fromItemStack(is);
+            data.setLastActivity(System.currentTimeMillis());
+            BuildInABox.getInstance().getDataStore().saveChest(data);
+        }
     }
 }

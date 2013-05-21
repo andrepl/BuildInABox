@@ -122,7 +122,7 @@ public class BIABCommandExecutor implements TabExecutor {
         lines.add(BuildInABox.getNormalMsg("available-building-plans", page, numPages));
         for (int i=8*(page-1);i<8*(page);i++) {
             if (i<plans.size()) {
-                lines.add(ChatColor.GOLD + " * " + ChatColor.GRAY + plans.get(i).getName());
+                lines.add(ChatColor.GOLD + " * " + ChatColor.GRAY + plans.get(i).getName() + " - " + plans.get(i).getDisplayName());
             }
         }
         sender.sendMessage(lines.toArray(new String[lines.size()]));
@@ -138,8 +138,15 @@ public class BIABCommandExecutor implements TabExecutor {
         }
         String buildingName = args.pop();
         BuildingPlan plan = BuildingPlan.fromClipboard(plugin, (Player) sender, buildingName);
+        String displayName = "";
+        while (args.size() > 0 && !args.peek().equals("|")) {
+            displayName += args.pop() + " ";
+        }
+        if (!displayName.equals("")) {
+            plan.setDisplayName(displayName.trim());
+        }
         if (args.size() > 0) {
-            plan.description = parseDescription(args);
+            plan.setDescription(parseDescription(args));
         }
         if (plan != null) {
             sender.sendMessage(BuildInABox.getSuccessMsg("building-plan-saved", buildingName));

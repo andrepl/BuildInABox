@@ -44,8 +44,8 @@ public class YamlDataStore extends DataStore {
                 BuildingPlan plan = new BuildingPlan(plugin, 
                         sec.getString("name"), 
                         sec.getString("filename"), 
+                        sec.getString("display-name", sec.getString("name")),
                         sec.getStringList("description"));
-                
                 this.plans.put(plan.getName().toLowerCase(), plan);
             }
         }
@@ -124,6 +124,7 @@ public class YamlDataStore extends DataStore {
             sec = planCfg.getConfig().createSection(plan.getName());
         }
         sec.set("name", plan.getName());
+        sec.set("display-name", plan.getDisplayName());
         sec.set("filename", plan.getFilename());
         sec.set("description", plan.getDescription());
         this.plans.put(plan.getName().toLowerCase(), plan);

@@ -126,7 +126,7 @@ public class BuildChest {
             }, PREVIEW_DURATION);
         } else {
             endPreview(player);
-            player.sendMessage(BuildInABox.getErrorMsg("building-wont-fit", plan.getName()));
+            player.sendMessage(BuildInABox.getErrorMsg("building-wont-fit", plan.getDisplayName()));
         }
     }
 
@@ -140,7 +140,7 @@ public class BuildChest {
             previewing = false;
         }
         building = true;
-        player.sendMessage(BuildInABox.getNormalMsg("building", plan.getName()));
+        player.sendMessage(BuildInABox.getNormalMsg("building", plan.getDisplayName()));
         final World world = player.getWorld();
         final int blocksPerTick = plugin.getConfig().getInt("pickup-animation.blocks-per-tick", 5);
         data.setLocation(getLocation());
@@ -257,7 +257,7 @@ public class BuildChest {
         for (Player p: player.getWorld().getPlayers()) {
             nearby.add(p);
         }
-        player.sendMessage(BuildInABox.getNormalMsg("removing", this.getPlan().getName()));
+        player.sendMessage(BuildInABox.getNormalMsg("removing", this.getPlan().getDisplayName()));
         final BukkitWorld bukkitWorld = new BukkitWorld(player.getWorld());
         if (!isLocked()) {
             building = true;
@@ -357,7 +357,7 @@ public class BuildChest {
                 }
             }, 1, 1);
         } else {
-            player.sendMessage(BuildInABox.getErrorMsg("building-is-locked", getPlan().getName(), getLockedBy()));
+            player.sendMessage(BuildInABox.getErrorMsg("building-is-locked", getPlan().getDisplayName(), getLockedBy()));
         }
     }
 

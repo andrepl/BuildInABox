@@ -12,7 +12,7 @@ cannot-use-from-console: You cannot do that from the console.
 no-permission: You don''t have permission to do that.
 cmd-give-usage: "Usage: /biab give [<player>] <plan>"
 cmd-give-success: "{0} was given to {1}."
-cmd-save-usage: "Usage: /biab save <plan>"
+cmd-save-usage: "Usage: /biab save <plan> [<display name> [ | description ]]"
 cmd-delete-usage: "Usage: /biab delete <plan>"
 cmd-setdesc-usage: "Usage: /biab setdesc <plan> <description line 1>[ | <description line 2> ... ]"
 description-saved: "New description for {0} has been saved."

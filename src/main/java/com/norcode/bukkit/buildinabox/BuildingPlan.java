@@ -35,15 +35,17 @@ import com.sk89q.worldedit.schematic.SchematicFormat;
 
 public class BuildingPlan {
     String name;
+    String displayName;
     String filename;
     List<String> description;
     BuildInABox plugin;
     
     private static final EnumSet<Material> coverableBlocks = EnumSet.of(Material.LONG_GRASS, Material.SNOW, Material.AIR, Material.RED_MUSHROOM, Material.BROWN_MUSHROOM, Material.DEAD_BUSH, Material.FIRE, Material.RED_ROSE, Material.YELLOW_FLOWER, Material.SAPLING);
     
-    public BuildingPlan(BuildInABox plugin, String name, String filename, List<String> description) {
+    public BuildingPlan(BuildInABox plugin, String name, String filename, String displayName, List<String> description) {
         this.plugin = plugin;
         this.name = name;
+        this.displayName = displayName;
         this.filename = filename;
         this.description = description;
     }
@@ -62,6 +64,14 @@ public class BuildingPlan {
 
     public String getName() {
         return this.name;
+    }
+
+    public String getDisplayName() {
+        return (displayName == null || displayName.equals("")) ? getName() : displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
     }
 
     @SuppressWarnings("incomplete-switch")
@@ -172,7 +182,7 @@ public class BuildingPlan {
         cc.setOffset(chestOffset);
         try {
             SchematicFormat.MCEDIT.save(cc, new File(new File(plugin.getDataFolder(), "schematics"), name + ".schematic"));
-            plan = new BuildingPlan(plugin, name, name+".schematic", null);
+            plan = new BuildingPlan(plugin, name, name+".schematic", name, null);
             plugin.getDataStore().saveBuildingPlan(plan);
         } catch (IOException e) {
             // TODO Auto-generated catch block

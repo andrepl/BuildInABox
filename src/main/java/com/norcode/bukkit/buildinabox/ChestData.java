@@ -97,14 +97,14 @@ public class ChestData {
         ItemMeta meta = BuildInABox.getInstance().getServer().getItemFactory().getItemMeta(Material.getMaterial(BuildInABox.BLOCK_ID));
         List<String> lore = new ArrayList<String>();
         lore.add(BuildInABox.LORE_PREFIX + BuildInABox.LORE_HEADER);
-        lore.add(ChatColor.BLACK + Integer.toHexString(getId()));
         BuildingPlan plan = BuildInABox.getInstance().getDataStore().getBuildingPlan(planName);
+        lore.add(Integer.toHexString(getId()));
         if (plan != null) {
             if (plan.getDescription() != null) {
                 lore.addAll(plan.getDescription());
             }
             meta.setLore(lore);
-            meta.setDisplayName(planName);
+            meta.setDisplayName(plan.getDisplayName());
             stack.setItemMeta(meta);
         }
         return stack;
