@@ -3,12 +3,8 @@ package com.norcode.bukkit.buildinabox;
 import java.io.File;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
-
-import javax.persistence.PersistenceException;
 
 import net.h31ix.updater.Updater;
 import net.h31ix.updater.Updater.UpdateType;
@@ -16,16 +12,10 @@ import net.milkbowl.vault.economy.Economy;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
-import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event.Result;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
@@ -35,14 +25,12 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
-import com.norcode.bukkit.buildinabox.BuildChest.UnlockingTask;
 import com.norcode.bukkit.buildinabox.datastore.DataStore;
 import com.norcode.bukkit.buildinabox.datastore.YamlDataStore;
 import com.norcode.bukkit.buildinabox.listeners.BlockProtectionListener;
 import com.norcode.bukkit.buildinabox.listeners.ItemListener;
 import com.norcode.bukkit.buildinabox.listeners.PlayerListener;
 import com.norcode.bukkit.buildinabox.util.ConfigAccessor;
-import com.sk89q.worldedit.bukkit.BukkitWorld;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 
 
@@ -160,9 +148,11 @@ public class BuildInABox extends JavaPlugin implements Listener {
         p.removeMetadata("biab-carryeffect", getInstance());
         p.removePotionEffect(PotionEffectType.getByName(getConfig().getString("carry-effect-type")));
     }
+
     public boolean hasCarryEffect(Player p) {
         return p.hasMetadata("biab-carryeffect");
     }
+
     public void applyCarryEffect(Player p) {
         p.setMetadata("biab-carryeffect", new FixedMetadataValue(getInstance(), true));
         p.addPotionEffect(new PotionEffect(PotionEffectType.getByName(getConfig().getString("carry-effect-type")), 1200, 1));

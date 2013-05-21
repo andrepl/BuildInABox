@@ -1,0 +1,48 @@
+display-name: "§6Build-in-a-Box"
+message-prefix: "§f[{0}§f]"
+world-edit-selection-needed: "먼저 세계 편집 선택을해야합니다."
+punch-to-make-permanent: "한대 치시면 됨니다 엔더상자에."
+enderchest-not-found: "엔더상자에 포함되어있지 않습니다."
+update-available: "업데이트를 할수있습니다: {0}"
+update-downloaded: 서버를 다시시작하시면 그때 적용이됨니다
+lock-attempt-cancelled: "{0}' 잠금을 시도하는중 취소되었습니다."
+unlock-attempt-cancelled: "{0}''s 잠금해제를 시도하는중 취소를 선택하셨습니다."
+unknown-player: "{0} 알수 없는 플레이어 입니다"
+cannot-give-to-console: 당신은 명령어를 쓰실수 없습니다
+cannot-use-from-console: 당신은 명령어로 해당 작업을 수행 할 수 없습니다.
+no-permission: 당신은 펄미션에 권한이 없습니다
+cmd-give-usage: "사용법 : /biab give [<player>] <plan>"
+cmd-give-success: "{0} 님이 이사람에게 주었습니다 {1}."
+cmd-save-usage: "사용법 : /biab save <plan> [<display name> [ | description ]]"
+cmd-delete-usage: "사용법 : /biab delete <plan>"
+cmd-setdesc-usage: "사용법 : /biab setdesc <plan> <description line 1>[ | <description line 2> ... ]"
+cmd-setdisplayname-usage: "사용법: /biab setdisplayname <plan> <display name>"
+description-saved: "{0} 건축 시스템이 저장되었습니다"
+unknown-building-plan: "알수없는 건축 이름입니다: {0}"
+building-plan-saved: "{0} 라는 건물이 성공적으로 세이브되었습니다."
+building-plan-deleted: "{0} 라는 건물이 성공적으로 삭제되었습니다"
+available-building-plans: 사용가능한 건축 도면 [pg. {0} of {1}]
+no-building-plans: 건축 설계도가 없습니다
+invalid-page: "잘못된 페이지 번호입니다: {0}"
+insufficient-funds: "죄송합니다 적어도 이 설계도가 필요합니다 {0}."
+unexpected-argument: "예기치 않은 인수: {0}"
+building: 건축중 {0}...
+building-complete: 건축이 완료되었습니다
+removing: 삭제중 {0}...
+removal-complete: 삭제가 완료되었습니다
+building-wont-fit: "{0} 건물이 맞지 않습니다."
+building-is-locked: "{0} 님의 의해 잠겨있습니다{0}."
+unlock-cancelled-self: 잠금해제에서 취소를 시도합니다.
+lock-cancelled-self: 잠금에서 취소를 시도합니다
+lock-success-self: 성공적으로 잠금이 되었습니다 {0}.
+unlock-success-self: 성공적으로 잠금이 해제 되었습니다{0}.
+unlock-progress: 잠금을 해제중 {0}... {1}%
+lock-progress: 잠금을 설정중 {0}... {1}%
+left-click-to-cancel: 왼쪽 클릭 취소
+right-click-to-confirm: 오른쪽 클릭 확인
+right-click-twice-to-unlock: 마우스 오른쪽을 2번 클릭 하면 잠금 해제
+left-click-twice-to-pickup: 왼쪽 클릭 픽업
+right-click-twice-to-lock: 잠금을 하시려면 마우스 오른쪽 버튼을 2번 클릭해주세요
+preview: 미리보기
+locked: 잠금
+unlocked: 잠금해제

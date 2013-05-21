@@ -1,9 +1,12 @@
 package com.norcode.bukkit.buildinabox;
 
+import java.awt.image.ColorModel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -15,6 +18,7 @@ import org.bukkit.metadata.FixedMetadataValue;
 
 public class BIABCommandExecutor implements TabExecutor {
     BuildInABox plugin;
+    Pattern colorPattern = Pattern.compile("(&[0-9a-flmnor])", Pattern.CASE_INSENSITIVE);
     public BIABCommandExecutor(BuildInABox buildInABox) {
         this.plugin = buildInABox;
     }
@@ -122,7 +126,7 @@ public class BIABCommandExecutor implements TabExecutor {
         args.pop();
         String dn = "";
         while (!args.isEmpty()) {
-            dn += args.pop() + " ";
+            dn += convertColors(args.pop()) + " ";
         }
         dn = dn.trim();
         if (dn.equals("")) {
@@ -132,6 +136,16 @@ public class BIABCommandExecutor implements TabExecutor {
         BuildInABox.getInstance().getDataStore().saveBuildingPlan(plan);
         sender.sendMessage(BuildInABox.getSuccessMsg("building-plan-saved", plan.getName()));
     }
+
+    private String convertColors(String s) {
+        Matcher m = colorPattern.matcher(s);
+        StringBuffer sb = new StringBuffer();
+        while (m.find())
+            m.appendReplacement(sb, ChatColor.COLOR_CHAR + m.group(1).substring(1));
+        m.appendTail(sb);
+        return sb.toString();
+    }
+
     private List<String> parseDescription(LinkedList<String> args) {
         List<String> lines = new ArrayList<String>();
         String line = "";
@@ -142,7 +156,7 @@ public class BIABCommandExecutor implements TabExecutor {
                 lines.add(line);
                 line = "";
             } else {
-                line += w + " ";
+                line += convertColors(w) + " ";
             }
         }
         if (!line.equals(" ")) {
@@ -272,7 +286,7 @@ public class BIABCommandExecutor implements TabExecutor {
               results.add("give");
           }
       } else if (args.size() == 1) {
-          if (action.equals("save") || action.equals("give")) {
+          if (action.equals("save") || action.equals("give") || action.equals("setdisplayname") || action.equals("setdescription")) {
               if (sender.hasPermission("biab." + action)) {
                   for (BuildingPlan plan: plugin.getDataStore().getAllBuildingPlans()) {
                       if (plan.getName().toLowerCase().startsWith(args.peek().toLowerCase())) {
