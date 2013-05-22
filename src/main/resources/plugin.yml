@@ -3,6 +3,8 @@ main: com.norcode.bukkit.buildinabox.BuildInABox
 version: 0.1.4-SNAPSHOT
 name: BuildInABox
 softdepend: [Vault]
+depend: [WorldEdit]
+
 commands:
   biab:
     usage: "/<command> [list [<page>]|[give [<player>]|save|delete] <buildingname>]"

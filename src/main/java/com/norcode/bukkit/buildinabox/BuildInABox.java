@@ -61,7 +61,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
         enableEconomy();
         debugMode = getConfig().getBoolean("debug", false);
         BLOCK_ID = getConfig().getInt("chest-block", 130);
-        loadMessage();
+        loadMessages();
         LORE_HEADER = getMsg("display-name"); 
         doUpdater();
         new File(getDataFolder(), "schematics").mkdir();
@@ -117,7 +117,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
         return instance.economy != null;
     }
 
-    private void loadMessage() {
+    private void loadMessages() {
         String lang = getConfig().getString("language", "english").toLowerCase();
         File tDir = new File(getDataFolder(), "lang");
         if (!tDir.exists()) {
@@ -126,8 +126,9 @@ public class BuildInABox extends JavaPlugin implements Listener {
         File cfgFile = new File("lang", lang + ".yml");
         debug("Using translation file: " + cfgFile.getPath());
         messages = new ConfigAccessor(this, cfgFile.getPath());
-        FileConfiguration cfg = messages.getConfig();
         messages.saveDefaultConfig();
+        messages.reloadConfig();
+        FileConfiguration cfg = messages.getConfig();
         cfg.options().copyDefaults(true);
         messages.saveConfig();
         messages.reloadConfig();

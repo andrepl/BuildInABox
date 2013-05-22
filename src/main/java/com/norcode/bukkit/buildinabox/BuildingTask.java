@@ -17,7 +17,6 @@ import com.sk89q.worldedit.blocks.BaseBlock;
 public abstract class BuildingTask implements Runnable {
     public static final int TOP_DOWN = -1;
     public static final int BOTTOM_UP = 1;
-    
     BlockVector cursor;
     CuboidClipboard clipboard;
     HashMap<BlockVector, BaseBlock> replacedBlocks = new HashMap<BlockVector, BaseBlock>();
