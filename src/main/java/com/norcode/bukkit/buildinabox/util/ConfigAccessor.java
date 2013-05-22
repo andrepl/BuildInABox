@@ -82,6 +82,7 @@ public class ConfigAccessor {
         }
         return file;
     }
+
     public void saveConfig() {
         if (fileConfiguration == null || configFile == null) {
             return;

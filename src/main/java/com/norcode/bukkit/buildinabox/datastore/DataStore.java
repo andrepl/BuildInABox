@@ -3,8 +3,6 @@ package com.norcode.bukkit.buildinabox.datastore;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -13,23 +11,19 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.zip.GZIPInputStream;
 
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.codec.binary.StringUtils;
-
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-
 import org.bukkit.craftbukkit.libs.com.google.gson.Gson;
 import org.bukkit.craftbukkit.libs.com.google.gson.reflect.TypeToken;
 
 import com.norcode.bukkit.buildinabox.BuildInABox;
 import com.norcode.bukkit.buildinabox.BuildingPlan;
 import com.norcode.bukkit.buildinabox.ChestData;
+import com.norcode.bukkit.buildinabox.util.Base64;
 import com.sk89q.jnbt.CompoundTag;
 import com.sk89q.jnbt.NBTInputStream;
 import com.sk89q.jnbt.NBTOutputStream;
@@ -92,7 +86,7 @@ public abstract class DataStore {
             NBTOutputStream stream = new NBTOutputStream(baos);
             stream.writeTag(tag);
             stream.close();
-            return new String(Base64.encodeBase64(baos.toByteArray()));
+            return new String(Base64.encodeToByte(baos.toByteArray(), false));
         } catch (IOException e) {
         }
         return null;
@@ -104,8 +98,9 @@ public abstract class DataStore {
         }
         BuildInABox.getInstance().debug("Attempting to deserialize: " + s);
         try {
-            NBTInputStream stream = new NBTInputStream(new GZIPInputStream(new ByteArrayInputStream(Base64.decodeBase64(s.getBytes()))));
+            NBTInputStream stream = new NBTInputStream(new GZIPInputStream(new ByteArrayInputStream(Base64.decode(s.getBytes()))));
             Tag tag = stream.readTag();
+            stream.close();
             if (tag instanceof CompoundTag) {
                 BuildInABox.getInstance().debug("Deserialized: " + tag);
                 return (CompoundTag) tag;
@@ -209,36 +204,46 @@ public abstract class DataStore {
                 ItemMeta meta = stack.getItemMeta();
                 if (meta.getLore().get(0).startsWith(BuildInABox.LORE_PREFIX) || meta.getLore().get(0).equals(ChatColor.GOLD + "Build-in-a-Box")) {
                     if (meta.getLore().size() > 1) {
+                        int chestId;
+                        ChestData data;
+                        boolean update = false;
                         try {
-                            ChestData data = getChest(Integer.parseInt(meta.getLore().get(1).substring(2), 16)); 
-                            BuildingPlan plan = getBuildingPlan(data.getPlanName());
-                            if (plan != null) {
-                                boolean update = false;
-                                if (!plan.getDisplayName().equals(meta.getDisplayName())) {
-                                    meta.setDisplayName(plan.getDisplayName());
+                            chestId = Integer.parseInt(meta.getLore().get(1).substring(2), 16);
+                            data = getChest(chestId);
+                        } catch (IllegalArgumentException ex) {
+                            BuildingPlan planCheck = getBuildingPlan(meta.getLore().get(1).substring(2).toLowerCase());
+                            if (planCheck == null) {
+                                return null;
+                            }
+                            data = createChest(planCheck.getName());
+                            List<String> newLore = new ArrayList<String>();
+                            newLore.add(meta.getLore().get(0));
+                            newLore.add(ChatColor.BLACK + Integer.toHexString(data.getId()));
+                            meta.setLore(newLore);
+                            update = true;
+                        }
+                        BuildingPlan plan = getBuildingPlan(data.getPlanName());
+                        if (plan != null) {
+                            if (!plan.getDisplayName().equals(meta.getDisplayName())) {
+                                meta.setDisplayName(plan.getDisplayName());
+                                update = true;
+                            }
+                            if (!update) {
+                                if (!meta.getLore().subList(2, meta.getLore().size()).equals(plan.getDescription())) {
+                                    List<String> newLore = new ArrayList<String>();
+                                    for (int i=0;i<2;i++) {
+                                        newLore.add(meta.getLore().get(i));
+                                    }
+                                    newLore.addAll(plan.getDescription());
                                     update = true;
                                 }
-                                if (!update) {
-                                    if (!meta.getLore().subList(2, meta.getLore().size()).equals(plan.getDescription())) {
-                                        List<String> newLore = new ArrayList<String>();
-                                        for (int i=0;i<2;i++) {
-                                            newLore.add(meta.getLore().get(i));
-                                        }
-                                        newLore.addAll(plan.getDescription());
-                                        update = true;
-                                    }
-                                }
-                                if (update) {
-                                    BuildInABox.getInstance().debug("Updating itemstack: " + meta);
-                                    stack.setItemMeta(meta);
-                                    return data;
-                                }
+                            }
+                            if (update) {
+                                BuildInABox.getInstance().debug("Updating itemstack: " + meta);
+                                stack.setItemMeta(meta);
                                 return data;
                             }
-                        } catch (IllegalArgumentException ex) {
-                            StringWriter errors = new StringWriter();
-                            ex.printStackTrace(new PrintWriter(errors));
-                            BuildInABox.getInstance().debug(errors.toString());
+                            return data;
                         }
                     }
                 }
