@@ -125,9 +125,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
         if (!tDir.exists()) {
             tDir.mkdir();
         }
-        File cfgFile = new File("lang", lang + ".yml");
-        debug("Using translation file: " + cfgFile.getPath());
-        messages = new ConfigAccessor(this, cfgFile.getPath());
+        messages = new ConfigAccessor(this, "lang/" + lang + ".yml");
         messages.saveDefaultConfig();
         messages.reloadConfig();
         FileConfiguration cfg = messages.getConfig();

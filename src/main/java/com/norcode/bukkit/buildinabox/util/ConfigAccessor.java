@@ -96,7 +96,7 @@ public class ConfigAccessor {
     }
 
     public void saveDefaultConfig() {
-        saveResource(BuildInABox.class, new File(BuildInABox.getInstance().getDataFolder(),fileName).getPath(), fileName);
+        saveResource(BuildInABox.class, new File(BuildInABox.getInstance().getDataFolder()+"/"+fileName).getPath(), fileName);
 //        if (!configFile.exists()) {
 //            this.plugin.saveResource(fileName, false);
 //        }
