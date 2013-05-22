@@ -5,6 +5,8 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import net.h31ix.updater.Updater;
 import net.h31ix.updater.Updater.UpdateType;
@@ -142,7 +144,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
                 tpl += "{"+i+"}, ";
             }
         }
-        return new MessageFormat(tpl).format(args);
+        return new MessageFormat(convertColors(tpl)).format(args);
     }
 
     public void removeCarryEffect(Player p) {
@@ -225,6 +227,16 @@ public class BuildInABox extends JavaPlugin implements Listener {
                 }
             }, 20);
         }
+    }
+
+    static final Pattern colorPattern = Pattern.compile("(&[0-9a-flmnor])", Pattern.CASE_INSENSITIVE);
+    public static String convertColors(String s) {
+        Matcher m = colorPattern.matcher(s);
+        StringBuffer sb = new StringBuffer();
+        while (m.find())
+            m.appendReplacement(sb, ChatColor.COLOR_CHAR + m.group(1).substring(1));
+        m.appendTail(sb);
+        return sb.toString();
     }
 
     public void doUpdater() {

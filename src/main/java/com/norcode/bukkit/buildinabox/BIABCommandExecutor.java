@@ -18,7 +18,6 @@ import org.bukkit.metadata.FixedMetadataValue;
 
 public class BIABCommandExecutor implements TabExecutor {
     BuildInABox plugin;
-    Pattern colorPattern = Pattern.compile("(&[0-9a-flmnor])", Pattern.CASE_INSENSITIVE);
     public BIABCommandExecutor(BuildInABox buildInABox) {
         this.plugin = buildInABox;
     }
@@ -127,7 +126,7 @@ public class BIABCommandExecutor implements TabExecutor {
         args.pop();
         String dn = "";
         while (!args.isEmpty()) {
-            dn += convertColors(args.pop()) + " ";
+            dn += BuildInABox.convertColors(args.pop()) + " ";
         }
         dn = dn.trim();
         if (dn.equals("")) {
@@ -136,15 +135,6 @@ public class BIABCommandExecutor implements TabExecutor {
         plan.setDisplayName(dn);
         BuildInABox.getInstance().getDataStore().saveBuildingPlan(plan);
         sender.sendMessage(BuildInABox.getSuccessMsg("building-plan-saved", plan.getName()));
-    }
-
-    private String convertColors(String s) {
-        Matcher m = colorPattern.matcher(s);
-        StringBuffer sb = new StringBuffer();
-        while (m.find())
-            m.appendReplacement(sb, ChatColor.COLOR_CHAR + m.group(1).substring(1));
-        m.appendTail(sb);
-        return sb.toString();
     }
 
     private List<String> parseDescription(LinkedList<String> args) {
@@ -157,7 +147,7 @@ public class BIABCommandExecutor implements TabExecutor {
                 lines.add(line);
                 line = "";
             } else {
-                line += convertColors(w) + " ";
+                line += BuildInABox.convertColors(w) + " ";
             }
         }
         if (!line.equals(" ")) {

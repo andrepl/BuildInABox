@@ -1,5 +1,5 @@
-display-name: "§6Build-in-a-Box"
-message-prefix: "§f[{0}§f] "
+display-name: "&6Build-in-a-Box"
+message-prefix: "&f[{0}&f] "
 world-edit-selection-needed: "You need to make a world-edit selection first."
 punch-to-make-permanent: "Punch an enderchest to make the building permanent."
 enderchest-not-found: "Selection does not contain an enderchest."
