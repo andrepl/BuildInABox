@@ -23,6 +23,7 @@ public class BIABCommandExecutor implements TabExecutor {
         this.plugin = buildInABox;
     }
 
+
     public boolean onCommand(CommandSender sender, Command command, String alias, String[] params) {
         LinkedList<String> args = new LinkedList<String>(Arrays.asList(params));
         if (args.size() == 0) {

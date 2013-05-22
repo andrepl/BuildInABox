@@ -1,13 +1,17 @@
 package com.norcode.bukkit.buildinabox.util;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.logging.Level;
 
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import com.norcode.bukkit.buildinabox.BuildInABox;
 
 public class ConfigAccessor {
 
@@ -50,6 +54,34 @@ public class ConfigAccessor {
         return fileConfiguration;
     }
 
+    /**
+     * Load a file from the jar and save it to the filesystem without angering windows.
+     * thanks https://github.com/alkarinv/BattleArena/
+     */
+    public static File saveResource(Class<?> clazz, String config_file, String default_file) {
+        File file = new File(config_file);
+        if (!file.exists()){ // Create a new file from our default example
+            InputStream inputStream = null;
+            OutputStream out = null;
+            try{
+                inputStream = clazz.getResourceAsStream(default_file);
+                if (inputStream == null){ // will this work to fix the problems in windows??
+                    inputStream = clazz.getClassLoader().getResourceAsStream(default_file);}
+
+                out=new FileOutputStream(config_file);
+                byte buf[]=new byte[1024];
+                int len;
+                while((len=inputStream.read(buf))>0){
+                    out.write(buf,0,len);}
+            } catch (Exception e){
+                e.printStackTrace();
+            } finally {
+                if (out != null) try {out.close();} catch (Exception e){}
+                if (inputStream != null) try {inputStream.close();} catch (Exception e){}
+            }
+        }
+        return file;
+    }
     public void saveConfig() {
         if (fileConfiguration == null || configFile == null) {
             return;
@@ -63,8 +95,9 @@ public class ConfigAccessor {
     }
 
     public void saveDefaultConfig() {
-        if (!configFile.exists()) {
-            this.plugin.saveResource(fileName, false);
-        }
+        saveResource(BuildInABox.class, new File(BuildInABox.getInstance().getDataFolder(),fileName).getPath(), fileName);
+//        if (!configFile.exists()) {
+//            this.plugin.saveResource(fileName, false);
+//        }
     }
 }
