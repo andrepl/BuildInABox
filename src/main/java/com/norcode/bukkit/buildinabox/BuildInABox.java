@@ -33,6 +33,7 @@ import com.norcode.bukkit.buildinabox.listeners.BlockProtectionListener;
 import com.norcode.bukkit.buildinabox.listeners.ItemListener;
 import com.norcode.bukkit.buildinabox.listeners.PlayerListener;
 import com.norcode.bukkit.buildinabox.util.ConfigAccessor;
+import com.norcode.bukkit.buildinabox.util.MessageFile;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 
 
@@ -45,7 +46,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
     private Updater updater = null;
     private boolean debugMode = false;
     private BukkitTask inventoryScanTask;
-    private ConfigAccessor messages = null;
+    private MessageFile messages = null;
     private Economy economy = null;
     @Override
     public void onLoad() {
@@ -125,7 +126,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
         if (!tDir.exists()) {
             tDir.mkdir();
         }
-        messages = new ConfigAccessor(this, "lang/" + lang + ".yml");
+        messages = new MessageFile(this, "lang/" + lang + ".yml");
         messages.saveDefaultConfig();
         messages.reloadConfig();
         FileConfiguration cfg = messages.getConfig();
