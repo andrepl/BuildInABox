@@ -213,7 +213,6 @@ public abstract class BuildingPlanTask implements Runnable {
     }
 
     public void copyFromClipboard(BaseBlock bb, Player attributeToPlayer) {
-
         // Send a BlockPlace event for loggers to rollback maybe.
         BlockState bs = worldCursor.getBlock().getState();
         BlockPlaceEvent bpe = new BlockPlaceEvent(worldCursor.getBlock(), bs, 

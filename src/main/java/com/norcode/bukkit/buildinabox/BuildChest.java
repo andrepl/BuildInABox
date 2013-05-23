@@ -34,6 +34,7 @@ import com.sk89q.worldedit.BlockVector;
 import com.sk89q.worldedit.CuboidClipboard;
 import com.sk89q.worldedit.Vector;
 import com.sk89q.worldedit.blocks.BaseBlock;
+import com.sk89q.worldedit.blocks.BlockType;
 import com.sk89q.worldedit.blocks.TileEntityBlock;
 import com.sk89q.worldedit.bukkit.BukkitWorld;
 import com.sk89q.worldedit.data.DataException;
@@ -213,25 +214,20 @@ public class BuildChest {
                     BlockVector c = blockUpdate.getVector();
                     Location wc = getWorldLocationFor(c);
                     if (bb.getType() == 0) return false;
-                    
-                    if (!canQueue) {
-                        if (c.getBlockY() < getBlock().getY()) {
-                            saveReplacedBlock(c, wc);
-                        }
-                        // these are the torches, doors etc that have already been queued.
-                        
-                        copyFromClipboard(bb,player);
-                        return true;
-                    } else {
-                        if (c.getBlockY() < getBlock().getY()) {
-                            saveReplacedBlock(c, wc);
-                        }
+                    if (canQueue) {
                         if (postBuildBlockIds.contains(bb.getType())) {
                             postBuildQueue.add(blockUpdate);
+                            return false;
                         } else if (postLayerBlockIds.contains(bb.getType())) {
                             postLayerQueue.add(blockUpdate);
+                            return false;
                         }
                     }
+                    if (c.getBlockY() < getBlock().getY()) {
+                        saveReplacedBlock(c, wc);
+                    }
+                    sendAnimationPacket(wc.getBlockX(), wc.getBlockY(), wc.getBlockZ(), bb.getType());
+                    copyFromClipboard(bb,player);
                     return true;
                 }
         }; 
