@@ -24,7 +24,7 @@ public class MessageFile extends ConfigAccessor {
         super(plugin, fileName);
     }
 
-    private YamlConfiguration configFromStream(InputStream stream) {
+    private YamlConfiguration configFromUTF8Stream(InputStream stream) {
         StringBuffer buff = new StringBuffer();
         String line;
         try {
@@ -35,12 +35,14 @@ public class MessageFile extends ConfigAccessor {
             }
         } catch (IOException ex) {
             ex.printStackTrace();
+        } finally {
+            if (stream != null) try {stream.close();} catch (Exception e){}
         }
         YamlConfiguration cfg = new YamlConfiguration();
         try {
             cfg.loadFromString(buff.toString());
         } catch (InvalidConfigurationException e) {
-            e.printStackTrace();
+            cfg = new YamlConfiguration();
         }
         return cfg;
     }
@@ -53,9 +55,15 @@ public class MessageFile extends ConfigAccessor {
             configFile = new File(dataFolder, fileName);
         }
         try {
-            fileConfiguration = configFromStream(new FileInputStream(configFile));
+            fileConfiguration = configFromUTF8Stream(new FileInputStream(configFile));
         } catch (FileNotFoundException e) {
             fileConfiguration = new YamlConfiguration();
+        }
+        
+        InputStream defIs = getPluginResource(fileName);
+        if (defIs != null) {
+            YamlConfiguration defCfg = configFromUTF8Stream(defIs);
+            fileConfiguration.setDefaults(defCfg);
         }
     }
 
@@ -64,6 +72,15 @@ public class MessageFile extends ConfigAccessor {
             this.reloadConfig();
         }
         return fileConfiguration;
+    }
+
+    private static InputStream getPluginResource(String path) {
+        InputStream inputStream = null;
+        inputStream = BuildInABox.class.getResourceAsStream(path);
+        if (inputStream == null){ // will this work to fix the problems in windows??
+            inputStream = BuildInABox.class.getClassLoader().getResourceAsStream(path);
+        }
+        return inputStream;
     }
 
     /**
@@ -76,9 +93,7 @@ public class MessageFile extends ConfigAccessor {
             InputStream inputStream = null;
             OutputStream out = null;
             try{
-                inputStream = clazz.getResourceAsStream(default_file);
-                if (inputStream == null){ // will this work to fix the problems in windows??
-                    inputStream = clazz.getClassLoader().getResourceAsStream(default_file);}
+                inputStream = getPluginResource(default_file);
 
                 out=new FileOutputStream(config_file);
                 byte buf[]=new byte[1024];
