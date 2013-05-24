@@ -9,11 +9,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.metadata.FixedMetadataValue;
 
 public class BIABCommandExecutor implements TabExecutor {
@@ -238,12 +240,21 @@ public class BIABCommandExecutor implements TabExecutor {
                 sender.sendMessage(BuildInABox.getErrorMsg("unknown-building-plan", planName));
                 return;
             }
-            ChestData data = plugin.getDataStore().createChest(plan.getName());
-            ItemStack stack = data.toItemStack();
+            
+            //ChestData data = plugin.getDataStore().createChest(plan.getName());
+            ItemStack stack = new ItemStack(BuildInABox.BLOCK_ID, 1);
+            ItemMeta meta = plugin.getServer().getItemFactory().getItemMeta(Material.getMaterial(BuildInABox.BLOCK_ID));
+            meta.setDisplayName(plan.getDisplayName());
+            List<String> lore = new ArrayList<String>();
+            lore.add(BuildInABox.LORE_PREFIX + BuildInABox.LORE_HEADER);
+            lore.add(ChatColor.BLACK + plan.getName());
+            lore.addAll(plan.getDescription());
+            meta.setLore(lore);
+            stack.setItemMeta(meta);
             if (targetPlayer.getInventory().addItem(stack).size() > 0) {
                 targetPlayer.getWorld().dropItem(targetPlayer.getLocation(), stack);
             }
-            sender.sendMessage(BuildInABox.getSuccessMsg("cmd-give-success", data.getPlanName(), targetPlayer.getName()));
+            sender.sendMessage(BuildInABox.getSuccessMsg("cmd-give-success", plan.getDisplayName(), targetPlayer.getName()));
         } else {
             sender.sendMessage(BuildInABox.getNormalMsg("cmd-give-usage"));
         }

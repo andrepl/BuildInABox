@@ -15,6 +15,7 @@ import com.norcode.bukkit.buildinabox.BuildChest;
 import com.norcode.bukkit.buildinabox.BuildInABox;
 import com.norcode.bukkit.buildinabox.ChestData;
 import com.norcode.bukkit.buildinabox.BuildChest.UnlockingTask;
+import com.norcode.bukkit.buildinabox.FakeBlockPlaceEvent;
 
 public class PlayerListener implements Listener {
     BuildInABox plugin;
@@ -161,4 +162,11 @@ public class PlayerListener implements Listener {
         }
     }
 
+    @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGHEST)
+    public void onFakeBlockPlace(final BlockPlaceEvent event) {
+        if (event instanceof FakeBlockPlaceEvent) {
+            // prevent them from getting logged.
+            event.setCancelled(true);
+        }
+    }
 }

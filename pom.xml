@@ -8,6 +8,10 @@
   </properties>
   <repositories>
     <repository>
+        <id>gravity-repo</id>
+        <url>http://repo.gravitydevelopment.net/</url>
+    </repository>
+    <repository>
       <id>sk89q-repo</id>
       <url>http://maven.sk89q.com/repo/</url>
     </repository>
@@ -21,6 +25,13 @@
     </repository>
   </repositories>
   <dependencies>
+    <dependency>
+      <groupId>net.h31ix.anticheat</groupId>
+      <artifactId>AntiCheat</artifactId>
+      <version>1.5.8</version>
+      <type>jar</type>
+      <scope>compile</scope>
+    </dependency>
     <dependency>
       <groupId>org.bukkit</groupId>
         <artifactId>craftbukkit</artifactId>
@@ -36,5 +47,12 @@
         <artifactId>Vault</artifactId>
         <version>1.2.26-SNAPSHOT</version>
     </dependency>
+    <dependency>
+       <groupId>fr.neatmonster.nocheatplus</groupId>
+       <artifactId>NoCheatPlus</artifactId>
+       <version>static</version>
+       <scope>system</scope>
+       <systemPath>${basedir}/lib/NoCheatPlus.jar</systemPath>
+     </dependency>
   </dependencies>
 </project>

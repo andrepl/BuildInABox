@@ -28,6 +28,10 @@ carry-effect-type: SLOW
 # Prevent breaking blocks which belong to a building.
 protect-buildings: true
 
+# if true, BIAB will generate fake BlockPlaceEvents during preview and check for cancellation
+# to determine if a building may be placed.
+check-build-permissions: true
+
 # If set to true, this will prevent players from placing any non-BIAB enderchests.
 # use this in conjunction with a protection plugin that allows per-block-type 
 # permissions, to allow for a no-build world where players can still place BIAB's

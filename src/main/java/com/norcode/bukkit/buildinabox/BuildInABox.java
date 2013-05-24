@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import net.h31ix.anticheat.Anticheat;
+import net.h31ix.anticheat.api.AnticheatAPI;
+import net.h31ix.anticheat.manage.CheckType;
 import net.h31ix.updater.Updater;
 import net.h31ix.updater.Updater.UpdateType;
 import net.milkbowl.vault.economy.Economy;
@@ -36,6 +39,9 @@ import com.norcode.bukkit.buildinabox.util.ConfigAccessor;
 import com.norcode.bukkit.buildinabox.util.MessageFile;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 
+import fr.neatmonster.nocheatplus.NoCheatPlus;
+import fr.neatmonster.nocheatplus.hooks.NCPExemptionManager;
+
 
 public class BuildInABox extends JavaPlugin implements Listener {
     public static String LORE_PREFIX = ChatColor.DARK_GREEN + "" + ChatColor.DARK_RED + "" + ChatColor.DARK_GRAY + "" + ChatColor.DARK_BLUE;
@@ -48,6 +54,8 @@ public class BuildInABox extends JavaPlugin implements Listener {
     private BukkitTask inventoryScanTask;
     private MessageFile messages = null;
     private Economy economy = null;
+    private Anticheat antiCheat;
+    private NoCheatPlus NCP;
     @Override
     public void onLoad() {
         instance = this;
@@ -62,6 +70,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
         saveDefaultConfig();
         reloadConfig();
         enableEconomy();
+        setupAntiCheat();
         debugMode = getConfig().getBoolean("debug", false);
         BLOCK_ID = getConfig().getInt("chest-block", 130);
         loadMessages();
@@ -100,6 +109,38 @@ public class BuildInABox extends JavaPlugin implements Listener {
             }, 20, 20);
         }
     }
+
+    private void setupAntiCheat() {
+        if(getServer().getPluginManager().getPlugin("AntiCheat") != null)
+        {
+            antiCheat = (Anticheat) getServer().getPluginManager().getPlugin("AntiCheat");
+        }
+        if (getServer().getPluginManager().getPlugin("NoCheatPlus") != null) {
+            NCP = (NoCheatPlus) getServer().getPluginManager().getPlugin("NoCheatPlus");
+        }
+        // TODO: NCP
+    }
+
+    public void exemptPlayer(Player p) {
+        if (antiCheat != null) {
+            AnticheatAPI.exemptPlayer(p, CheckType.FAST_PLACE);
+            AnticheatAPI.exemptPlayer(p, CheckType.LONG_REACH);
+        }
+        if (NCP != null) {
+            NCPExemptionManager.exemptPermanently(p, fr.neatmonster.nocheatplus.checks.CheckType.BLOCKPLACE);
+        }
+    }
+
+    public void unexemptPlayer(Player p) {
+        if (antiCheat != null) {
+            AnticheatAPI.unexemptPlayer(p, CheckType.FAST_PLACE);
+            AnticheatAPI.unexemptPlayer(p, CheckType.LONG_REACH);
+        }
+        if (NCP != null) {
+            NCPExemptionManager.unexempt(p, fr.neatmonster.nocheatplus.checks.CheckType.BLOCKPLACE);
+        }
+    }
+
 
     private void enableEconomy() {
         if (getServer().getPluginManager().getPlugin("Vault") == null) {

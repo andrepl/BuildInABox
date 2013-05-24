@@ -20,6 +20,7 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.material.EnderChest;
 import org.bukkit.metadata.FixedMetadataValue;
@@ -127,10 +128,19 @@ public class BuildChest {
 
     public void preview(final Player player) {
         final long previewDuration = (plugin.getConfig().getInt("preview-duration", 5000) * 20)/1000; // millis to ticks.
+        final boolean checkBuildPermissions = plugin.getConfig().getBoolean("check-build-permissions", true);
         previewing = true;
         buildTask = new BuildingPlanTask(
                 plan.getRotatedClipboard(getEnderChest().getFacing()),
                 BuildChest.this, BlockFace.UP, 50, false) {
+            @Override
+            public void onRunStart() {
+                plugin.exemptPlayer(player);
+            }
+            @Override
+            public void onRunEnd() {
+                plugin.unexemptPlayer(player);
+            }
             @Override
             public void onComplete() {
                 if (cancelled) {
@@ -157,10 +167,17 @@ public class BuildChest {
                     BuildInABox.getInstance().getLogger().warning("Cannot place " + bb + " at " + wc);
                     cancelled = true;
                     return BlockProcessResult.DISCARD;
-                } else {
-                    player.sendBlockChange(wc, bb.getType(), (byte) bb.getData());
-                    return BlockProcessResult.PROCESSED;
                 }
+                if (checkBuildPermissions) {
+                    FakeBlockPlaceEvent event = new FakeBlockPlaceEvent(wc, player);
+                    plugin.getServer().getPluginManager().callEvent(event);
+                    if (event.isCancelled()) {
+                        cancelled = true;
+                        return BlockProcessResult.DISCARD;
+                    }
+                }
+                player.sendBlockChange(wc, bb.getType(), (byte) bb.getData());
+                return BlockProcessResult.PROCESSED;
             }
         };
         buildTask.start();
@@ -169,7 +186,6 @@ public class BuildChest {
     public Set<Chunk> protectBlocks() {
         return plan.protectBlocks(getBlock(), null);
     }
-
 
     public void build(final Player player) {
         buildTask = new BuildingPlanTask(plan.getRotatedClipboard(getEnderChest().getFacing()), BuildChest.this, BlockFace.DOWN, 50, false) {
@@ -202,6 +218,7 @@ public class BuildChest {
         building = true;
         player.sendMessage(BuildInABox.getNormalMsg("building", plan.getDisplayName()));
         final World world = player.getWorld();
+        final boolean allowPickup = plugin.getConfig().getBoolean("allow-pickup", true);
         data.setLocation(getLocation());
         data.setLastActivity(System.currentTimeMillis());
         plugin.getDataStore().saveChest(data);
@@ -253,7 +270,14 @@ public class BuildChest {
                             new BaseBlock(wc.getBlock().getTypeId(), 
                                     wc.getBlock().getData()));
                 }
-
+                @Override
+                public void onRunStart() {
+                    plugin.exemptPlayer(player);
+                }
+                @Override
+                public void onRunEnd() {
+                    plugin.unexemptPlayer(player);
+                }
                 @Override
                 public void onComplete() {
                     building = false;
@@ -290,7 +314,7 @@ public class BuildChest {
                     copyFromClipboard(bb,wc,player);
                     if (wc.equals(data.getLocation())) {
                         wc.getBlock().setMetadata("buildInABox", new FixedMetadataValue(plugin, BuildChest.this));
-                    } else if (protectBlocks) {
+                    } else if (protectBlocks && allowPickup) {
                         wc.getBlock().setMetadata("biab-block", new FixedMetadataValue(plugin, true));
                     }
                     return BlockProcessResult.PROCESSED;

@@ -145,6 +145,7 @@ public abstract class BuildingPlanTask implements Runnable {
         int bpt = blocksPerTick;
         BlockProcessResult result;
         BlockUpdate update;
+        onRunStart();
         while (bpt > 0 && !cancelled) {
             if (points.isEmpty()) {
                 if (!getMorePoints()) {
@@ -170,6 +171,7 @@ public abstract class BuildingPlanTask implements Runnable {
                 break;
             }
         }
+        onRunEnd();
         if (cancelled) {
             onComplete();
         } else if (!finished) {
@@ -182,6 +184,9 @@ public abstract class BuildingPlanTask implements Runnable {
 
     public abstract void onComplete();
 
+    public void onRunStart() {}
+    public void onRunEnd() {}
+    
     public abstract BlockProcessResult processBlockUpdate(BlockUpdate update);
 
     public void copyFromClipboard(BaseBlock bb, Location wc, Player attributeToPlayer) {
