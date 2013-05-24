@@ -252,7 +252,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
                 public void run() {
                     Player player = getServer().getPlayer(playerName);
                     if (player != null && player.isOnline()) {
-                        getLogger().info("Updater Result: " + updater.getResult());
+                        debug("Updater Result: " + updater.getResult());
                         switch (updater.getResult()) {
                         case UPDATE_AVAILABLE:
                             player.sendMessage(getNormalMsg("update-available", "http://dev.bukkit.org/server-mods/build-in-a-box/"));

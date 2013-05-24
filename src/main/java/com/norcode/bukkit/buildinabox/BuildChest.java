@@ -164,14 +164,13 @@ public class BuildChest {
                     return BlockProcessResult.DISCARD;
                 }
                 if (wc.getBlockY() >= getBlock().getLocation().getBlockY() && !BuildingPlan.coverableBlocks.contains(wc.getBlock().getType())) {
-                    BuildInABox.getInstance().getLogger().warning("Cannot place " + bb + " at " + wc);
                     cancelled = true;
                     return BlockProcessResult.DISCARD;
                 }
                 if (checkBuildPermissions) {
                     FakeBlockPlaceEvent event = new FakeBlockPlaceEvent(wc, player);
                     plugin.getServer().getPluginManager().callEvent(event);
-                    if (event.isCancelled()) {
+                    if (event.isCancelled() && event.wasCancelled()) {
                         cancelled = true;
                         return BlockProcessResult.DISCARD;
                     }
