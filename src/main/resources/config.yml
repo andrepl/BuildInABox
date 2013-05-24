@@ -17,6 +17,9 @@ auto-update: true
 # count as a double-click.
 double-click-interval: 2000
 
+# The length of time (in milliseconds) the preview is shown for
+preview-time: 5000
+
 # apply a potion effect while carrying a building.
 # this involves scanning inventories often. use with caution.
 carry-effect: false

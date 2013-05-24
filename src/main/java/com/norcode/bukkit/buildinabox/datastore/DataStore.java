@@ -210,6 +210,9 @@ public abstract class DataStore {
                         try {
                             chestId = Integer.parseInt(meta.getLore().get(1).substring(2), 16);
                             data = getChest(chestId);
+                            if (data == null) {
+                                return null;
+                            }
                         } catch (IllegalArgumentException ex) {
                             BuildingPlan planCheck = getBuildingPlan(meta.getLore().get(1).substring(2).toLowerCase());
                             if (planCheck == null) {
@@ -222,6 +225,7 @@ public abstract class DataStore {
                             meta.setLore(newLore);
                             update = true;
                         }
+                        BuildInABox.getInstance().debug("data:"+data);
                         BuildingPlan plan = getBuildingPlan(data.getPlanName());
                         if (plan != null) {
                             if (!plan.getDisplayName().equals(meta.getDisplayName())) {

@@ -41,7 +41,7 @@ public class BuildingPlan {
     List<String> description;
     BuildInABox plugin;
     
-    private static final EnumSet<Material> coverableBlocks = EnumSet.of(Material.LONG_GRASS, Material.SNOW, Material.AIR, Material.RED_MUSHROOM, Material.BROWN_MUSHROOM, Material.DEAD_BUSH, Material.FIRE, Material.RED_ROSE, Material.YELLOW_FLOWER, Material.SAPLING);
+    public static final EnumSet<Material> coverableBlocks = EnumSet.of(Material.LONG_GRASS, Material.SNOW, Material.AIR, Material.RED_MUSHROOM, Material.BROWN_MUSHROOM, Material.DEAD_BUSH, Material.FIRE, Material.RED_ROSE, Material.YELLOW_FLOWER, Material.SAPLING);
     
     public BuildingPlan(BuildInABox plugin, String name, String filename, String displayName, List<String> description) {
         this.plugin = plugin;
@@ -211,80 +211,6 @@ public class BuildingPlan {
             e.printStackTrace();
         }
         return null;
-    }
-
-    public boolean sendPreview(Player player, Block enderChest) {
-        Location chestLoc = enderChest.getLocation();
-        EnderChest ec = (EnderChest) chestLoc.getBlock().getState().getData();
-        BlockFace dir = ec.getFacing();
-        CuboidClipboard clipboard = getRotatedClipboard(dir);
-        Vector offset = clipboard.getOffset();
-        Vector origin = new Vector(enderChest.getX(), enderChest.getY(), enderChest.getZ()).add(offset);
-        int chestY = -clipboard.getOffset().getBlockY();
-        for (int x = 0; x < clipboard.getSize().getBlockX(); x++) {
-            for (int y = 0; y < clipboard.getSize().getBlockY(); y++) {
-                for (int z = 0; z < clipboard.getSize().getBlockZ(); z++) {
-                    Vector v = new Vector(origin).add(x, y, z);
-                    Location loc = new Location(player.getWorld(), v.getBlockX(), v.getBlockY(), v.getBlockZ());
-                    BaseBlock bb = clipboard.getPoint(new Vector(x,y,z));
-                    if (bb.getType() != 0) {
-                        if (coverableBlocks.contains(loc.getBlock().getType()) || y < chestY) {
-                            player.sendBlockChange(loc, bb.getType(), (byte)bb.getData());
-                        } else if (loc.equals(chestLoc)) {
-                            // skip the enderchest.
-                        } else {
-                            return false;
-                        }
-                    }
-                }
-            }
-        }
-        return true;
-    }
-
-    public void clearPreview(String playerName, Block enderChest) {
-        Player player = plugin.getServer().getPlayer(playerName);
-        Location chestLoc = enderChest.getLocation();
-        EnderChest ec = (EnderChest) chestLoc.getBlock().getState().getData();
-        BlockFace dir = ec.getFacing();
-        CuboidClipboard clipboard = getRotatedClipboard(dir);
-        Vector offset = clipboard.getOffset();
-        Vector origin = new Vector(enderChest.getX(), enderChest.getY(), enderChest.getZ()).add(offset);
-        plugin.getLogger().info("Schematic Offset: " + offset);
-        for (int x = 0; x < clipboard.getSize().getBlockX(); x++) {
-            for (int y = 0; y < clipboard.getSize().getBlockY(); y++) {
-                for (int z = 0; z < clipboard.getSize().getBlockZ(); z++) {
-                    Vector v = new Vector(origin).add(x, y, z);
-                    Location loc = new Location(player.getWorld(), v.getBlockX(), v.getBlockY(), v.getBlockZ());
-                    BaseBlock bb = clipboard.getPoint(new Vector(x,y,z));
-                    if (bb.getType() > 0) {
-                        player.sendBlockChange(loc, loc.getBlock().getTypeId(), loc.getBlock().getData());
-                    }
-                }
-            }
-        }
-    }
-
-    public void build(Block enderChest, CuboidClipboard clipboard) {
-        Location chestLoc = enderChest.getLocation();
-        EnderChest ec = (EnderChest) Material.getMaterial(BuildInABox.BLOCK_ID).getNewData(chestLoc.getBlock().getData());
-        BlockFace dir = ec.getFacing();
-        if (clipboard == null) {
-            clipboard = getRotatedClipboard(dir);
-        }
-        EditSession editSession = new EditSession(new BukkitWorld(chestLoc.getWorld()), 500000);
-        editSession.setFastMode(true);
-        editSession.enableQueue();
-        Vector origin = new Vector(enderChest.getX(), enderChest.getY(), enderChest.getZ());
-        try {
-            clipboard.paste(editSession, origin, true, true);
-            editSession.flushQueue();
-            if (plugin.getConfig().getBoolean("protect-buildings", false)) {
-                protectBlocks(enderChest, clipboard);
-            }
-        } catch (MaxChangedBlocksException e) {
-            e.printStackTrace();
-        }
     }
 
     public Set<Chunk> protectBlocks(Block enderChest, CuboidClipboard clipboard) {
