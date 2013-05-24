@@ -1,6 +1,6 @@
 author: metalhedd
 main: com.norcode.bukkit.buildinabox.BuildInABox
-version: 0.1.5-SNAPSHOT
+version: 0.1.5
 name: BuildInABox
 softdepend: [Vault, AntiCheat, NoCheatPlus]
 depend: [WorldEdit]

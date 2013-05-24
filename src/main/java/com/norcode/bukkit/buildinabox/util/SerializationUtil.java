@@ -40,7 +40,7 @@ public class SerializationUtil {
     }
  
     // Time for Deserialization
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public static ConfigurationSerializable deserialize(Map<String, Object> map) {
         if (map  == null) {
             return null;

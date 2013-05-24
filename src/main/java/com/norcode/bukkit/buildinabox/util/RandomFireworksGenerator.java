@@ -8,8 +8,6 @@ import org.bukkit.FireworkEffect.Type;
 import org.bukkit.entity.Firework;
 import org.bukkit.inventory.meta.FireworkMeta;
 
-import com.norcode.bukkit.buildinabox.BuildInABox;
-
 public class RandomFireworksGenerator {
     private static Random rand = new Random();
 

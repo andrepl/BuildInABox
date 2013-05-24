@@ -35,7 +35,6 @@ import com.norcode.bukkit.buildinabox.datastore.YamlDataStore;
 import com.norcode.bukkit.buildinabox.listeners.BlockProtectionListener;
 import com.norcode.bukkit.buildinabox.listeners.ItemListener;
 import com.norcode.bukkit.buildinabox.listeners.PlayerListener;
-import com.norcode.bukkit.buildinabox.util.ConfigAccessor;
 import com.norcode.bukkit.buildinabox.util.MessageFile;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 
@@ -118,7 +117,6 @@ public class BuildInABox extends JavaPlugin implements Listener {
         if (getServer().getPluginManager().getPlugin("NoCheatPlus") != null) {
             NCP = (NoCheatPlus) getServer().getPluginManager().getPlugin("NoCheatPlus");
         }
-        // TODO: NCP
     }
 
     public void exemptPlayer(Player p) {

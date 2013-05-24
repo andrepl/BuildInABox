@@ -2,7 +2,6 @@ package com.norcode.bukkit.buildinabox.listeners;
 
 import java.util.Iterator;
 
-import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
