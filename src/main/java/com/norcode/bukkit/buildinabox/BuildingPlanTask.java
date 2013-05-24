@@ -40,6 +40,7 @@ public abstract class BuildingPlanTask implements Runnable {
     private boolean onFinalPass = false;
     private BlockVector origin;
     private int currentY;
+    protected boolean cancelled;
     private List<Player> nearbyPlayers = new ArrayList<Player>();
     public static final HashSet<Integer> postLayerBlockIds = new HashSet<Integer>();
     public static final HashSet<Integer> postBuildBlockIds = new HashSet<Integer>();
@@ -144,7 +145,7 @@ public abstract class BuildingPlanTask implements Runnable {
         int bpt = blocksPerTick;
         BlockProcessResult result;
         BlockUpdate update;
-        while (bpt > 0) {
+        while (bpt > 0 && !cancelled) {
             if (points.isEmpty()) {
                 if (!getMorePoints()) {
                     finished = true;
@@ -169,7 +170,9 @@ public abstract class BuildingPlanTask implements Runnable {
                 break;
             }
         }
-        if (!finished) {
+        if (cancelled) {
+            onComplete();
+        } else if (!finished) {
             // reschedule
             plugin.getServer().getScheduler().runTaskLater(plugin, this, 1);
         } else {
@@ -188,7 +191,7 @@ public abstract class BuildingPlanTask implements Runnable {
         BlockPlaceEvent bpe = new BlockPlaceEvent(wc.getBlock(), bs, 
                 wc.getBlock().getRelative(BlockFace.DOWN), null, attributeToPlayer, true);
         plugin.getServer().getPluginManager().callEvent(bpe);
-        wc.getBlock().setTypeIdAndData(bb.getType(), (byte) bb.getData(), true);
+        wc.getBlock().setTypeIdAndData(bb.getType(), (byte) bb.getData(), false);
         bukkitWorld.copyToWorld(new BlockVector(wc.getBlockX(), wc.getBlockY(), wc.getBlockZ()), bb);
     }
 

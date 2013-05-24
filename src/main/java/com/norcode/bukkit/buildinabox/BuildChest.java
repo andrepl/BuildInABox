@@ -8,13 +8,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import net.minecraft.server.v1_5_R3.Packet61WorldEvent;
-
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
-import org.bukkit.craftbukkit.v1_5_R3.entity.CraftPlayer;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
@@ -26,7 +23,6 @@ import org.bukkit.event.block.Action;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.material.EnderChest;
 import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.scheduler.BukkitTask;
 
 import com.sk89q.jnbt.CompoundTag;
 import com.sk89q.jnbt.IntTag;
@@ -35,14 +31,11 @@ import com.sk89q.worldedit.BlockVector;
 import com.sk89q.worldedit.CuboidClipboard;
 import com.sk89q.worldedit.Vector;
 import com.sk89q.worldedit.blocks.BaseBlock;
-import com.sk89q.worldedit.blocks.BlockType;
 import com.sk89q.worldedit.blocks.TileEntityBlock;
-import com.sk89q.worldedit.bukkit.BukkitWorld;
 import com.sk89q.worldedit.data.DataException;
 import com.sk89q.worldedit.schematic.SchematicFormat;
 
 public class BuildChest {
-    final static long PREVIEW_DURATION = 20 * 4; // TODO: Move Me.
     BuildInABox plugin;
     private boolean previewing = false;
     private BuildingPlan plan;
@@ -92,17 +85,29 @@ public class BuildChest {
     }
 
     public void endPreview(final Player player) {
-        Block b = getBlock();
-        if (b != null && previewing && b.getTypeId() == BuildInABox.BLOCK_ID) {
-            plan.clearPreview(player.getName(), b);
-            b.setType(Material.AIR);
-            data.setLocation(null);
-            plugin.getDataStore().saveChest(data);
-            b.getWorld().dropItem(
-                    new Location(b.getWorld(), b.getX() + 0.5, b.getY() + 0.5,
-                            b.getZ() + 0.5), data.toItemStack());
-            previewing = false;
-        }
+        if (!previewing) return;
+        buildTask = new BuildingPlanTask(
+                plan.getRotatedClipboard(getEnderChest().getFacing()),
+                BuildChest.this, BlockFace.DOWN, 50, true) {
+                    @Override
+                    public void onComplete() {
+                        previewing = false;
+                        getBlock().removeMetadata("buildInABox", plugin);
+                        getBlock().setTypeIdAndData(0, (byte) 0, false);
+                        getBlock().getWorld().dropItem(getBlock().getLocation().add(0.5,0.5,0.5), data.toItemStack());
+                        data.setLocation(null);
+                        plugin.getDataStore().saveChest(data);
+                    }
+
+                    @Override
+                    public BlockProcessResult processBlockUpdate(
+                            BlockUpdate update) {
+                        Location wc = getWorldLocationFor(update.getPos());
+                        player.sendBlockChange(wc, wc.getBlock().getType(), (byte) wc.getBlock().getData());
+                        return BlockProcessResult.PROCESSED;
+                    }
+        };
+        buildTask.start();
     }
 
     public boolean isPreviewing() {
@@ -121,20 +126,44 @@ public class BuildChest {
     }
 
     public void preview(final Player player) {
+        final long previewDuration = (plugin.getConfig().getInt("preview-duration", 5000) * 20)/1000; // millis to ticks.
         previewing = true;
-
-        if (plan.sendPreview(player, getBlock())) {
-            player.sendMessage(getDescription());
-            Bukkit.getScheduler().runTaskLater(plugin, new Runnable() {
-                public void run() {
-                    endPreview(player);
+        buildTask = new BuildingPlanTask(
+                plan.getRotatedClipboard(getEnderChest().getFacing()),
+                BuildChest.this, BlockFace.UP, 50, false) {
+            @Override
+            public void onComplete() {
+                if (cancelled) {
+                    player.sendMessage(BuildInABox.getErrorMsg("building-wont-fit",
+                            plan.getDisplayName()));
+                } else {
+                    player.sendMessage(getDescription());
                 }
-            }, PREVIEW_DURATION);
-        } else {
-            endPreview(player);
-            player.sendMessage(BuildInABox.getErrorMsg("building-wont-fit",
-                    plan.getDisplayName()));
-        }
+                Bukkit.getScheduler().runTaskLater(plugin, new Runnable() {
+                    public void run() {
+                        endPreview(player);
+                    }
+                }, cancelled ? 1 : previewDuration);
+            }
+            @Override
+            public BlockProcessResult processBlockUpdate(
+                    BlockUpdate update) {
+                BaseBlock bb = update.getBlock();
+                Location wc = getWorldLocationFor(update.getPos());
+                if (wc.equals(getBlock().getLocation())) {
+                    return BlockProcessResult.DISCARD;
+                }
+                if (wc.getBlockY() >= getBlock().getLocation().getBlockY() && !BuildingPlan.coverableBlocks.contains(wc.getBlock().getType())) {
+                    BuildInABox.getInstance().getLogger().warning("Cannot place " + bb + " at " + wc);
+                    cancelled = true;
+                    return BlockProcessResult.DISCARD;
+                } else {
+                    player.sendBlockChange(wc, bb.getType(), (byte) bb.getData());
+                    return BlockProcessResult.PROCESSED;
+                }
+            }
+        };
+        buildTask.start();
     }
 
     public Set<Chunk> protectBlocks() {
@@ -143,15 +172,31 @@ public class BuildChest {
 
 
     public void build(final Player player) {
+        buildTask = new BuildingPlanTask(plan.getRotatedClipboard(getEnderChest().getFacing()), BuildChest.this, BlockFace.DOWN, 50, false) {
+            @Override
+            public void onComplete() {
+                previewing = false;
+                startBuild(player);
+            }
+
+            @Override
+            public BlockProcessResult processBlockUpdate(
+                    BlockUpdate update) {
+                Location wc = getWorldLocationFor(update.getPos());
+                player.sendBlockChange(wc, wc.getBlock().getType(), (byte) wc.getBlock().getData());
+                return BlockProcessResult.PROCESSED;
+            }
+        };
+        buildTask.start();
+    }
+
+    private void startBuild(final Player player) {
         double cost = plugin.getConfig().getDouble("build-cost", 0);
         if (cost > 0 && BuildInABox.hasEconomy()) {
             if (!BuildInABox.getEconomy().withdrawPlayer(player.getName(), cost).transactionSuccess()) {
                 player.sendMessage(BuildInABox.getErrorMsg("insufficient-funds", BuildInABox.getEconomy().format(cost)));
                 return;
             }
-        }
-        if (previewing) {
-            plan.clearPreview(player.getName(), getBlock());
         }
         previewing = false;
         building = true;
@@ -230,6 +275,7 @@ public class BuildChest {
                     BlockVector c = blockUpdate.getPos();
                     Location wc = getWorldLocationFor(c);
                     if (bb.getType() == 0) return BlockProcessResult.DISCARD;
+                    if (wc.equals(getBlock().getLocation())) return BlockProcessResult.DISCARD;
                     if (blockUpdate.isCanQueue()) {
                         if (BuildingPlanTask.postBuildBlockIds.contains(bb.getType())) {
                             return BlockProcessResult.QUEUE_FINAL;
