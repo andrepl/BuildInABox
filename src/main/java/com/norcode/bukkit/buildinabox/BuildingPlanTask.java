@@ -2,9 +2,10 @@ package com.norcode.bukkit.buildinabox;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 
 import net.minecraft.server.v1_5_R3.Packet61WorldEvent;
 
@@ -16,23 +17,32 @@ import org.bukkit.craftbukkit.v1_5_R3.entity.CraftPlayer;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
-import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.scheduler.BukkitTask;
 
 import com.norcode.bukkit.buildinabox.util.RandomFireworksGenerator;
 import com.sk89q.worldedit.BlockVector;
 import com.sk89q.worldedit.CuboidClipboard;
 import com.sk89q.worldedit.Vector;
 import com.sk89q.worldedit.blocks.BaseBlock;
+import com.sk89q.worldedit.bukkit.BukkitWorld;
 
 public abstract class BuildingPlanTask implements Runnable {
-
+    private static Random random = new Random();
+    BuildInABox plugin;
+    public BukkitWorld bukkitWorld;
+    public BuildChest buildChest;
+    public BlockFace buildDirection = BlockFace.UP;
+    public LinkedList<BlockUpdate> finalPoints = new LinkedList<BlockUpdate>();
+    public LinkedList<BlockUpdate> points = new LinkedList<BlockUpdate>();
+    public boolean shuffle;
+    public int blocksPerTick;
+    public CuboidClipboard clipboard;
+    private boolean onFinalPass = false;
+    private BlockVector origin;
+    private int currentY;
+    private List<Player> nearbyPlayers = new ArrayList<Player>();
     public static final HashSet<Integer> postLayerBlockIds = new HashSet<Integer>();
     public static final HashSet<Integer> postBuildBlockIds = new HashSet<Integer>();
-    public final List<BuildingPlanTask.BlockUpdate> postLayerQueue = new ArrayList<BuildingPlanTask.BlockUpdate>();
-    public final List<BuildingPlanTask.BlockUpdate> postBuildQueue = new ArrayList<BuildingPlanTask.BlockUpdate>();
-    private BukkitTask task;
     static {
         // These are placed after each vertical layer is complete.
         postLayerBlockIds.add(Material.BED_BLOCK.getId());
@@ -53,173 +63,133 @@ public abstract class BuildingPlanTask implements Runnable {
         
     }
 
-    CuboidClipboard clipboard;
-    // location in the clipboard.
-    BlockVector cursor;
-    // ground-blocks replaced by the build and restored when it finishes
-    HashMap<BlockVector, BaseBlock> replacedBlocks = new HashMap<BlockVector, BaseBlock>();
-    // a Location in the world matching the cursor
-    Location worldCursor;
-    // the world coordinates of the lower limit of the schematic.
-    BlockVector origin;
-    // a list of xz pairs 
-    ArrayList<BlockVector> xzPoints;
-    // the current position in the above list.
-    int ptr = -1;
-    // TOP_DOWN or BOTTOM_UP
-    BlockFace buildDirection = BlockFace.SELF;
-    // whether or not to shuffle the list of xz pairs between layers.
-    boolean shuffle;
-    private List<Player> nearbyPlayers;
-
-    private BuildChest buildChest;
-    private BuildInABox plugin;
-    private int blocksPerTick;
-
-    public BuildingPlanTask(BuildChest buildChest, CuboidClipboard clipboard, BlockFace buildDirection, int blocksPerTick, boolean shuffle) {
+    public BuildingPlanTask(CuboidClipboard clipboard, BuildChest buildChest, BlockFace buildDirection, int blocksPerTick, boolean shuffle) {
         this.plugin = BuildInABox.getInstance();
+        this.bukkitWorld = new BukkitWorld(buildChest.getLocation().getWorld());
+        this.clipboard = clipboard;
         this.buildChest = buildChest;
         this.buildDirection = buildDirection;
-        this.clipboard = clipboard;
-        this.shuffle = shuffle;
         this.blocksPerTick = blocksPerTick;
+        this.shuffle = shuffle;
         Location cl = buildChest.getLocation();
         Vector off = clipboard.getOffset();
         origin = new BlockVector(cl.getBlockX() + off.getBlockX(), cl.getBlockY() + off.getBlockY(), cl.getBlockZ() + off.getBlockZ());
     }
 
-    private void layerComplete(int finishedLayerY) {
-        for (int i=0;i<postLayerQueue.size();i++) {
-            processBlockUpdate(postLayerQueue.get(i), false);
-        }
-        postLayerQueue.clear();
-        onLayerComplete(finishedLayerY);
-    };
-
-    public void onLayerComplete(int finishedLayerY) {};
-
-    private void complete() {
-        for (int i=0;i<postBuildQueue.size();i++) {
-            processBlockUpdate(postBuildQueue.get(i), false);
-        }
-        postBuildQueue.clear();
-        onComplete();
-    };
-
-    public void onComplete() {};
-
-    public void start() {
-        // initialize clipboard and world cursor positions.
-        this.cursor = new BlockVector(0, (buildDirection == BlockFace.DOWN ? this.clipboard.getSize().getBlockY()-1:0), 0);
-        worldCursor = new Location(buildChest.getBlock().getWorld(), origin.getBlockX(), origin.getBlockY(), origin.getBlockZ());
-        // setup the xz coord list
-        ptr = -1;
-        xzPoints = new ArrayList<BlockVector>(clipboard.getSize().getBlockX() * clipboard.getSize().getBlockZ());
-        for (int x=0; x<this.clipboard.getSize().getBlockX();x++) {
-            for (int z=0;z<this.clipboard.getSize().getBlockZ();z++) {
-                xzPoints.add(new BlockVector(x,0,z));
-            }
-        }
-        if (this.shuffle) {
-            Collections.shuffle(xzPoints);
-        }
-        // Collect the nearby players for sending fake block breaks etc.
-        nearbyPlayers.clear();
-        double maxDistance = 16 + (Math.max(clipboard.getSize().getBlockX(), clipboard.getSize().getBlockZ())/2);
-        Location center = new Location(
-                worldCursor.getWorld(), 
-                worldCursor.getX() + clipboard.getSize().getBlockX()/2,
-                worldCursor.getY() + clipboard.getSize().getBlockY()/2,
-                worldCursor.getZ() + clipboard.getSize().getBlockZ()/2);
-        for (Player p: worldCursor.getWorld().getPlayers()) {
-            if (p.getLocation().distance(center) < maxDistance) {
-                nearbyPlayers.add(p);
-            }
-            nearbyPlayers.add(p);
-        }
-        plugin.getServer().getScheduler().runTaskLater(plugin, this,1);
-    }
-
-    /**
-     * process the block at the current cursor position.
-     * @return true if this should count against blocksPerTick
-     */
-    public abstract boolean processBlockUpdate(BlockUpdate blockUpdate, boolean canQueue);
-
-    public void run() {
-        boolean finished = false;
-        for (int i=0;i<blocksPerTick;i++) {
-            if (moveCursor()) {
-                if (!processBlockUpdate(new BlockUpdate(cursor, clipboard.getPoint(cursor)), true)) {
-                    i--;
-                    continue;
+    public boolean getMorePoints() {
+        if (onFinalPass) {
+            return false;
+        } else {
+            currentY += buildDirection.getModY();
+            if (currentY < 0 || currentY >= clipboard.getSize().getBlockY()) {
+                onFinalPass = true;
+                if (finalPoints.isEmpty()) {
+                    return false;
                 }
-            } else {
-                finished = true;
-                break;
+                points = finalPoints;
+                return true;
             }
-        }
-        if (!finished) {
-            plugin.getServer().getScheduler().runTaskLater(plugin, this, 1);
+            BlockVector v;
+            for (int x=0;x<clipboard.getSize().getBlockX();x++) {
+                for (int z=0;z<clipboard.getSize().getBlockZ();z++) {
+                    v = new BlockVector(x, currentY, z);
+                    points.add(new BlockUpdate(v, clipboard.getPoint(v), true));
+                }
+            }
+            if (shuffle) {
+                Collections.shuffle(points);
+            }
+            return true;
         }
     }
 
     public Location getWorldLocationFor(BlockVector v) {
-        return new Location(worldCursor.getWorld(), 
+        return new Location(bukkitWorld.getWorld(), 
                 origin.getBlockX() + v.getBlockX(), 
                 origin.getBlockY() + v.getBlockY(), 
                 origin.getBlockZ() + v.getBlockZ());
     }
 
-    /*
-     * moves the cursor to the next position in the clipboard to be processed.
-     */
-    boolean moveCursor() {
-        int y = cursor.getBlockY();
-        ptr++;
-        if (ptr >= xzPoints.size()) {
-            ptr = 0;
-            y += buildDirection.getModY();
-            layerComplete(y-buildDirection.getModY());
-            if (y<0|y>=clipboard.getSize().getBlockY()) {
-                complete();
-                return false;
-            }
-            if (this.shuffle) {
-                Collections.shuffle(xzPoints);
+    public void start() {
+        currentY = buildDirection.equals(BlockFace.UP) ? 0 : clipboard.getSize().getBlockY()-1;
+        BlockVector v;
+        for (int x=0;x<clipboard.getSize().getBlockX();x++) {
+            for (int z=0;z<clipboard.getSize().getBlockZ();z++) {
+                v = new BlockVector(x, currentY, z);
+                points.add(new BlockUpdate(v, clipboard.getPoint(v), true));
             }
         }
-        BlockVector v = xzPoints.get(ptr);
-        cursor = new BlockVector(v.getBlockX(),y,v.getBlockZ());
-        return true;
+        if (shuffle) {
+            Collections.shuffle(points);
+        }
+        plugin.getServer().getScheduler().runTaskLater(plugin, this, 1);
+     // Collect the nearby players for sending fake block breaks etc.
+        nearbyPlayers.clear();
+        double maxDistance = 16 + (Math.max(clipboard.getSize().getBlockX(), clipboard.getSize().getBlockZ())/2);
+        Location center = new Location(
+                bukkitWorld.getWorld(), 
+                origin.getX() + clipboard.getSize().getBlockX()/2,
+                origin.getY() + clipboard.getSize().getBlockY()/2,
+                origin.getZ() + clipboard.getSize().getBlockZ()/2);
+        for (Player p: bukkitWorld.getWorld().getPlayers()) {
+            if (p.getLocation().distance(center) < maxDistance) {
+                nearbyPlayers.add(p);
+            }
+            nearbyPlayers.add(p);
+        }
     }
 
-    protected void launchFireworks(int fireworksLevel) {
-        for (int i=0;i<fireworksLevel;i++) {
-            BuildInABox.getInstance().getServer().getScheduler().runTaskLater(BuildInABox.getInstance(), new Runnable() {
-                public void run() {
-                    BlockVector vec;
-                    Firework fw;
-                    for (int ptc=0;ptc<20&&ptc<xzPoints.size();ptc++) {
-                        vec = xzPoints.get(ptc);
-                        worldCursor.setZ(origin.getBlockZ() + vec.getBlockZ());
-                        worldCursor.setX(origin.getBlockX() + vec.getBlockX());
-                        fw = (Firework) worldCursor.getWorld().spawnEntity(worldCursor, EntityType.FIREWORK);
-                        RandomFireworksGenerator.assignRandomFireworkMeta(fw);
-                    }
+    public void run() {
+        boolean finished = false;
+        int bpt = blocksPerTick;
+        BlockProcessResult result;
+        BlockUpdate update;
+        while (bpt > 0) {
+            if (points.isEmpty()) {
+                if (!getMorePoints()) {
+                    finished = true;
+                    break;
                 }
-            }, i*10);
+            }
+            update = points.removeFirst();
+            result = processBlockUpdate(update);
+            switch (result) {
+            case PROCESSED:
+                bpt--;
+                break;
+            case QUEUE_AFTER_LAYER:
+                update.setCanQueue(false);
+                points.addLast(update);
+                break;
+            case QUEUE_FINAL:
+                update.setCanQueue(false);
+                finalPoints.addLast(update);
+                break;
+            case DISCARD:
+                break;
+            }
+        }
+        if (!finished) {
+            // reschedule
+            plugin.getServer().getScheduler().runTaskLater(plugin, this, 1);
+        } else {
+            onComplete();
         }
     }
 
-    public void copyFromClipboard(BaseBlock bb, Player attributeToPlayer) {
+    public abstract void onComplete();
+
+    public abstract BlockProcessResult processBlockUpdate(BlockUpdate update);
+
+    public void copyFromClipboard(BaseBlock bb, Location wc, Player attributeToPlayer) {
         // Send a BlockPlace event for loggers to rollback maybe.
-        BlockState bs = worldCursor.getBlock().getState();
-        BlockPlaceEvent bpe = new BlockPlaceEvent(worldCursor.getBlock(), bs, 
-                worldCursor.getBlock().getRelative(BlockFace.DOWN), null, attributeToPlayer, true);
-        plugin.getServer().getPluginManager().callEvent(bpe);
-        worldCursor.getBlock().setTypeIdAndData(bb.getType(), (byte) bb.getData(), true);
+        BlockState bs = wc.getBlock().getState();
         
+        BlockPlaceEvent bpe = new BlockPlaceEvent(wc.getBlock(), bs, 
+                wc.getBlock().getRelative(BlockFace.DOWN), null, attributeToPlayer, true);
+        plugin.getServer().getPluginManager().callEvent(bpe);
+        wc.getBlock().setTypeIdAndData(bb.getType(), (byte) bb.getData(), true);
+        bukkitWorld.copyToWorld(new BlockVector(wc.getBlockX(), wc.getBlockY(), wc.getBlockZ()), bb);
     }
 
     public void sendAnimationPacket(int x, int y, int z, int type) {
@@ -231,25 +201,60 @@ public abstract class BuildingPlanTask implements Runnable {
         }
     }
 
-    public static class BlockUpdate {
-        private BlockVector vector;
-        private BaseBlock baseBlock;
-        public BlockUpdate(BlockVector vector, BaseBlock baseBlock) {
-            this.vector = vector;
-            this.baseBlock = baseBlock;
-        }
-        public BlockVector getVector() {
-            return vector;
-        }
-        public void setVector(BlockVector vector) {
-            this.vector = vector;
-        }
-        public BaseBlock getBlock() {
-            return baseBlock;
-        }
-        public void setBlock(BaseBlock baseBlock) {
-            this.baseBlock = baseBlock;
+    protected void launchFireworks(int fireworksLevel) {
+        
+        final int y = clipboard.getSize().getBlockY() + origin.getBlockY();
+        final int x = clipboard.getSize().getBlockX();
+        final int z = clipboard.getSize().getBlockZ();
+        final Location worldCursor = new Location(bukkitWorld.getWorld(), origin.getBlockX(), y, origin.getBlockZ());
+        for (int i=0;i<fireworksLevel;i++) {
+            BuildInABox.getInstance().getServer().getScheduler().runTaskLater(BuildInABox.getInstance(), new Runnable() {
+                public void run() {
+                    Firework fw;
+                    for (int j=0;j<Math.max(x*z,20);j++) {
+                        worldCursor.setX(random.nextInt(x)+origin.getBlockX());
+                        worldCursor.setZ(random.nextInt(z)+origin.getBlockZ());
+                        fw = (Firework) worldCursor.getWorld().spawnEntity(worldCursor, EntityType.FIREWORK);
+                        RandomFireworksGenerator.assignRandomFireworkMeta(fw);
+                    }
+                }
+            }, i*10);
         }
     }
 
+    public static enum BlockProcessResult {
+        QUEUE_AFTER_LAYER,
+        QUEUE_FINAL,
+        DISCARD,
+        PROCESSED
+    }
+
+    public class BlockUpdate {
+        BlockVector pos;
+        BaseBlock block;
+        boolean canQueue;
+        public BlockUpdate(BlockVector pos, BaseBlock block, boolean canQueue) {
+            this.pos = pos;
+            this.block = block;
+            this.canQueue = canQueue;
+        }
+        public BlockVector getPos() {
+            return pos;
+        }
+        public void setPos(BlockVector pos) {
+            this.pos = pos;
+        }
+        public BaseBlock getBlock() {
+            return block;
+        }
+        public void setBlock(BaseBlock block) {
+            this.block = block;
+        }
+        public boolean isCanQueue() {
+            return canQueue;
+        }
+        public void setCanQueue(boolean canQueue) {
+            this.canQueue = canQueue;
+        }
+    }
 }

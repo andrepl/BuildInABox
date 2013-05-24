@@ -265,28 +265,6 @@ public class BuildingPlan {
         }
     }
 
-    public void build(Block enderChest, CuboidClipboard clipboard) {
-        Location chestLoc = enderChest.getLocation();
-        EnderChest ec = (EnderChest) Material.getMaterial(BuildInABox.BLOCK_ID).getNewData(chestLoc.getBlock().getData());
-        BlockFace dir = ec.getFacing();
-        if (clipboard == null) {
-            clipboard = getRotatedClipboard(dir);
-        }
-        EditSession editSession = new EditSession(new BukkitWorld(chestLoc.getWorld()), 500000);
-        editSession.setFastMode(true);
-        editSession.enableQueue();
-        Vector origin = new Vector(enderChest.getX(), enderChest.getY(), enderChest.getZ());
-        try {
-            clipboard.paste(editSession, origin, true, true);
-            editSession.flushQueue();
-            if (plugin.getConfig().getBoolean("protect-buildings", false)) {
-                protectBlocks(enderChest, clipboard);
-            }
-        } catch (MaxChangedBlocksException e) {
-            e.printStackTrace();
-        }
-    }
-
     public Set<Chunk> protectBlocks(Block enderChest, CuboidClipboard clipboard) {
         HashSet<Chunk> loadedChunks = new HashSet<Chunk>();
         if (clipboard == null) {

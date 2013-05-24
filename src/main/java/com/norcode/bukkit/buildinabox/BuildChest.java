@@ -25,6 +25,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.block.Action;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.material.EnderChest;
+import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.scheduler.BukkitTask;
 
 import com.sk89q.jnbt.CompoundTag;
@@ -156,7 +157,6 @@ public class BuildChest {
         building = true;
         player.sendMessage(BuildInABox.getNormalMsg("building", plan.getDisplayName()));
         final World world = player.getWorld();
-        final int blocksPerTick = plugin.getConfig().getInt("pickup-animation.blocks-per-tick", 5);
         data.setLocation(getLocation());
         data.setLastActivity(System.currentTimeMillis());
         plugin.getDataStore().saveChest(data);
@@ -197,103 +197,60 @@ public class BuildChest {
         } catch (DataException e) {
             e.printStackTrace();
         }
-        buildTask = new BuildingPlanTask(this, clipboard, BlockFace.UP,
+        final boolean protectBlocks = plugin.getConfig().getBoolean("protect-buildings", true);
+        buildTask = new BuildingPlanTask(clipboard, this, BlockFace.UP,
                 plugin.getConfig().getInt("build-animation.blocks-per-tick", 5),
                 plugin.getConfig().getBoolean("build-animation.shuffle", true)) {
 
-                private void saveReplacedBlock(Vector c, Location wc) {
+                private void saveReplacedBlock(BlockVector c, Location wc) {
                     // save blocks below ground level for restoration.
-                    getData().getReplacedBlocks().put(cursor, 
-                            new BaseBlock(worldCursor.getBlock().getTypeId(), 
-                                    worldCursor.getBlock().getData()));
+                    getData().getReplacedBlocks().put(c, 
+                            new BaseBlock(wc.getBlock().getTypeId(), 
+                                    wc.getBlock().getData()));
                 }
 
                 @Override
-                public boolean processBlockUpdate(BlockUpdate blockUpdate, boolean canQueue) {
+                public void onComplete() {
+                    building = false;
+                    data.clearTileEntities();
+                    if (!plugin.getConfig().getBoolean("allow-pickup")) {
+                      plugin.getDataStore().deleteChest(data.getId());
+                      getBlock().removeMetadata("buildInABox", plugin);
+                  }
+                  int fireworksLevel = plugin.getConfig().getInt("build-animation.fireworks", 0);
+                  if (fireworksLevel > 0) {
+                      launchFireworks(fireworksLevel);
+                  }
+                  building = false;
+                  return;
+                }
+                @Override
+                public BuildingPlanTask.BlockProcessResult processBlockUpdate(BuildingPlanTask.BlockUpdate blockUpdate) {
                     BaseBlock bb = blockUpdate.getBlock();
-                    BlockVector c = blockUpdate.getVector();
+                    BlockVector c = blockUpdate.getPos();
                     Location wc = getWorldLocationFor(c);
-                    if (bb.getType() == 0) return false;
-                    if (canQueue) {
-                        if (postBuildBlockIds.contains(bb.getType())) {
-                            postBuildQueue.add(blockUpdate);
-                            return false;
+                    if (bb.getType() == 0) return BlockProcessResult.DISCARD;
+                    if (blockUpdate.isCanQueue()) {
+                        if (BuildingPlanTask.postBuildBlockIds.contains(bb.getType())) {
+                            return BlockProcessResult.QUEUE_FINAL;
                         } else if (postLayerBlockIds.contains(bb.getType())) {
-                            postLayerQueue.add(blockUpdate);
-                            return false;
+                            return BlockProcessResult.QUEUE_AFTER_LAYER;
                         }
                     }
                     if (c.getBlockY() < getBlock().getY()) {
                         saveReplacedBlock(c, wc);
                     }
                     sendAnimationPacket(wc.getBlockX(), wc.getBlockY(), wc.getBlockZ(), bb.getType());
-                    copyFromClipboard(bb,player);
-                    return true;
+                    copyFromClipboard(bb,wc,player);
+                    if (wc.equals(data.getLocation())) {
+                        wc.getBlock().setMetadata("buildInABox", new FixedMetadataValue(plugin, BuildChest.this));
+                    } else if (protectBlocks) {
+                        wc.getBlock().setMetadata("biab-block", new FixedMetadataValue(plugin, true));
+                    }
+                    return BlockProcessResult.PROCESSED;
                 }
         }; 
         buildTask.start();
-//            @Override
-//            public void run() {
-//                BaseBlock bb;
-//                boolean disabled = plugin.getConfig().getBoolean("build-animation.disable", false);
-//                for (int i=0;i<blocksPerTick||disabled;i++) {
-//                    if (moveCursor()) {
-//                        bb = clipboard.getPoint(cursor);
-//                        if (bb.getType() == 0) {
-//                            i--;
-//                            continue; // skip air blocks;
-//                        }
-//                        if (cursor.getBlockY() < -clipboard.getOffset().getBlockY()) {
-//                            // store replaced Block
-//                            if (worldCursor.getBlock().getTypeId() != 0) {
-//                                replacedBlocks.put(new BlockVector(cursor), new BaseBlock(worldCursor.getBlock().getTypeId(), worldCursor.getBlock().getData()));
-//                            }
-//                        }
-//                        if (BuildingPlanTask.postLayerBlockIds.contains(bb.getType())) {
-//                            lastStep.add(new BlockUpdate(cursor,bb));
-//                            i--;
-//                            continue;
-//                        } else if (BuildingPlanTask.postBuildBlockIds.contains(bb.getType())) {
-//                            lastStep.add(new BlockUpdate(cursor, bb));
-//                            i--;
-//                            continue;
-//                        }
-//                        if (!disabled) {
-//                            Packet61WorldEvent packet = new Packet61WorldEvent(2001, worldCursor.getBlockX(), worldCursor.getBlockY(), worldCursor.getBlockZ(), bb.getType(), false);
-//                            for (Player p: nearby) {
-//                                if (p.isOnline()) {
-//                                    ((CraftPlayer) p).getHandle().playerConnection.sendPacket(packet);
-//                                }
-//                            }
-//                        }
-//                        worldCursor.getBlock().setTypeIdAndData(bb.getType(), (byte) bb.getData(), true);
-//                    } else {
-//                        finish();
-//                        return;
-//                    }
-//                }
-//            }
-//
-//            private void finish() {
-//                BuildInABox.getInstance().debug("finished building...");
-//                // clipboard paste, save data etc.
-//                plan.build(getBlock(), clipboard);
-//                data.setReplacedBlocks(replacedBlocks);
-//                data.clearTileEntities();
-//                buildTask.cancel();
-//                player.sendMessage(BuildInABox.getSuccessMsg("building-complete"));
-//                plugin.getDataStore().saveChest(data);
-//                if (!plugin.getConfig().getBoolean("allow-pickup")) {
-//                    plugin.getDataStore().deleteChest(data.getId());
-//                    getBlock().removeMetadata("buildInABox", plugin);
-//                }
-//                int fireworksLevel = plugin.getConfig().getInt("build-animation.fireworks", 0);
-//                if (fireworksLevel > 0) {
-//                    launchFireworks(fireworksLevel);
-//                }
-//                building = false;
-//                return;
-//            }
     }
 
     public void unlock(Player player) {
@@ -347,250 +304,120 @@ public class BuildChest {
         }
         final int blocksPerTick = plugin.getConfig().getInt(
                 "pickup-animation.blocks-per-tick", 20);
+        final boolean shuffle = plugin.getConfig().getBoolean("pickup-animation.shuffle", true);
         final List<Player> nearby = new ArrayList<Player>();
         for (Player p : player.getWorld().getPlayers()) {
             nearby.add(p);
         }
-        player.sendMessage(BuildInABox.getNormalMsg("removing", this.getPlan()
-                .getDisplayName()));
-        final BukkitWorld bukkitWorld = new BukkitWorld(player.getWorld());
         if (!isLocked()) {
+            player.sendMessage(BuildInABox.getNormalMsg("removing", this.getPlan()
+                    .getDisplayName()));
             building = true;
             data.clearTileEntities();
-            buildTask = plugin
-                    .getServer()
-                    .getScheduler()
-                    .runTaskTimer(
-                            plugin,
-                            new BuildingPlanTask(this, plan
-                                    .getRotatedClipboard(getEnderChest()
-                                            .getFacing()),
-                                    BuildingPlanTask.TOP_DOWN) {
-                                @Override
-                                protected boolean shouldShuffle() {
-                                    return BuildInABox
-                                            .getInstance()
-                                            .getConfig()
-                                            .getBoolean(
-                                                    "pickup-animation.shuffle",
-                                                    true);
-                                }
+            buildTask = new BuildingPlanTask(plan.getRotatedClipboard(getEnderChest().getFacing()), this, BlockFace.DOWN, blocksPerTick, shuffle) {
 
-                                public void run() {
-                                    BaseBlock bb;
-                                    boolean disabled = plugin.getConfig()
-                                            .getBoolean(
-                                                    "pickup-animation.disable",
-                                                    false);
-                                    for (int i = 0; i < blocksPerTick
-                                            || disabled; i++) {
-                                        if (moveCursor()) {
-                                            bb = clipboard.getPoint(cursor);
-                                            if (bb.getType() == 0) {
-                                                i--;
-                                                continue; // skip air blocks;
-                                            }
-                                            if (bb.getType() == BuildInABox.BLOCK_ID) {
-                                                if (worldCursor.getBlock()
-                                                        .hasMetadata(
-                                                                "buildInABox")) {
-                                                    continue;
-                                                }
-                                            }
-                                            if (bb instanceof TileEntityBlock) {
-                                                BlockState state = worldCursor
-                                                        .getBlock().getState();
-                                                BaseBlock worldBlock = bukkitWorld.getBlock(new Vector(
-                                                        worldCursor.getBlockX(),
-                                                        worldCursor.getBlockY(),
-                                                        worldCursor.getBlockZ()));
-                                                BuildInABox
-                                                        .getInstance()
-                                                        .debug("Replacing clipboard data with: "
-                                                                + worldBlock);
-                                                clipboard.setBlock(cursor,
-                                                        worldBlock);
-                                                if (state instanceof org.bukkit.inventory.InventoryHolder) {
-                                                    org.bukkit.inventory.InventoryHolder chest = (org.bukkit.inventory.InventoryHolder) state;
-                                                    Inventory inven = chest
-                                                            .getInventory();
-                                                    if (chest instanceof Chest) {
-                                                        inven = ((Chest) chest)
-                                                                .getBlockInventory();
-                                                    }
-                                                    inven.clear();
-                                                }
-                                            }
-                                            if (!disabled) {
-                                                Packet61WorldEvent packet = new Packet61WorldEvent(
-                                                        2001,
-                                                        worldCursor.getBlockX(),
-                                                        worldCursor.getBlockY(),
-                                                        worldCursor.getBlockZ(),
-                                                        bb.getType(), false);
-                                                for (Player p : nearby) {
-                                                    if (p.isOnline()) {
-                                                        ((CraftPlayer) p)
-                                                                .getHandle().playerConnection
-                                                                .sendPacket(packet);
-                                                    }
-                                                }
-                                            }
-                                            if (cursor.getBlockY() < -clipboard
-                                                    .getOffset().getBlockY()) {
-                                                if (data.getReplacedBlocks()
-                                                        .containsKey(cursor)) {
-                                                    BaseBlock replacement = data
-                                                            .getReplacedBlocks()
-                                                            .get(cursor);
-                                                    if (replacement != null) {
-                                                        BuildInABox
-                                                                .getInstance()
-                                                                .debug("Setting "
-                                                                        + cursor
-                                                                        + " to "
-                                                                        + replacement);
-                                                        worldCursor
-                                                                .getBlock()
-                                                                .setTypeIdAndData(
-                                                                        replacement
-                                                                                .getType(),
-                                                                        (byte) replacement
-                                                                                .getData(),
-                                                                        false);
-                                                    }
-                                                } else {
-                                                    worldCursor.getBlock()
-                                                            .setTypeIdAndData(
-                                                                    0,
-                                                                    (byte) 0,
-                                                                    false);
-                                                }
-                                            } else {
-                                                BuildInABox.getInstance()
-                                                        .debug("Setting "
-                                                                + cursor
-                                                                + " to air");
-                                                worldCursor
-                                                        .getBlock()
-                                                        .setTypeIdAndData(0,
-                                                                (byte) 0, false);
-                                            }
-                                            worldCursor
-                                                    .getBlock()
-                                                    .removeMetadata(
-                                                            "biab-block",
-                                                            BuildInABox
-                                                                    .getInstance());
-                                            worldCursor
-                                                    .getBlock()
-                                                    .removeMetadata(
-                                                            "buildInABox",
-                                                            BuildInABox
-                                                                    .getInstance());
-                                        } else {
-                                            // finished
-                                            // Rotate back to north to get the
-                                            // proper container coordinates
-                                            clipboard.rotate2D(BuildingPlan
-                                                    .getRotationDegrees(
-                                                            getEnderChest()
-                                                                    .getFacing(),
-                                                            BlockFace.NORTH));
-                                            Vector v;
-                                            for (int x = 0; x < clipboard
-                                                    .getSize().getBlockX(); x++) {
-                                                for (int z = 0; z < clipboard
-                                                        .getSize().getBlockZ(); z++) {
-                                                    for (int y = 0; y < clipboard
-                                                            .getSize()
-                                                            .getBlockY(); y++) {
-                                                        v = new Vector(x, y, z);
-                                                        if (x == -clipboard
-                                                                .getOffset()
-                                                                .getBlockX()
-                                                                && y == -clipboard
-                                                                        .getOffset()
-                                                                        .getBlockY()
-                                                                && z == -clipboard
-                                                                        .getOffset()
-                                                                        .getBlockZ()) {
-                                                            BuildInABox
-                                                                    .getInstance()
-                                                                    .debug("Skipping enderchest in TileEntity check");
-                                                            continue;
-                                                        }
-                                                        bb = clipboard
-                                                                .getPoint(v);
-                                                        if (bb instanceof TileEntityBlock) {
-                                                            TileEntityBlock teb = bb;
-                                                            HashMap<String, Tag> values = new HashMap<String, Tag>();
-                                                            if (teb.getNbtData() != null
-                                                                    && teb.getNbtData()
-                                                                            .getValue() != null) {
-                                                                for (Entry<String, Tag> e : teb
-                                                                        .getNbtData()
-                                                                        .getValue()
-                                                                        .entrySet()) {
-                                                                    values.put(
-                                                                            e.getKey(),
-                                                                            e.getValue());
-                                                                }
-                                                                CompoundTag tag = new CompoundTag(
-                                                                        "",
-                                                                        values);
-                                                                data.setTileEntities(
-                                                                        new BlockVector(
-                                                                                x,
-                                                                                y,
-                                                                                z),
-                                                                        tag);
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            getBlock().setType(Material.AIR);
-                                            getBlock().removeMetadata(
-                                                    "buildInABox", plugin);
-                                            getBlock().removeMetadata(
-                                                    "biab-block", plugin);
-                                            data.getLocation()
-                                                    .getWorld()
-                                                    .dropItem(
-                                                            new Location(
-                                                                    data.getLocation()
-                                                                            .getWorld(),
-                                                                    data.getLocation()
-                                                                            .getX() + 0.5,
-                                                                    data.getLocation()
-                                                                            .getY() + 0.5,
-                                                                    data.getLocation()
-                                                                            .getZ() + 0.5),
-                                                            data.toItemStack());
-                                            data.setLocation(null);
-                                            data.setLastActivity(System
-                                                    .currentTimeMillis());
-                                            data.setReplacedBlocks(null);
-                                            plugin.getDataStore().saveChest(
-                                                    data);
-                                            buildTask.cancel();
-                                            int fireworksLevel = plugin
-                                                    .getConfig()
-                                                    .getInt("pickup-animation.fireworks",
-                                                            0);
-                                            if (fireworksLevel > 0) {
-                                                launchFireworks(fireworksLevel);
-                                            }
-                                            building = false;
-                                            player.sendMessage(BuildInABox
-                                                    .getSuccessMsg("removal-complete"));
-                                            return;
+                @Override
+                public void onComplete() {
+                    BaseBlock bb;
+                    clipboard.rotate2D(BuildingPlan.getRotationDegrees(getEnderChest().getFacing(), BlockFace.NORTH));
+                    Vector v;
+                    for (int x=0;x<clipboard.getSize().getBlockX();x++) {
+                        for (int z=0;z<clipboard.getSize().getBlockZ();z++) {
+                            for (int y=0;y<clipboard.getSize().getBlockY();y++) {
+                                v = new Vector(x,y,z);
+                                if (x == -clipboard.getOffset().getBlockX() && y == -clipboard.getOffset().getBlockY() && z == -clipboard.getOffset().getBlockZ()) {
+                                    BuildInABox.getInstance().debug("Skipping enderchest in TileEntity check");
+                                    continue;
+                                }
+                                bb = clipboard.getPoint(v);
+                                if (bb instanceof TileEntityBlock) {
+                                    TileEntityBlock teb = bb;
+                                    HashMap<String, Tag> values = new HashMap<String, Tag>();
+                                    if (teb.getNbtData() != null && teb.getNbtData().getValue() != null) {
+                                        for (Entry<String, Tag> e: teb.getNbtData().getValue().entrySet()) {
+                                            values.put(e.getKey(), e.getValue());
                                         }
+                                        CompoundTag tag = new CompoundTag("", values);
+                                        data.setTileEntities(new BlockVector(x,y,z), tag);
                                     }
-
                                 }
-                            }, 1, 1);
+                            }
+                        }
+                    }
+
+                    getBlock().setType(Material.AIR);
+                    getBlock().removeMetadata("buildInABox", plugin);
+                    getBlock().removeMetadata("biab-block", plugin);
+                    data.getLocation().getWorld().dropItem(new Location(data.getLocation().getWorld(), data.getLocation().getX() + 0.5, data.getLocation().getY() + 0.5, data.getLocation().getZ() + 0.5), data.toItemStack());
+                    data.setLocation(null);
+                    data.setLastActivity(System.currentTimeMillis());
+                    data.setReplacedBlocks(null);
+                    plugin.getDataStore().saveChest(data);
+                    int fireworksLevel = plugin.getConfig().getInt("pickup-animation.fireworks", 0);
+                    if (fireworksLevel > 0) {
+                        launchFireworks(fireworksLevel);
+                    }
+                    building = false;
+                    player.sendMessage(BuildInABox.getSuccessMsg("removal-complete"));
+                    return;
+                }
+
+                @Override
+                public BlockProcessResult processBlockUpdate(BlockUpdate blockUpdate) {
+                    BaseBlock bb = blockUpdate.getBlock();
+                    BlockVector c = blockUpdate.getPos();
+                    Location wc = getWorldLocationFor(c);
+                    if (bb.getType() == 0) return BlockProcessResult.DISCARD;
+                    if (bb.getType() == BuildInABox.BLOCK_ID) {
+                        if (wc.getBlock().hasMetadata("buildInABox")) {
+                            BuildInABox.getInstance().debug("Skipping Enderchest.");
+                            return BlockProcessResult.DISCARD;
+                        }
+                    }
+                    if (blockUpdate.isCanQueue()) {
+                        if (postBuildBlockIds.contains(bb.getType())) {
+                            return BlockProcessResult.QUEUE_FINAL;
+                        } else if (!postLayerBlockIds.contains(bb.getType())) {
+                            return BlockProcessResult.QUEUE_AFTER_LAYER;
+                        }
+                    }
+                    if (bb instanceof TileEntityBlock) {
+                        if (((TileEntityBlock)bb).hasNbtData()) {
+                            BlockState state = wc.getBlock().getState();
+                            BaseBlock worldBlock = bukkitWorld.getBlock(new Vector(wc.getBlockX(), wc.getBlockY(), wc.getBlockZ()));
+                            BuildInABox.getInstance().debug("Replacing clipboard data with: " + worldBlock);
+                            clipboard.setBlock(c, worldBlock);
+                            if (state instanceof org.bukkit.inventory.InventoryHolder) {
+                                org.bukkit.inventory.InventoryHolder chest = (org.bukkit.inventory.InventoryHolder) state;
+                                Inventory inven = chest.getInventory();
+                                if (chest instanceof Chest) {
+                                    inven = ((Chest) chest).getBlockInventory();
+                                }
+                                inven.clear();
+                            }
+                        }
+                    }
+                    sendAnimationPacket(wc.getBlockX(), wc.getBlockY(), wc.getBlockZ(), bb.getType());
+                    if (c.getBlockY() < -clipboard.getOffset().getBlockY()) {
+                        if (data.getReplacedBlocks().containsKey(c)) {
+                            BaseBlock replacement = data.getReplacedBlocks().get(c);
+                            if (replacement != null) {
+                                BuildInABox.getInstance().debug("Setting " + c + " to " + replacement);
+                                wc.getBlock().setTypeIdAndData(replacement.getType(), (byte) replacement.getData(), false);
+                            }
+                        } else {
+                            wc.getBlock().setTypeIdAndData(0,(byte) 0, false);
+                        }
+                    } else {
+                        BuildInABox.getInstance().debug("Setting " + c + " to air");
+                        wc.getBlock().setTypeIdAndData(0, (byte)0, false);
+                    }
+                    wc.getBlock().removeMetadata("biab-block", BuildInABox.getInstance());
+                    wc.getBlock().removeMetadata("buildInABox", BuildInABox.getInstance());
+                    return BlockProcessResult.PROCESSED;
+                }
+            };
+            buildTask.start();
         } else {
             player.sendMessage(BuildInABox.getErrorMsg("building-is-locked",
                     getPlan().getDisplayName(), getLockedBy()));
