@@ -96,6 +96,7 @@ public class BuildChest {
                         getBlock().setTypeIdAndData(0, (byte) 0, false);
                         getBlock().getWorld().dropItem(getBlock().getLocation().add(0.5,0.5,0.5), data.toItemStack());
                         data.setLocation(null);
+                        data.setLastActivity(System.currentTimeMillis());
                         plugin.getDataStore().saveChest(data);
                     }
 
@@ -528,6 +529,7 @@ public class BuildChest {
             if (player.isOnline()) {
                 player.sendMessage(getCancelMessage());
                 data.setLockedBy(getLockedBy() == null ? lockingPlayer : null);
+                data.setLastActivity(System.currentTimeMillis());
                 lockingTask = null;
             }
         }

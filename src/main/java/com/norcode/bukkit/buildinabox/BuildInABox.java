@@ -31,6 +31,8 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
 import com.norcode.bukkit.buildinabox.datastore.DataStore;
+import com.norcode.bukkit.buildinabox.datastore.EbeanDataStore;
+import com.norcode.bukkit.buildinabox.datastore.EbeanDataStore.ChestBean;
 import com.norcode.bukkit.buildinabox.datastore.YamlDataStore;
 import com.norcode.bukkit.buildinabox.listeners.BlockProtectionListener;
 import com.norcode.bukkit.buildinabox.listeners.ItemListener;
@@ -203,35 +205,38 @@ public class BuildInABox extends JavaPlugin implements Listener {
         String storageType = getConfig().getString("storage-backend", "file").toLowerCase();
         if (storageType.equals("file")) {
             datastore = new YamlDataStore(this);
-            datastore.load();
-            long now = System.currentTimeMillis();
-            long expiry = getConfig().getLong("data-expiry", 1000*60*60*24*90L);
-            long tooOldTime = now - expiry;// if the chest hasn't been touched in 90 days expire the data
-            HashSet<Chunk> loadedChunks = new HashSet<Chunk>();
-            for (ChestData cd: new ArrayList<ChestData>(datastore.getAllChests())) {
-                debug("Checking Chest: " + cd.getId());
-                if (cd.getLastActivity() < tooOldTime) {
-                    debug("Chest Data is too old: " + cd.getLastActivity() + " vs " + tooOldTime);
-                    datastore.deleteChest(cd.getId());
-                } else {
-                    if (cd.getLocation() != null) {
-                        BuildChest bc = new BuildChest(cd);
-                        if (bc.getBlock().getTypeId() == BLOCK_ID) {
-                            bc.getBlock().setMetadata("buildInABox", new FixedMetadataValue(this, bc));
-                            if (getConfig().getBoolean("protect-buildings")) {
-                                debug("Protecting Building: " + bc);
-                                loadedChunks.addAll(bc.protectBlocks());
-                            }
+        } else if (storageType.equals("ebean")) {
+            datastore = new EbeanDataStore(this);
+        } else {
+            return false;
+        }
+        datastore.load();
+        long now = System.currentTimeMillis();
+        long expiry = getConfig().getLong("data-expiry", 1000*60*60*24*90L);
+        long tooOldTime = now - expiry;// if the chest hasn't been touched in 90 days expire the data
+        HashSet<Chunk> loadedChunks = new HashSet<Chunk>();
+        for (ChestData cd: new ArrayList<ChestData>(datastore.getAllChests())) {
+            debug("Checking Chest: " + cd.getId());
+            if (cd.getLastActivity() < tooOldTime) {
+                debug("Chest Data is too old: " + cd.getLastActivity() + " vs " + tooOldTime);
+                datastore.deleteChest(cd.getId());
+            } else {
+                if (cd.getLocation() != null) {
+                    BuildChest bc = new BuildChest(cd);
+                    if (bc.getBlock().getTypeId() == BLOCK_ID) {
+                        bc.getBlock().setMetadata("buildInABox", new FixedMetadataValue(this, bc));
+                        if (getConfig().getBoolean("protect-buildings")) {
+                            debug("Protecting Building: " + bc);
+                            loadedChunks.addAll(bc.protectBlocks());
                         }
                     }
                 }
             }
-            for (Chunk c: loadedChunks) {
-                c.getWorld().unloadChunkRequest(c.getX(), c.getZ(), true);
-            }
-            return true;
         }
-        return false;
+        for (Chunk c: loadedChunks) {
+            c.getWorld().unloadChunkRequest(c.getX(), c.getZ(), true);
+        }
+        return true;
     }
 
     @Override
@@ -335,4 +340,15 @@ public class BuildInABox extends JavaPlugin implements Listener {
     public static String getSuccessMsg(String key, Object... args) {
         return getMsg("message-prefix", LORE_HEADER) + ChatColor.GREEN + getMsg(key, args);
     }
+
+   public void installDDL() {
+       installDDL();
+   }
+
+   @Override
+    public List<Class<?>> getDatabaseClasses() {
+       List<Class<?>> dbClasses = new ArrayList<Class<?>>();
+       dbClasses.add(ChestBean.class);
+       return dbClasses;
+    } 
 }

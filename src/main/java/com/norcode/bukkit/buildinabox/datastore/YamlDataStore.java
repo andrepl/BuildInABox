@@ -15,13 +15,13 @@ import com.sk89q.worldedit.blocks.BaseBlock;
 
 
 public class YamlDataStore extends DataStore {
-    private BuildInABox plugin;
-    private ConfigAccessor planCfg;
-    private ConfigAccessor chestCfg;
-    private int nextChestId = 0;
-    private HashMap<Integer, ChestData> chests = new HashMap<Integer, ChestData>();
-    private HashMap<String, BuildingPlan> plans = new HashMap<String, BuildingPlan>();
-    private boolean dirty = false;
+    BuildInABox plugin;
+    ConfigAccessor planCfg;
+    ConfigAccessor chestCfg;
+    int nextChestId = 0;
+    HashMap<Integer, ChestData> chests = new HashMap<Integer, ChestData>();
+    HashMap<String, BuildingPlan> plans = new HashMap<String, BuildingPlan>();
+    boolean dirty = false;
 
     public YamlDataStore(BuildInABox plugin) {
         this.plugin = plugin;
@@ -29,15 +29,11 @@ public class YamlDataStore extends DataStore {
         this.chestCfg = new ConfigAccessor(plugin, "chests.yml");
     }
 
-    @Override
-    public void load() {
+    void loadPlans() {
         this.planCfg.reloadConfig();
-        this.chestCfg.reloadConfig();
-        this.chests.clear();
         this.plans.clear();
-        ConfigurationSection sec;
-
         // Load Plans
+        ConfigurationSection sec;
         for (String key: this.planCfg.getConfig().getKeys(false)) {
             sec = this.planCfg.getConfig().getConfigurationSection(key);
             if (sec != null) {
@@ -49,8 +45,13 @@ public class YamlDataStore extends DataStore {
                 this.plans.put(plan.getName().toLowerCase(), plan);
             }
         }
-
+    }
+    
+    void loadChests() {
+        this.chestCfg.reloadConfig();
+        this.chests.clear();
         // Load Chests
+        ConfigurationSection sec;
         int maxId = 0;
         int id;
         Location loc;
@@ -66,6 +67,11 @@ public class YamlDataStore extends DataStore {
             }
         }
         nextChestId = maxId;
+    }
+    @Override
+    public void load() {
+        loadPlans();
+        loadChests();
     }
 
     @Override

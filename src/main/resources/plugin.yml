@@ -4,6 +4,7 @@ version: 0.1.6-SNAPSHOT
 name: BuildInABox
 softdepend: [Vault, AntiCheat, NoCheatPlus]
 depend: [WorldEdit]
+database: true
 
 commands:
   biab:
