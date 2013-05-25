@@ -208,6 +208,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
         } else if (storageType.equals("ebean")) {
             datastore = new EbeanDataStore(this);
         } else {
+            getLogger().severe("No datastore configured.");
             return false;
         }
         datastore.load();
@@ -342,7 +343,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
     }
 
    public void installDDL() {
-       installDDL();
+       super.installDDL();
    }
 
    @Override

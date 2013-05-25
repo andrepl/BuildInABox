@@ -1,6 +1,9 @@
 # Output extra logging
 debug: false
 
+# Data storage backend.  currently supports 'file' or 'ebean' (sql)
+storage-backend: file
+
 # Language selection (from lang/<language>.yml)
 language: english
 
