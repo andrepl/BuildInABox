@@ -279,6 +279,16 @@ public class BuildInABox extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
+        PluginManager pm = getServer().getPluginManager();
+        pm.removePermission("biab.admin");
+        pm.removePermission(wildcardGivePerm);
+        pm.removePermission(wildcardPlacePerm);
+        pm.removePermission(wildcardPickupPerm);
+        pm.removePermission(wildcardLockPerm);
+        pm.removePermission(wildcardUnlockPerm);
+        for (BuildingPlan plan: getDataStore().getAllBuildingPlans()) {
+            plan.unregisterPermissions();
+        }
         getDataStore().save();
         if (inventoryScanTask != null) {
             inventoryScanTask.cancel();

@@ -325,7 +325,6 @@ public class CuboidClipboard {
         case BlockID.ENDER_CHEST:
         case BlockID.TRAPPED_CHEST:
         case BlockID.HOPPER:
-            BuildInABox.getInstance().debug("hit furnace switch w/ data: " + data);
             switch (data) {
             case 2: return 5;
             case 3: return 4;
@@ -433,15 +432,9 @@ public class CuboidClipboard {
         int id = block.getData();
         int data = rotate90(block.getType(), block.getData());
         block.setData(data);
-        if (block.getType() == 61) {
-            BuildInABox.getInstance().debug("Rotated Furnace from " + id + " to " + data + " and the blocks data is now " + block.getData() + "(" + block.getClass() + ")");
-        } 
-        
         if (block instanceof SkullBlock) {
             byte rot = ((SkullBlock) block).getRot();
             ((SkullBlock) block).setRot((byte) ((rot + 4) % 16));
-        } if (block instanceof FurnaceBlock) {
-            BuildInABox.getInstance().debug("Rotated Furnace from " + id + " to " + block.getData());
         }
     }
 

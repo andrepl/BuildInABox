@@ -17,6 +17,7 @@ import org.bukkit.material.EnderChest;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionDefault;
+import org.bukkit.plugin.PluginManager;
 
 import org.bukkit.Chunk;
 import org.bukkit.Location;
@@ -61,8 +62,17 @@ public class BuildingPlan {
         registerPermission("unlock", plugin.wildcardUnlockPerm);
     }
 
+    public void unregisterPermissions() {
+        PluginManager pm = plugin.getServer().getPluginManager();
+        pm.removePermission("biab.give." + name.toLowerCase());
+        pm.removePermission("biab.place." + name.toLowerCase());
+        pm.removePermission("biab.pickup." + name.toLowerCase());
+        pm.removePermission("biab.lock." + name.toLowerCase());
+        pm.removePermission("biab.unlock." + name.toLowerCase());
+    }
+
     private void registerPermission(String action, Permission parent) {
-        Permission p = new Permission("biab." + action.toLowerCase() + "." + name, "Permission to " + action + " " + name + " BIABs.", PermissionDefault.OP);
+        Permission p = new Permission("biab." + action.toLowerCase() + "." + name.toLowerCase(), "Permission to " + action + " " + name + " BIABs.", PermissionDefault.OP);
         p.addParent(parent, true);
         plugin.getServer().getPluginManager().addPermission(p);
         parent.recalculatePermissibles();
@@ -208,4 +218,5 @@ public class BuildingPlan {
         }
         return description;
     }
+
 }
