@@ -207,23 +207,24 @@ public abstract class DataStore {
                         int chestId;
                         ChestData data;
                         boolean update = false;
-                        try {
-                            chestId = Integer.parseInt(meta.getLore().get(1).substring(2), 16);
-                            data = getChest(chestId);
-                            if (data == null) {
-                                return null;
-                            }
-                        } catch (IllegalArgumentException ex) {
-                            BuildingPlan planCheck = getBuildingPlan(meta.getLore().get(1).substring(2).toLowerCase());
-                            if (planCheck == null) {
-                                return null;
-                            }
+                        BuildingPlan planCheck = getBuildingPlan(meta.getLore().get(1).substring(2).toLowerCase());
+                        if (planCheck != null) {
                             data = createChest(planCheck.getName());
                             List<String> newLore = new ArrayList<String>();
                             newLore.add(meta.getLore().get(0));
                             newLore.add(ChatColor.BLACK + Integer.toHexString(data.getId()));
                             meta.setLore(newLore);
                             update = true;
+                        } else {
+                            try {
+                                chestId = Integer.parseInt(meta.getLore().get(1).substring(2), 16);
+                                data = getChest(chestId);
+                                if (data == null) {
+                                    return null;
+                                }
+                            } catch (IllegalArgumentException ex) {
+                                return null;
+                            }
                         }
                         BuildInABox.getInstance().debug("data:"+data);
                         BuildingPlan plan = getBuildingPlan(data.getPlanName());

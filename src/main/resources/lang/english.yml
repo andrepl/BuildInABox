@@ -19,6 +19,7 @@ cmd-setdesc-usage: "Usage: /biab setdesc <plan> <description line 1>[ | <descrip
 cmd-setdisplayname-usage: "Usage: /biab setdisplayname <plan> <display name>"
 description-saved: "New description for {0} has been saved."
 unknown-building-plan: "Unknown building-plan: {0}"
+invalid-building-plan-name: "Sorry {0} isn't a valid name for a building plan."
 building-plan-saved: Building plan {0} successfully saved.
 building-plan-deleted: Building plan {0} has been deleted.
 available-building-plans: Available Building Plans [pg. {0} of {1}]

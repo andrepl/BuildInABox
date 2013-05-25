@@ -184,7 +184,10 @@ public class BuildChest {
     }
 
     public Set<Chunk> protectBlocks() {
-        return plan.protectBlocks(getBlock(), null);
+        if (plan != null) {
+            return plan.protectBlocks(getBlock(), null);
+        }
+        return null;
     }
 
     public void build(final Player player) {

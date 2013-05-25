@@ -192,11 +192,12 @@ public abstract class BuildingPlanTask implements Runnable {
     public void copyFromClipboard(BaseBlock bb, Location wc, Player attributeToPlayer) {
         // Send a BlockPlace event for loggers to rollback maybe.
         BlockState bs = wc.getBlock().getState();
-        
         BlockPlaceEvent bpe = new BlockPlaceEvent(wc.getBlock(), bs, 
                 wc.getBlock().getRelative(BlockFace.DOWN), null, attributeToPlayer, true);
         plugin.getServer().getPluginManager().callEvent(bpe);
-        wc.getBlock().setTypeIdAndData(bb.getType(), (byte) bb.getData(), false);
+        bs.setTypeId(bb.getType());
+        bs.setRawData((byte) bb.getData());
+        bs.update(true);
         bukkitWorld.copyToWorld(new BlockVector(wc.getBlockX(), wc.getBlockY(), wc.getBlockZ()), bb);
     }
 
