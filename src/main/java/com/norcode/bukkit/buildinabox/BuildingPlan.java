@@ -20,7 +20,8 @@ import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 
-import com.sk89q.worldedit.CuboidClipboard;
+import com.norcode.bukkit.buildinabox.util.CuboidClipboard;
+
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.IncompleteRegionException;
 
@@ -73,62 +74,6 @@ public class BuildingPlan {
         this.displayName = displayName;
     }
 
-    @SuppressWarnings("incomplete-switch")
-    public static int getRotationDegrees(BlockFace from, BlockFace to) {
-        switch (from) {
-        case NORTH:
-            switch (to) {
-            case NORTH:
-                return 0;
-            case EAST:
-                return 90;
-            case SOUTH:
-                return 180;
-            case WEST:
-                return 270;
-            }
-            break;
-        case EAST:
-            switch (to) {
-            case NORTH:
-                return 270;
-            case EAST:
-                return 0;
-            case SOUTH:
-                return 90;
-            case WEST:
-                return 180;
-            }
-            break;
-        case SOUTH:
-            switch (to) {
-            case NORTH:
-                return 180;
-            case EAST:
-                return 270;
-            case SOUTH:
-                return 0;
-            case WEST:
-                return 90;
-            }
-            break;
-        case WEST:
-            switch (to) {
-            case NORTH:
-                return 90;
-            case EAST:
-                return 180;
-            case SOUTH:
-                return 270;
-            case WEST:
-                return 0;
-            }
-            break;
-        default:
-            return 0;
-        }
-        return 0;
-    }
 
     public static Vector findEnderChest(CuboidClipboard cc) {
         for (int x = 0; x < cc.getSize().getBlockX(); x++) {
@@ -175,19 +120,17 @@ public class BuildingPlan {
         
         Directional md = (Directional) Material.getMaterial(BuildInABox.BLOCK_ID).getNewData((byte)cc.getPoint(new Vector(-chestOffset.getBlockX(), -chestOffset.getBlockY(), -chestOffset.getBlockZ())).getData());
         if (!md.getFacing().equals(BlockFace.NORTH)) {
-            cc.rotate2D(getRotationDegrees(md.getFacing(), BlockFace.NORTH));
+            cc.rotate2D(CuboidClipboard.getRotationDegrees(md.getFacing(), BlockFace.NORTH));
             chestOffset = findEnderChest(cc);
         }
         cc.setOffset(chestOffset);
         try {
-            SchematicFormat.MCEDIT.save(cc, new File(new File(plugin.getDataFolder(), "schematics"), name + ".schematic"));
+            SchematicFormat.MCEDIT.save(cc.toWorldEditClipboard(), new File(new File(plugin.getDataFolder(), "schematics"), name + ".schematic"));
             plan = new BuildingPlan(plugin, name, name+".schematic", name, null);
             plugin.getDataStore().saveBuildingPlan(plan);
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         } catch (DataException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
         return plan;
@@ -199,8 +142,8 @@ public class BuildingPlan {
 
     public CuboidClipboard getRotatedClipboard(BlockFace facing) {
         try {
-            CuboidClipboard clipboard = SchematicFormat.MCEDIT.load(this.getSchematicFile());
-            clipboard.rotate2D(getRotationDegrees(BlockFace.NORTH, facing));
+            CuboidClipboard clipboard = new CuboidClipboard(SchematicFormat.MCEDIT.load(this.getSchematicFile()));
+            clipboard.rotate2D(CuboidClipboard.getRotationDegrees(BlockFace.NORTH, facing));
             clipboard.setOffset(findEnderChest(clipboard));
             return clipboard;
         } catch (IOException e) {

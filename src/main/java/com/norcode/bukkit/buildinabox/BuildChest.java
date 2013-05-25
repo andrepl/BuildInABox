@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import com.norcode.bukkit.buildinabox.util.CuboidClipboard;
+
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
@@ -28,7 +30,6 @@ import com.sk89q.jnbt.CompoundTag;
 import com.sk89q.jnbt.IntTag;
 import com.sk89q.jnbt.Tag;
 import com.sk89q.worldedit.BlockVector;
-import com.sk89q.worldedit.CuboidClipboard;
 import com.sk89q.worldedit.Vector;
 import com.sk89q.worldedit.blocks.BaseBlock;
 import com.sk89q.worldedit.blocks.TileEntityBlock;
@@ -183,7 +184,10 @@ public class BuildChest {
     }
 
     public Set<Chunk> protectBlocks() {
-        return plan.protectBlocks(getBlock(), null);
+        if (plan != null) {
+            return plan.protectBlocks(getBlock(), null);
+        }
+        return null;
     }
 
     public void build(final Player player) {
@@ -229,7 +233,7 @@ public class BuildChest {
         }
         CuboidClipboard clipboard = null;
         try {
-            clipboard = SchematicFormat.MCEDIT.load(plan.getSchematicFile());
+            clipboard = new CuboidClipboard(SchematicFormat.MCEDIT.load(plan.getSchematicFile()));
             
             if (data.getTileEntities() != null) {
                 CompoundTag tag;
@@ -252,7 +256,7 @@ public class BuildChest {
                     clipboard.getPoint(entry.getKey()).setNbtData(new CompoundTag("", values));
                 }
             }
-            clipboard.rotate2D(BuildingPlan.getRotationDegrees(BlockFace.NORTH, getEnderChest().getFacing()));
+            clipboard.rotate2D(CuboidClipboard.getRotationDegrees(BlockFace.NORTH, getEnderChest().getFacing()));
         } catch (IOException e) {
             e.printStackTrace();
         } catch (DataException e) {
@@ -388,7 +392,7 @@ public class BuildChest {
                 @Override
                 public void onComplete() {
                     BaseBlock bb;
-                    clipboard.rotate2D(BuildingPlan.getRotationDegrees(getEnderChest().getFacing(), BlockFace.NORTH));
+                    clipboard.rotate2D(CuboidClipboard.getRotationDegrees(getEnderChest().getFacing(), BlockFace.NORTH));
                     Vector v;
                     for (int x=0;x<clipboard.getSize().getBlockX();x++) {
                         for (int z=0;z<clipboard.getSize().getBlockZ();z++) {

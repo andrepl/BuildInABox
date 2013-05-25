@@ -19,9 +19,9 @@ import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockPlaceEvent;
 
+import com.norcode.bukkit.buildinabox.util.CuboidClipboard;
 import com.norcode.bukkit.buildinabox.util.RandomFireworksGenerator;
 import com.sk89q.worldedit.BlockVector;
-import com.sk89q.worldedit.CuboidClipboard;
 import com.sk89q.worldedit.Vector;
 import com.sk89q.worldedit.blocks.BaseBlock;
 import com.sk89q.worldedit.bukkit.BukkitWorld;
@@ -192,11 +192,12 @@ public abstract class BuildingPlanTask implements Runnable {
     public void copyFromClipboard(BaseBlock bb, Location wc, Player attributeToPlayer) {
         // Send a BlockPlace event for loggers to rollback maybe.
         BlockState bs = wc.getBlock().getState();
-        
         BlockPlaceEvent bpe = new BlockPlaceEvent(wc.getBlock(), bs, 
                 wc.getBlock().getRelative(BlockFace.DOWN), null, attributeToPlayer, true);
         plugin.getServer().getPluginManager().callEvent(bpe);
-        wc.getBlock().setTypeIdAndData(bb.getType(), (byte) bb.getData(), false);
+        bs.setTypeId(bb.getType());
+        bs.setRawData((byte) bb.getData());
+        bs.update(true);
         bukkitWorld.copyToWorld(new BlockVector(wc.getBlockX(), wc.getBlockY(), wc.getBlockZ()), bb);
     }
 

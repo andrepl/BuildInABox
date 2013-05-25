@@ -189,6 +189,11 @@ public class BIABCommandExecutor implements TabExecutor {
             return;
         }
         String buildingName = args.pop();
+        try {
+            int isNumeric = Integer.parseInt(buildingName, 16);
+            sender.sendMessage(BuildInABox.getErrorMsg("invalid-building-plan-name", buildingName));
+            return;
+        } catch (IllegalArgumentException ex) {}
         BuildingPlan plan = BuildingPlan.fromClipboard(plugin, (Player) sender, buildingName);
         String displayName = "";
         while (args.size() > 0 && !args.peek().equals("|")) {

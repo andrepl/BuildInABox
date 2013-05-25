@@ -5,6 +5,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -228,7 +229,10 @@ public class BuildInABox extends JavaPlugin implements Listener {
                         bc.getBlock().setMetadata("buildInABox", new FixedMetadataValue(this, bc));
                         if (getConfig().getBoolean("protect-buildings")) {
                             debug("Protecting Building: " + bc);
-                            loadedChunks.addAll(bc.protectBlocks());
+                            Set<Chunk> protectedChunks = bc.protectBlocks(); 
+                            if (protectedChunks != null) {
+                                loadedChunks.addAll(protectedChunks);
+                            }
                         }
                     }
                 }
