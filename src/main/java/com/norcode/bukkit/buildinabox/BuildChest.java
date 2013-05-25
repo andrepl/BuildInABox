@@ -237,7 +237,6 @@ public class BuildChest {
             
             if (data.getTileEntities() != null) {
                 CompoundTag tag;
-                BuildInABox.getInstance().debug("TileEntities: " + data.getTileEntities()); 
                 for (Entry<BlockVector, CompoundTag> entry: data.getTileEntities().entrySet()) {
                     tag = entry.getValue();
                     Map<String, Tag> values = new HashMap<String, Tag>();
@@ -252,7 +251,6 @@ public class BuildChest {
                             values.put(tagEntry.getKey(), tagEntry.getValue());
                         }
                     }
-                    BuildInABox.getInstance().debug("Setting clipboard nbt data:" + entry.getKey() + " -> " + values);
                     clipboard.getPoint(entry.getKey()).setNbtData(new CompoundTag("", values));
                 }
             }
@@ -399,7 +397,6 @@ public class BuildChest {
                             for (int y=0;y<clipboard.getSize().getBlockY();y++) {
                                 v = new Vector(x,y,z);
                                 if (x == -clipboard.getOffset().getBlockX() && y == -clipboard.getOffset().getBlockY() && z == -clipboard.getOffset().getBlockZ()) {
-                                    BuildInABox.getInstance().debug("Skipping enderchest in TileEntity check");
                                     continue;
                                 }
                                 bb = clipboard.getPoint(v);
@@ -443,7 +440,6 @@ public class BuildChest {
                     if (bb.getType() == 0) return BlockProcessResult.DISCARD;
                     if (bb.getType() == BuildInABox.BLOCK_ID) {
                         if (wc.getBlock().hasMetadata("buildInABox")) {
-                            BuildInABox.getInstance().debug("Skipping Enderchest.");
                             return BlockProcessResult.DISCARD;
                         }
                     }
@@ -458,7 +454,6 @@ public class BuildChest {
                         if (((TileEntityBlock)bb).hasNbtData()) {
                             BlockState state = wc.getBlock().getState();
                             BaseBlock worldBlock = bukkitWorld.getBlock(new Vector(wc.getBlockX(), wc.getBlockY(), wc.getBlockZ()));
-                            BuildInABox.getInstance().debug("Replacing clipboard data with: " + worldBlock);
                             clipboard.setBlock(c, worldBlock);
                             if (state instanceof org.bukkit.inventory.InventoryHolder) {
                                 org.bukkit.inventory.InventoryHolder chest = (org.bukkit.inventory.InventoryHolder) state;
@@ -475,14 +470,12 @@ public class BuildChest {
                         if (data.getReplacedBlocks().containsKey(c)) {
                             BaseBlock replacement = data.getReplacedBlocks().get(c);
                             if (replacement != null) {
-                                BuildInABox.getInstance().debug("Setting " + c + " to " + replacement);
                                 wc.getBlock().setTypeIdAndData(replacement.getType(), (byte) replacement.getData(), false);
                             }
                         } else {
                             wc.getBlock().setTypeIdAndData(0,(byte) 0, false);
                         }
                     } else {
-                        BuildInABox.getInstance().debug("Setting " + c + " to air");
                         wc.getBlock().setTypeIdAndData(0, (byte)0, false);
                     }
                     wc.getBlock().removeMetadata("biab-block", BuildInABox.getInstance());

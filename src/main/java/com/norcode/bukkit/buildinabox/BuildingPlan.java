@@ -15,6 +15,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.material.Directional;
 import org.bukkit.material.EnderChest;
 import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.permissions.Permission;
+import org.bukkit.permissions.PermissionDefault;
 
 import org.bukkit.Chunk;
 import org.bukkit.Location;
@@ -48,6 +50,22 @@ public class BuildingPlan {
         this.displayName = displayName;
         this.filename = filename;
         this.description = description;
+        registerPermissions();
+    }
+
+    private void registerPermissions() {
+        registerPermission("give", plugin.wildcardGivePerm);
+        registerPermission("place", plugin.wildcardPlacePerm);
+        registerPermission("pickup", plugin.wildcardPickupPerm);
+        registerPermission("lock", plugin.wildcardLockPerm);
+        registerPermission("unlock", plugin.wildcardUnlockPerm);
+    }
+
+    private void registerPermission(String action, Permission parent) {
+        Permission p = new Permission("biab." + action.toLowerCase() + "." + name, "Permission to " + action + " " + name + " BIABs.", PermissionDefault.OP);
+        p.addParent(parent, true);
+        plugin.getServer().getPluginManager().addPermission(p);
+        parent.recalculatePermissibles();
     }
 
     public void setName(String name) {
@@ -190,5 +208,4 @@ public class BuildingPlan {
         }
         return description;
     }
-
 }

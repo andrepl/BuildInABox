@@ -96,16 +96,12 @@ public abstract class DataStore {
         if (s == null) {
             return null;
         }
-        BuildInABox.getInstance().debug("Attempting to deserialize: " + s);
         try {
             NBTInputStream stream = new NBTInputStream(new GZIPInputStream(new ByteArrayInputStream(Base64.decode(s.getBytes()))));
             Tag tag = stream.readTag();
             stream.close();
             if (tag instanceof CompoundTag) {
-                BuildInABox.getInstance().debug("Deserialized: " + tag);
                 return (CompoundTag) tag;
-            } else {
-                BuildInABox.getInstance().debug("Didn't Deserialize (not compound?): " + tag);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -226,7 +222,6 @@ public abstract class DataStore {
                                 return null;
                             }
                         }
-                        BuildInABox.getInstance().debug("data:"+data);
                         BuildingPlan plan = getBuildingPlan(data.getPlanName());
                         if (plan != null) {
                             if (!plan.getDisplayName().equals(meta.getDisplayName())) {
@@ -244,7 +239,6 @@ public abstract class DataStore {
                                 }
                             }
                             if (update) {
-                                BuildInABox.getInstance().debug("Updating itemstack: " + meta);
                                 stack.setItemMeta(meta);
                                 return data;
                             }

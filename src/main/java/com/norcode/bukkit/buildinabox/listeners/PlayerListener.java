@@ -77,7 +77,7 @@ public class PlayerListener implements Listener {
                         if (event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
                             // pick up
                             if (!bc.isLocked()) {
-                                if (player.hasPermission("biab.pickup")) {
+                                if (player.hasPermission("biab.pickup." + bc.getPlan().getName().toLowerCase())) {
                                     bc.pickup(player);
                                 } else {
                                     player.sendMessage(BuildInABox.getErrorMsg("no-permission"));
@@ -88,7 +88,7 @@ public class PlayerListener implements Listener {
                             if (plugin.getConfig().getBoolean("allow-locking", true)) {
                                 if (bc.isLocked()) {
                                     if (bc.getLockedBy().equals(player.getName())) {
-                                        if (player.hasPermission("biab.unlock")) {
+                                        if (player.hasPermission("biab.unlock." + bc.getPlan().getName().toLowerCase())) {
                                             bc.unlock(player);
                                         } else {
                                             player.sendMessage(BuildInABox.getErrorMsg("no-permission"));
@@ -101,7 +101,7 @@ public class PlayerListener implements Listener {
                                         }
                                     }
                                 } else {
-                                    if (player.hasPermission("biab.lock")) {
+                                    if (player.hasPermission("biab.lock." + bc.getPlan().getName().toLowerCase())) {
                                         bc.lock(player);
                                     } else {
                                         player.sendMessage(BuildInABox.getErrorMsg("no-perimssion"));
@@ -141,7 +141,7 @@ public class PlayerListener implements Listener {
     public void onBlockPlace(final BlockPlaceEvent event) {
         ChestData data = plugin.getDataStore().fromItemStack(event.getItemInHand());
         if (data != null) {
-            if (!event.getPlayer().hasPermission("biab.place")) {
+            if (!event.getPlayer().hasPermission("biab.place." + data.getPlanName().toLowerCase())) {
                 event.getPlayer().sendMessage(BuildInABox.getErrorMsg("no-permission"));
                 event.setCancelled(true);
                 return;

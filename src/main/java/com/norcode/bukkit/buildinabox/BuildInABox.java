@@ -25,6 +25,9 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.permissions.Permission;
+import org.bukkit.permissions.PermissionDefault;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
@@ -58,6 +61,12 @@ public class BuildInABox extends JavaPlugin implements Listener {
     private Economy economy = null;
     private Anticheat antiCheat;
     private NoCheatPlus NCP;
+    public Permission wildcardGivePerm;
+    public Permission wildcardPlacePerm;
+    public Permission wildcardPickupPerm;
+    public Permission wildcardLockPerm;
+    public Permission wildcardUnlockPerm;
+
     @Override
     public void onLoad() {
         instance = this;
@@ -79,6 +88,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
         LORE_HEADER = getMsg("display-name"); 
         doUpdater();
         new File(getDataFolder(), "schematics").mkdir();
+        setupPermissions();
         if (initializeDataStore()) {
             getServer().getPluginCommand("biab").setExecutor(new BIABCommandExecutor(this));
             getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
@@ -110,6 +120,31 @@ public class BuildInABox extends JavaPlugin implements Listener {
                 }
             }, 20, 20);
         }
+    }
+
+    private void setupPermissions() {
+        PluginManager pm = getServer().getPluginManager();
+        Permission adminPerm = new Permission("biab.admin", "Default set of admin permissions", PermissionDefault.OP);
+        pm.addPermission(adminPerm);
+        wildcardGivePerm = new Permission("biab.give.*", "Permission to 'give' any BIAB.", PermissionDefault.OP);
+        wildcardGivePerm.addParent(adminPerm, true);
+        pm.addPermission(wildcardGivePerm);
+
+        wildcardPlacePerm = new Permission("biab.place.*", "Permission to 'place' any BIAB.", PermissionDefault.OP);
+        wildcardPlacePerm.addParent(adminPerm, true);
+        pm.addPermission(wildcardPlacePerm);
+
+        wildcardPickupPerm = new Permission("biab.pickup.*", "Permission to 'pickup' and BIAB.", PermissionDefault.OP);
+        wildcardPickupPerm.addParent(adminPerm, true);
+        pm.addPermission(wildcardPickupPerm);
+
+        wildcardLockPerm = new Permission("biab.lock.*", "Permission to lock any BIAB.", PermissionDefault.OP);
+        wildcardLockPerm.addParent(adminPerm, true);
+        pm.addPermission(wildcardLockPerm);
+
+        wildcardUnlockPerm = new Permission("biab.unlock.*", "Permission to lock any BIAB.", PermissionDefault.OP);
+        wildcardUnlockPerm.addParent(adminPerm, true);
+        pm.addPermission(wildcardUnlockPerm);
     }
 
     private void setupAntiCheat() {
@@ -218,7 +253,6 @@ public class BuildInABox extends JavaPlugin implements Listener {
         long tooOldTime = now - expiry;// if the chest hasn't been touched in 90 days expire the data
         HashSet<Chunk> loadedChunks = new HashSet<Chunk>();
         for (ChestData cd: new ArrayList<ChestData>(datastore.getAllChests())) {
-            debug("Checking Chest: " + cd.getId());
             if (cd.getLastActivity() < tooOldTime) {
                 debug("Chest Data is too old: " + cd.getLastActivity() + " vs " + tooOldTime);
                 datastore.deleteChest(cd.getId());
@@ -228,7 +262,6 @@ public class BuildInABox extends JavaPlugin implements Listener {
                     if (bc.getBlock().getTypeId() == BLOCK_ID) {
                         bc.getBlock().setMetadata("buildInABox", new FixedMetadataValue(this, bc));
                         if (getConfig().getBoolean("protect-buildings")) {
-                            debug("Protecting Building: " + bc);
                             Set<Chunk> protectedChunks = bc.protectBlocks(); 
                             if (protectedChunks != null) {
                                 loadedChunks.addAll(protectedChunks);
@@ -260,7 +293,6 @@ public class BuildInABox extends JavaPlugin implements Listener {
                 public void run() {
                     Player player = getServer().getPlayer(playerName);
                     if (player != null && player.isOnline()) {
-                        debug("Updater Result: " + updater.getResult());
                         switch (updater.getResult()) {
                         case UPDATE_AVAILABLE:
                             player.sendMessage(getNormalMsg("update-available", "http://dev.bukkit.org/server-mods/build-in-a-box/"));

@@ -1,6 +1,6 @@
 author: metalhedd
 main: com.norcode.bukkit.buildinabox.BuildInABox
-version: 0.1.6
+version: 0.1.7-SNAPSHOT
 name: BuildInABox
 softdepend: [Vault, AntiCheat, NoCheatPlus]
 depend: [WorldEdit]
@@ -12,30 +12,12 @@ commands:
     description: give a player a Build-in-a-Box Building.
 
 permissions:
-  biab.admin:
-    default: op
-    children:
-      biab.give: true
-      biab.save: true
-  biab.give:
-    default: op
   biab.save:
     default: op
   biab.permanent:
     default: op
   biab.delete:
     default: op
-  biab.place:
-    description: allow placing BIABs
-    default: true
-  biab.pickup:
-    description: allow picking up BIABs
-    default: true
-  biab.lock:
-    description: allow locking BIAB's
-    default: true
-  biab.unlock:
-    description: allow unlocking BIAB's locked by you
-    default: true
   biab.unlock.others:
     description: allow unlocking BIAB's locked by other players.
+    default: true

@@ -212,10 +212,6 @@ public class BIABCommandExecutor implements TabExecutor {
     }
 
     public void cmdGive(CommandSender sender, LinkedList<String> args) {
-        if (!sender.hasPermission("biab.give")) {
-            sender.sendMessage(BuildInABox.getErrorMsg("no-permission"));
-            return;
-        }
         Player targetPlayer = null;
         if (args.size() >= 2) {
             String name = args.pop();
@@ -242,7 +238,10 @@ public class BIABCommandExecutor implements TabExecutor {
                 sender.sendMessage(BuildInABox.getErrorMsg("unknown-building-plan", planName));
                 return;
             }
-            
+            if (!sender.hasPermission("biab.give."+plan.getName().toLowerCase())) {
+                sender.sendMessage(BuildInABox.getErrorMsg("no-permission"));
+                return;
+            }
             //ChestData data = plugin.getDataStore().createChest(plan.getName());
             ItemStack stack = new ItemStack(BuildInABox.BLOCK_ID, 1);
             ItemMeta meta = plugin.getServer().getItemFactory().getItemMeta(Material.getMaterial(BuildInABox.BLOCK_ID));
@@ -286,7 +285,7 @@ public class BIABCommandExecutor implements TabExecutor {
           if ("save".startsWith(action) && sender.hasPermission("biab.save")) {
               results.add("save");
           }
-          if ("give".startsWith(action) && sender.hasPermission("biab.give")) {
+          if ("give".startsWith(action)) {
               results.add("give");
           }
       } else if (args.size() == 1) {
