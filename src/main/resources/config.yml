@@ -31,6 +31,9 @@ carry-effect-type: SLOW
 # Prevent breaking blocks which belong to a building.
 protect-buildings: true
 
+# when true, locked buildings will have their chests and doors locked as well.
+lock-containers: true
+
 # if true, BIAB will generate fake BlockPlaceEvents during preview and check for cancellation
 # to determine if a building may be placed.
 check-build-permissions: true

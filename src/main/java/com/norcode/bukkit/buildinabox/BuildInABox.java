@@ -262,7 +262,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
                     if (bc.getBlock().getTypeId() == BLOCK_ID) {
                         bc.getBlock().setMetadata("buildInABox", new FixedMetadataValue(this, bc));
                         if (getConfig().getBoolean("protect-buildings")) {
-                            Set<Chunk> protectedChunks = bc.protectBlocks(); 
+                            Set<Chunk> protectedChunks = bc.protectBlocks(null); 
                             if (protectedChunks != null) {
                                 loadedChunks.addAll(protectedChunks);
                             }

@@ -182,31 +182,7 @@ public class BuildingPlan {
         return null;
     }
 
-    public Set<Chunk> protectBlocks(Block enderChest, CuboidClipboard clipboard) {
-        HashSet<Chunk> loadedChunks = new HashSet<Chunk>();
-        if (clipboard == null) {
-            Location chestLoc = enderChest.getLocation();
-            EnderChest ec = (EnderChest) Material.getMaterial(BuildInABox.BLOCK_ID).getNewData(chestLoc.getBlock().getData());
-            BlockFace dir = ec.getFacing();
-            clipboard = getRotatedClipboard(dir);
-        }
-        Location loc;
-        Vector offset = clipboard.getOffset();
-        Vector origin = new Vector(enderChest.getX(), enderChest.getY(), enderChest.getZ());
-        for (int x=0;x<clipboard.getSize().getBlockX();x++) {
-            for (int y = 0;y<clipboard.getSize().getBlockY();y++) {
-                for (int z=0;z<clipboard.getSize().getBlockZ();z++) {
-                    if (clipboard.getPoint(new Vector(x,y,z)).getType() > 0) {
-                        Vector v = origin.add(offset);
-                        loc = new Location(enderChest.getWorld(), v.getBlockX()+x, v.getBlockY()+y, v.getBlockZ()+z);
-                        loadedChunks.add(loc.getChunk());
-                        enderChest.getWorld().getBlockAt(loc).setMetadata("biab-block", new FixedMetadataValue(plugin, enderChest));
-                    }
-                }
-            }
-        }
-        return loadedChunks;
-    }
+
 
     public String getFilename() {
         return filename;

@@ -3,6 +3,7 @@ package com.norcode.bukkit.buildinabox;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -183,11 +184,30 @@ public class BuildChest {
         buildTask.start();
     }
 
-    public Set<Chunk> protectBlocks() {
-        if (plan != null) {
-            return plan.protectBlocks(getBlock(), null);
+    public Set<Chunk> protectBlocks(CuboidClipboard clipboard) {
+        HashSet<Chunk> loadedChunks = new HashSet<Chunk>();
+        if (clipboard == null) {
+            Location chestLoc = getBlock().getLocation();
+            EnderChest ec = (EnderChest) Material.getMaterial(BuildInABox.BLOCK_ID).getNewData(chestLoc.getBlock().getData());
+            BlockFace dir = ec.getFacing();
+            clipboard = plan.getRotatedClipboard(dir);
         }
-        return null;
+        Location loc;
+        Vector offset = clipboard.getOffset();
+        Vector origin = new Vector(getBlock().getX(), getBlock().getY(), getBlock().getZ());
+        for (int x=0;x<clipboard.getSize().getBlockX();x++) {
+            for (int y = 0;y<clipboard.getSize().getBlockY();y++) {
+                for (int z=0;z<clipboard.getSize().getBlockZ();z++) {
+                    if (clipboard.getPoint(new Vector(x,y,z)).getType() > 0) {
+                        Vector v = origin.add(offset);
+                        loc = new Location(getBlock().getWorld(), v.getBlockX()+x, v.getBlockY()+y, v.getBlockZ()+z);
+                        loadedChunks.add(loc.getChunk());
+                        getBlock().getWorld().getBlockAt(loc).setMetadata("biab-block", new FixedMetadataValue(plugin, this));
+                    }
+                }
+            }
+        }
+        return loadedChunks;
     }
 
     public void build(final Player player) {
