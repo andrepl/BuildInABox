@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.norcode.bukkit.buildinabox</groupId>
   <artifactId>BuildInABox</artifactId>
-  <version>0.1.7-SNAPSHOT</version>
+  <version>0.1.6</version>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
