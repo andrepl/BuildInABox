@@ -72,10 +72,13 @@ public class BuildingPlan {
     }
 
     private void registerPermission(String action, Permission parent) {
-        Permission p = new Permission("biab." + action.toLowerCase() + "." + name.toLowerCase(), "Permission to " + action + " " + name + " BIABs.", PermissionDefault.OP);
-        p.addParent(parent, true);
-        plugin.getServer().getPluginManager().addPermission(p);
-        parent.recalculatePermissibles();
+        Permission p = plugin.getServer().getPluginManager().getPermission("biab." + action.toLowerCase() + "." + name.toLowerCase());
+        if (p == null) {
+            p = new Permission("biab." + action.toLowerCase() + "." + name.toLowerCase(), "Permission to " + action + " " + name + " BIABs.", PermissionDefault.OP);
+            p.addParent(parent, true);
+            plugin.getServer().getPluginManager().addPermission(p);
+            parent.recalculatePermissibles();
+        }
     }
 
     public void setName(String name) {

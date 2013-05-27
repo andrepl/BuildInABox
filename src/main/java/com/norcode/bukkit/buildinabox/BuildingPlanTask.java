@@ -197,7 +197,7 @@ public abstract class BuildingPlanTask implements Runnable {
         plugin.getServer().getPluginManager().callEvent(bpe);
         bs.setTypeId(bb.getType());
         bs.setRawData((byte) bb.getData());
-        bs.update(true);
+        bs.update(true, false);
         bukkitWorld.copyToWorld(new BlockVector(wc.getBlockX(), wc.getBlockY(), wc.getBlockZ()), bb);
     }
 
