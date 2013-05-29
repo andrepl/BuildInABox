@@ -18,6 +18,8 @@ import net.milkbowl.vault.economy.Economy;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
+import org.bukkit.World;
+import org.bukkit.WorldCreator;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -254,22 +256,41 @@ public class BuildInABox extends JavaPlugin implements Listener {
         HashSet<Chunk> loadedChunks = new HashSet<Chunk>();
         for (ChestData cd: new ArrayList<ChestData>(datastore.getAllChests())) {
             if (cd.getLastActivity() < tooOldTime) {
-                debug("Chest Data is too old: " + cd.getLastActivity() + " vs " + tooOldTime);
+                    debug("Chest Data is too old: " + cd.getLastActivity() + " vs " + tooOldTime);
+                    datastore.deleteChest(cd.getId());
+                    continue;
+            }
+            if (cd.getLocation() == null)
+                    continue;
+            WorldCreator wc;
+            try {
+                wc = new WorldCreator(cd.getLocation().getWorld().getName());
+            } catch (NullPointerException ex) {
                 datastore.deleteChest(cd.getId());
-            } else {
-                if (cd.getLocation() != null) {
-                    BuildChest bc = new BuildChest(cd);
-                    if (bc.getBlock().getTypeId() == BLOCK_ID) {
-                        bc.getBlock().setMetadata("buildInABox", new FixedMetadataValue(this, bc));
-                        if (getConfig().getBoolean("protect-buildings")) {
-                            Set<Chunk> protectedChunks = bc.protectBlocks(null); 
-                            if (protectedChunks != null) {
-                                loadedChunks.addAll(protectedChunks);
-                            }
-                        }
-                    }
+                continue;
+            }
+            if (getServer().createWorld(wc) == null) {
+                getLogger().warning("Deleting BuildChest @ " + cd.getLocation() + ": World '" + cd.getLocation().getWorld().getName() + "' Does not exist.");
+                datastore.deleteChest(cd.getId());
+                continue;
+            }
+            BuildChest bc = new BuildChest(cd);
+            if (!bc.getLocation().getChunk().isLoaded()) {
+                if (!bc.getLocation().getChunk().load()) {
+                    continue;
                 }
             }
+            if (bc.getBlock().getTypeId() != BLOCK_ID) {
+                    datastore.deleteChest(cd.getId());
+                    continue;
+            }
+            bc.getBlock().setMetadata("buildInABox", new FixedMetadataValue(this, bc));
+            if (!getConfig().getBoolean("protect-buildings"))
+                    continue;
+            Set<Chunk> protectedChunks = bc.protectBlocks(null);
+            if (protectedChunks == null)
+                    continue;
+            loadedChunks.addAll(protectedChunks);
         }
         for (Chunk c: loadedChunks) {
             c.getWorld().unloadChunkRequest(c.getX(), c.getZ(), true);
@@ -279,6 +300,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
+
         PluginManager pm = getServer().getPluginManager();
         pm.removePermission("biab.admin");
         pm.removePermission(wildcardGivePerm);

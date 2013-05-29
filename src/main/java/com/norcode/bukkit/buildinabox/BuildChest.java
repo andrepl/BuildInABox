@@ -123,7 +123,11 @@ public class BuildChest {
 
     public Block getBlock() {
         if (data.getLocation() != null) {
-            return data.getLocation().getBlock();
+            try {
+                return data.getLocation().getBlock();
+            } catch (NullPointerException ex) {
+                return null;
+            }
         }
         return null;
     }
