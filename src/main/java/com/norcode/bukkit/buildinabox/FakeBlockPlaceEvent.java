@@ -7,8 +7,8 @@ import org.bukkit.event.block.BlockPlaceEvent;
 
 public class FakeBlockPlaceEvent extends BlockPlaceEvent {
     private boolean wasCancelled = false;
-    public FakeBlockPlaceEvent(Location loc, Player thePlayer) {
-        super(loc.getBlock(), loc.getBlock().getState(), loc.getBlock().getRelative(BlockFace.DOWN), null, thePlayer, true);
+    public FakeBlockPlaceEvent(Location loc, Player thePlayer, boolean canBuild) {
+        super(loc.getBlock(), loc.getBlock().getState(), loc.getBlock().getRelative(BlockFace.DOWN), null, thePlayer, canBuild);
     }
     public boolean wasCancelled() {
         return wasCancelled;

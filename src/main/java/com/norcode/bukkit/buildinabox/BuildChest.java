@@ -23,6 +23,7 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockCanBuildEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.material.EnderChest;
 import org.bukkit.metadata.FixedMetadataValue;
@@ -174,7 +175,13 @@ public class BuildChest {
                     return BlockProcessResult.DISCARD;
                 }
                 if (checkBuildPermissions) {
-                    FakeBlockPlaceEvent event = new FakeBlockPlaceEvent(wc, player);
+                    BlockCanBuildEvent canBuildEvent = new BlockCanBuildEvent(wc.getBlock(), bb.getType(), true);
+                    plugin.getServer().getPluginManager().callEvent(canBuildEvent);
+                    if (!canBuildEvent.isBuildable()) {
+                        cancelled = true;
+                        return BlockProcessResult.DISCARD;
+                    }
+                    FakeBlockPlaceEvent event = new FakeBlockPlaceEvent(wc, player, canBuildEvent.isBuildable());
                     plugin.getServer().getPluginManager().callEvent(event);
                     if (event.isCancelled() && event.wasCancelled()) {
                         cancelled = true;

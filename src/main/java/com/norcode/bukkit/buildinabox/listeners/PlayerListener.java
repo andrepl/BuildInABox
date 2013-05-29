@@ -23,7 +23,8 @@ public class PlayerListener implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler(ignoreCancelled=true)
+
+    @EventHandler(ignoreCancelled=true, priority = EventPriority.NORMAL)
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         Block block = event.getClickedBlock();
@@ -97,7 +98,7 @@ public class PlayerListener implements Listener {
                                         if (player.hasPermission("biab.unlock.others")) {
                                             bc.unlock(player);
                                         } else {
-                                            player.sendMessage(BuildInABox.getErrorMsg("no-perimssion"));
+                                            player.sendMessage(BuildInABox.getErrorMsg("no-permission"));
                                         }
                                     }
                                 } else {

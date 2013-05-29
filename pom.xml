@@ -37,6 +37,11 @@
         <artifactId>craftbukkit</artifactId>
         <version>1.5.2-R0.1</version>
     </dependency>
+    <!--<dependency>-->
+      <!--<groupId>com.norcode.bukkit.schematica</groupId>-->
+        <!--<artifactId>Schematica</artifactId>-->
+        <!--<version>0.0.1-SNAPSHOT</version>-->
+    <!--</dependency>-->
     <dependency>
       <groupId>com.sk89q</groupId>
         <artifactId>worldedit</artifactId>
