@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.norcode.bukkit.schematica.exceptions.SchematicSaveException;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -125,7 +126,7 @@ public class BIABCommandExecutor implements TabExecutor {
         args.pop();
         String dn = "";
         while (!args.isEmpty()) {
-            dn += BuildInABox.convertColors(args.pop()) + " ";
+            dn += ChatColor.translateAlternateColorCodes('&', args.pop()) + " ";
         }
         dn = dn.trim();
         if (dn.equals("")) {
@@ -146,7 +147,7 @@ public class BIABCommandExecutor implements TabExecutor {
                 lines.add(line);
                 line = "";
             } else {
-                line += BuildInABox.convertColors(w) + " ";
+                line += ChatColor.translateAlternateColorCodes('&', w) + " ";
             }
         }
         if (!line.equals(" ")) {
@@ -194,7 +195,13 @@ public class BIABCommandExecutor implements TabExecutor {
             sender.sendMessage(BuildInABox.getErrorMsg("invalid-building-plan-name", buildingName));
             return;
         } catch (IllegalArgumentException ex) {}
-        BuildingPlan plan = BuildingPlan.fromClipboard(plugin, (Player) sender, buildingName);
+        BuildingPlan plan = null;
+        try {
+            plan = BuildingPlan.fromClipboard(plugin, (Player) sender, buildingName);
+        } catch (SchematicSaveException e) {
+            sender.sendMessage(BuildInABox.getErrorMsg("save-failed"));
+            return;
+        }
         String displayName = "";
         while (args.size() > 0 && !args.peek().equals("|")) {
             displayName += args.pop() + " ";

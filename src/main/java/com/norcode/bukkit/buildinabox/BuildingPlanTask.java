@@ -7,6 +7,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
+import com.norcode.bukkit.schematica.Clipboard;
+import com.norcode.bukkit.schematica.ClipboardBlock;
 import net.minecraft.server.v1_5_R3.Packet61WorldEvent;
 
 import org.bukkit.Location;
@@ -19,12 +21,10 @@ import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockPlaceEvent;
 
-import com.norcode.bukkit.buildinabox.util.CuboidClipboard;
 import com.norcode.bukkit.buildinabox.util.RandomFireworksGenerator;
-import com.sk89q.worldedit.BlockVector;
-import com.sk89q.worldedit.Vector;
 import com.sk89q.worldedit.blocks.BaseBlock;
 import com.sk89q.worldedit.bukkit.BukkitWorld;
+import org.bukkit.util.BlockVector;
 
 public abstract class BuildingPlanTask implements Runnable {
     private static Random random = new Random();
@@ -36,7 +36,7 @@ public abstract class BuildingPlanTask implements Runnable {
     public LinkedList<BlockUpdate> points = new LinkedList<BlockUpdate>();
     public boolean shuffle;
     public int blocksPerTick;
-    public CuboidClipboard clipboard;
+    public Clipboard clipboard;
     private boolean onFinalPass = false;
     private BlockVector origin;
     private int currentY;
@@ -64,7 +64,7 @@ public abstract class BuildingPlanTask implements Runnable {
         
     }
 
-    public BuildingPlanTask(CuboidClipboard clipboard, BuildChest buildChest, BlockFace buildDirection, int blocksPerTick, boolean shuffle) {
+    public BuildingPlanTask(Clipboard clipboard, BuildChest buildChest, BlockFace buildDirection, int blocksPerTick, boolean shuffle) {
         this.plugin = BuildInABox.getInstance();
         this.bukkitWorld = new BukkitWorld(buildChest.getLocation().getWorld());
         this.clipboard = clipboard;
@@ -73,7 +73,7 @@ public abstract class BuildingPlanTask implements Runnable {
         this.blocksPerTick = blocksPerTick;
         this.shuffle = shuffle;
         Location cl = buildChest.getLocation();
-        Vector off = clipboard.getOffset();
+        BlockVector off = clipboard.getOffset();
         origin = new BlockVector(cl.getBlockX() + off.getBlockX(), cl.getBlockY() + off.getBlockY(), cl.getBlockZ() + off.getBlockZ());
     }
 
@@ -94,7 +94,7 @@ public abstract class BuildingPlanTask implements Runnable {
             for (int x=0;x<clipboard.getSize().getBlockX();x++) {
                 for (int z=0;z<clipboard.getSize().getBlockZ();z++) {
                     v = new BlockVector(x, currentY, z);
-                    points.add(new BlockUpdate(v, clipboard.getPoint(v), true));
+                    points.add(new BlockUpdate(v, clipboard.getBlock(v), true));
                 }
             }
             if (shuffle) {
@@ -117,7 +117,7 @@ public abstract class BuildingPlanTask implements Runnable {
         for (int x=0;x<clipboard.getSize().getBlockX();x++) {
             for (int z=0;z<clipboard.getSize().getBlockZ();z++) {
                 v = new BlockVector(x, currentY, z);
-                points.add(new BlockUpdate(v, clipboard.getPoint(v), true));
+                points.add(new BlockUpdate(v, clipboard.getBlock(v), true));
             }
         }
         if (shuffle) {
@@ -198,7 +198,6 @@ public abstract class BuildingPlanTask implements Runnable {
         bs.setTypeId(bb.getType());
         bs.setRawData((byte) bb.getData());
         bs.update(true, false);
-        bukkitWorld.copyToWorld(new BlockVector(wc.getBlockX(), wc.getBlockY(), wc.getBlockZ()), bb);
     }
 
     public void sendAnimationPacket(int x, int y, int z, int type) {
@@ -240,9 +239,9 @@ public abstract class BuildingPlanTask implements Runnable {
 
     public class BlockUpdate {
         BlockVector pos;
-        BaseBlock block;
+        ClipboardBlock block;
         boolean canQueue;
-        public BlockUpdate(BlockVector pos, BaseBlock block, boolean canQueue) {
+        public BlockUpdate(BlockVector pos, ClipboardBlock block, boolean canQueue) {
             this.pos = pos;
             this.block = block;
             this.canQueue = canQueue;
@@ -253,10 +252,10 @@ public abstract class BuildingPlanTask implements Runnable {
         public void setPos(BlockVector pos) {
             this.pos = pos;
         }
-        public BaseBlock getBlock() {
+        public ClipboardBlock getBlock() {
             return block;
         }
-        public void setBlock(BaseBlock block) {
+        public void setBlock(ClipboardBlock block) {
             this.block = block;
         }
         public boolean isCanQueue() {

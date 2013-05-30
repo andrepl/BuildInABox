@@ -11,6 +11,9 @@ import java.util.Set;
 
 import com.norcode.bukkit.buildinabox.util.CuboidClipboard;
 
+import com.norcode.bukkit.schematica.Clipboard;
+import com.norcode.bukkit.schematica.ClipboardBlock;
+import net.minecraft.server.v1_5_R3.NBTTagCompound;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
@@ -30,12 +33,11 @@ import org.bukkit.metadata.FixedMetadataValue;
 import com.sk89q.jnbt.CompoundTag;
 import com.sk89q.jnbt.IntTag;
 import com.sk89q.jnbt.Tag;
-import com.sk89q.worldedit.BlockVector;
-import com.sk89q.worldedit.Vector;
 import com.sk89q.worldedit.blocks.BaseBlock;
 import com.sk89q.worldedit.blocks.TileEntityBlock;
 import com.sk89q.worldedit.data.DataException;
 import com.sk89q.worldedit.schematic.SchematicFormat;
+import org.bukkit.util.BlockVector;
 
 public class BuildChest {
     BuildInABox plugin;
@@ -88,9 +90,7 @@ public class BuildChest {
 
     public void endPreview(final Player player) {
         if (!previewing) return;
-        buildTask = new BuildingPlanTask(
-                plan.getRotatedClipboard(getEnderChest().getFacing()),
-                BuildChest.this, BlockFace.DOWN, 50, true) {
+        buildTask = new BuildingPlanTask(plan.getRotatedClipboard(getEnderChest().getFacing()), BuildChest.this, BlockFace.DOWN, 50, true) {
                     @Override
                     public void onComplete() {
                         previewing = false;
@@ -164,7 +164,7 @@ public class BuildChest {
             @Override
             public BlockProcessResult processBlockUpdate(
                     BlockUpdate update) {
-                BaseBlock bb = update.getBlock();
+                ClipboardBlock bb = update.getBlock();
                 Location wc = getWorldLocationFor(update.getPos());
                 if (wc.equals(getBlock().getLocation())) {
                     return BlockProcessResult.DISCARD;
@@ -188,7 +188,7 @@ public class BuildChest {
         buildTask.start();
     }
 
-    public Set<Chunk> protectBlocks(CuboidClipboard clipboard) {
+    public Set<Chunk> protectBlocks(Clipboard clipboard) {
         HashSet<Chunk> loadedChunks = new HashSet<Chunk>();
         if (clipboard == null) {
             Location chestLoc = getBlock().getLocation();
@@ -197,13 +197,13 @@ public class BuildChest {
             clipboard = plan.getRotatedClipboard(dir);
         }
         Location loc;
-        Vector offset = clipboard.getOffset();
-        Vector origin = new Vector(getBlock().getX(), getBlock().getY(), getBlock().getZ());
+        BlockVector offset = clipboard.getOffset();
+        BlockVector origin = new BlockVector(getBlock().getX(), getBlock().getY(), getBlock().getZ());
         for (int x=0;x<clipboard.getSize().getBlockX();x++) {
             for (int y = 0;y<clipboard.getSize().getBlockY();y++) {
                 for (int z=0;z<clipboard.getSize().getBlockZ();z++) {
-                    if (clipboard.getPoint(new Vector(x,y,z)).getType() > 0) {
-                        Vector v = origin.add(offset);
+                    if (clipboard.getBlock(x,y,z).getType() > 0) {
+                        BlockVector v = origin.add(offset).toBlockVector();
                         loc = new Location(getBlock().getWorld(), v.getBlockX()+x, v.getBlockY()+y, v.getBlockZ()+z);
                         loadedChunks.add(loc.getChunk());
                         getBlock().getWorld().getBlockAt(loc).setMetadata("biab-block", new FixedMetadataValue(plugin, this));
@@ -255,97 +255,93 @@ public class BuildChest {
                 nearby.add(p);
             }
         }
-        CuboidClipboard clipboard = null;
-        try {
-            clipboard = new CuboidClipboard(SchematicFormat.MCEDIT.load(plan.getSchematicFile()));
-            
-            if (data.getTileEntities() != null) {
-                CompoundTag tag;
-                for (Entry<BlockVector, CompoundTag> entry: data.getTileEntities().entrySet()) {
-                    tag = entry.getValue();
-                    Map<String, Tag> values = new HashMap<String, Tag>();
-                    for (Entry<String, Tag> tagEntry: tag.getValue().entrySet()) {
-                        if (tagEntry.getKey().equals("x")) {
-                            values.put("x", new IntTag("x", entry.getKey().getBlockX()));
-                        } else if (tagEntry.getKey().equals("y")) {
-                            values.put("y", new IntTag("y", entry.getKey().getBlockY()));
-                        } else if (tagEntry.getKey().equals("z")) {
-                            values.put("z", new IntTag("z", entry.getKey().getBlockZ()));
-                        } else {
-                            values.put(tagEntry.getKey(), tagEntry.getValue());
-                        }
-                    }
-                    clipboard.getPoint(entry.getKey()).setNbtData(new CompoundTag("", values));
-                }
+        Clipboard clipboard = plan.getRotatedClipboard(BlockFace.NORTH);
+        if (data.getTileEntities() != null) {
+            NBTTagCompound tag;
+            for (Entry<BlockVector, NBTTagCompound> entry: data.getTileEntities().entrySet()) {
+                tag = (NBTTagCompound) entry.getValue().clone();
+                tag.setInt("x", entry.getKey().getBlockX());
+                tag.setInt("y", entry.getKey().getBlockY());
+                tag.setInt("z", entry.getKey().getBlockZ());
+                clipboard.getBlock(entry.getKey()).setTag(tag);
             }
-            clipboard.rotate2D(CuboidClipboard.getRotationDegrees(BlockFace.NORTH, getEnderChest().getFacing()));
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (DataException e) {
-            e.printStackTrace();
         }
+        clipboard.rotate2D(BuildInABox.getRotationDegrees(BlockFace.NORTH, getEnderChest().getFacing()));
+        List<BlockVector> vectorQueue = clipboard.getPasteQueue(plugin.getConfig().getBoolean("build-animation.shuffle", true), null);
         final boolean protectBlocks = plugin.getConfig().getBoolean("protect-buildings", true);
-        buildTask = new BuildingPlanTask(clipboard, this, BlockFace.UP,
-                plugin.getConfig().getInt("build-animation.blocks-per-tick", 5),
-                plugin.getConfig().getBoolean("build-animation.shuffle", true)) {
+        final BlockVector origin = getLocation().toVector().add(clipboard.getOffset()).toBlockVector();
+        plugin.getBuildManager().scheduleTask(
+            new BuildManager.BuildTask(clipboard, vectorQueue, plugin.getConfig().getInt("build-animation.blocks-per-tick", 5)) {
 
                 private void saveReplacedBlock(BlockVector c, Location wc) {
                     // save blocks below ground level for restoration.
-                    getData().getReplacedBlocks().put(c, 
-                            new BaseBlock(wc.getBlock().getTypeId(), 
+                    getData().getReplacedBlocks().put(c,
+                            new ClipboardBlock(wc.getBlock().getTypeId(),
                                     wc.getBlock().getData()));
                 }
+
                 @Override
-                public void onRunStart() {
-                    plugin.exemptPlayer(player);
+                public void processBlock(BlockVector clipboardPoint) {
+                    int x = origin.getBlockX() + clipboardPoint.getBlockX();
+                    int y = origin.getBlockY() + clipboardPoint.getBlockY();
+                    int z = origin.getBlockZ() + clipboardPoint.getBlockZ();
+
+                    this.clipboard.copyBlockToWorld(clipboard.getBlock(clipboardPoint), new Location(world, x, y, z));
                 }
-                @Override
-                public void onRunEnd() {
-                    plugin.unexemptPlayer(player);
-                }
+
                 @Override
                 public void onComplete() {
                     building = false;
                     data.clearTileEntities();
                     if (!plugin.getConfig().getBoolean("allow-pickup")) {
-                      plugin.getDataStore().deleteChest(data.getId());
-                      getBlock().removeMetadata("buildInABox", plugin);
-                  }
-                  int fireworksLevel = plugin.getConfig().getInt("build-animation.fireworks", 0);
-                  if (fireworksLevel > 0) {
-                      launchFireworks(fireworksLevel);
-                  }
-                  building = false;
-                  return;
+                        plugin.getDataStore().deleteChest(data.getId());
+                        getBlock().removeMetadata("buildInABox", plugin);
+                    }
+                    int fireworksLevel = plugin.getConfig().getInt("build-animation.fireworks", 0);
+                    if (fireworksLevel > 0) {
+                        //TODO: launchFireworks(fireworksLevel);
+                    }
+                    building = false;
                 }
-                @Override
-                public BuildingPlanTask.BlockProcessResult processBlockUpdate(BuildingPlanTask.BlockUpdate blockUpdate) {
-                    BaseBlock bb = blockUpdate.getBlock();
-                    BlockVector c = blockUpdate.getPos();
-                    Location wc = getWorldLocationFor(c);
-                    if (bb.getType() == 0) return BlockProcessResult.DISCARD;
-                    if (wc.equals(getBlock().getLocation())) return BlockProcessResult.DISCARD;
-                    if (blockUpdate.isCanQueue()) {
-                        if (BuildingPlanTask.postBuildBlockIds.contains(bb.getType())) {
-                            return BlockProcessResult.QUEUE_FINAL;
-                        } else if (postLayerBlockIds.contains(bb.getType())) {
-                            return BlockProcessResult.QUEUE_AFTER_LAYER;
-                        }
-                    }
-                    if (c.getBlockY() < getBlock().getY()) {
-                        saveReplacedBlock(c, wc);
-                    }
-                    sendAnimationPacket(wc.getBlockX(), wc.getBlockY(), wc.getBlockZ(), bb.getType());
-                    copyFromClipboard(bb,wc,player);
-                    if (wc.equals(data.getLocation())) {
-                        wc.getBlock().setMetadata("buildInABox", new FixedMetadataValue(plugin, BuildChest.this));
-                    } else if (protectBlocks && allowPickup) {
-                        wc.getBlock().setMetadata("biab-block", new FixedMetadataValue(plugin, true));
-                    }
-                    return BlockProcessResult.PROCESSED;
-                }
-        }; 
-        buildTask.start();
+            });
+//        buildTask = new BuildingPlanTask(clipboard, this, BlockFace.UP,
+//
+//                @Override
+//                public void onRunStart() {
+//                    plugin.exemptPlayer(player);
+//                }
+//                @Override
+//                public void onRunEnd() {
+//                    plugin.unexemptPlayer(player);
+//                }
+//                @Override
+//                public BuildingPlanTask.BlockProcessResult processBlockUpdate(BuildingPlanTask.BlockUpdate blockUpdate) {
+//                    ClipboardBlock bb = blockUpdate.getBlock();
+//                    BlockVector c = blockUpdate.getPos();
+//                    Location wc = getWorldLocationFor(c);
+//                    if (bb.getType() == 0) return BlockProcessResult.DISCARD;
+//                    if (wc.equals(getBlock().getLocation())) return BlockProcessResult.DISCARD;
+//                    if (blockUpdate.isCanQueue()) {
+//                        if (BuildingPlanTask.postBuildBlockIds.contains(bb.getType())) {
+//                            return BlockProcessResult.QUEUE_FINAL;
+//                        } else if (postLayerBlockIds.contains(bb.getType())) {
+//                            return BlockProcessResult.QUEUE_AFTER_LAYER;
+//                        }
+//                    }
+//                    if (c.getBlockY() < getBlock().getY()) {
+//                        saveReplacedBlock(c, wc);
+//                    }
+//                    sendAnimationPacket(wc.getBlockX(), wc.getBlockY(), wc.getBlockZ(), bb.getType());
+//                    copyFromClipboard(bb,wc,player);
+//                    if (wc.equals(data.getLocation())) {
+//                        wc.getBlock().setMetadata("buildInABox", new FixedMetadataValue(plugin, BuildChest.this));
+//                    } else if (protectBlocks && allowPickup) {
+//                        wc.getBlock().setMetadata("biab-block", new FixedMetadataValue(plugin, true));
+//                    }
+//                    return BlockProcessResult.PROCESSED;
+//                }
+//        };
+//        buildTask.start();
     }
 
     public void unlock(Player player) {
@@ -686,16 +682,15 @@ public class BuildChest {
     }
 
     public void unprotect() {
-        CuboidClipboard clipboard = getPlan().getRotatedClipboard(
-                this.getEnderChest().getFacing());
+        Clipboard clipboard = getPlan().getRotatedClipboard(this.getEnderChest().getFacing());
         Location loc = null;
-        Vector offset = clipboard.getOffset();
+        BlockVector offset = clipboard.getOffset();
         Vector origin = new Vector(getBlock().getX(), getBlock().getY(),
                 getBlock().getZ());
         for (int x = 0; x < clipboard.getSize().getBlockX(); x++) {
             for (int y = 0; y < clipboard.getSize().getBlockY(); y++) {
                 for (int z = 0; z < clipboard.getSize().getBlockZ(); z++) {
-                    if (clipboard.getPoint(new Vector(x, y, z)).getType() > 0) {
+                    if (clipboard.getBlock(x, y, z).getType() > 0) {
                         Vector v = origin.add(offset);
                         loc = new Location(getBlock().getWorld(), v.getBlockX()
                                 + x, v.getBlockY() + y, v.getBlockZ() + z);

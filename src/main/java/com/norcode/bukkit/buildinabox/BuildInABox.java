@@ -18,6 +18,7 @@ import net.milkbowl.vault.economy.Economy;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.WorldCreator;
+import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -61,6 +62,8 @@ public class BuildInABox extends JavaPlugin implements Listener {
     private Economy economy = null;
     private Anticheat antiCheat;
     private NoCheatPlus NCP;
+    private BuildManager buildManager;
+    private BukkitTask buildManagerTask;
     public Permission wildcardGivePerm;
     public Permission wildcardPlacePerm;
     public Permission wildcardPickupPerm;
@@ -120,6 +123,8 @@ public class BuildInABox extends JavaPlugin implements Listener {
                 }
             }, 20, 20);
         }
+        buildManager = new BuildManager(this, getConfig().getInt("max-blocks-per-tick", 500));
+        buildManagerTask = getServer().getScheduler().runTaskTimer(this, buildManager, 1, 1);
     }
 
     private void setupPermissions() {
@@ -309,9 +314,13 @@ public class BuildInABox extends JavaPlugin implements Listener {
         return true;
     }
 
+    public BuildManager getBuildManager() {
+        return buildManager;
+    }
+
     @Override
     public void onDisable() {
-
+        this.buildManager.finishSafely();
         PluginManager pm = getServer().getPluginManager();
         pm.removePermission("biab.admin");
         pm.removePermission(wildcardGivePerm);
@@ -421,5 +430,63 @@ public class BuildInABox extends JavaPlugin implements Listener {
        List<Class<?>> dbClasses = new ArrayList<Class<?>>();
        dbClasses.add(ChestBean.class);
        return dbClasses;
-    } 
+    }
+
+    @SuppressWarnings("incomplete-switch")
+    public static int getRotationDegrees(BlockFace from, BlockFace to) {
+        switch (from) {
+            case NORTH:
+                switch (to) {
+                    case NORTH:
+                        return 0;
+                    case EAST:
+                        return 90;
+                    case SOUTH:
+                        return 180;
+                    case WEST:
+                        return 270;
+                }
+                break;
+            case EAST:
+                switch (to) {
+                    case NORTH:
+                        return 270;
+                    case EAST:
+                        return 0;
+                    case SOUTH:
+                        return 90;
+                    case WEST:
+                        return 180;
+                }
+                break;
+            case SOUTH:
+                switch (to) {
+                    case NORTH:
+                        return 180;
+                    case EAST:
+                        return 270;
+                    case SOUTH:
+                        return 0;
+                    case WEST:
+                        return 90;
+                }
+                break;
+
+            case WEST:
+                switch (to) {
+                    case NORTH:
+                        return 90;
+                    case EAST:
+                        return 180;
+                    case SOUTH:
+                        return 270;
+                    case WEST:
+                        return 0;
+                }
+                break;
+            default:
+                return 0;
+        }
+        return 0;
+    }
 }

@@ -541,63 +541,6 @@ public class CuboidClipboard {
         }
     }
 
-    @SuppressWarnings("incomplete-switch")
-    public static int getRotationDegrees(BlockFace from, BlockFace to) {
-        switch (from) {
-        case NORTH:
-            switch (to) {
-            case NORTH:
-                return 0;
-            case EAST:
-                return 90;
-            case SOUTH:
-                return 180;
-            case WEST:
-                return 270;
-            }
-            break;
-        case EAST:
-            switch (to) {
-            case NORTH:
-                return 270;
-            case EAST:
-                return 0;
-            case SOUTH:
-                return 90;
-            case WEST:
-                return 180;
-            }
-            break;
-        case SOUTH:
-            switch (to) {
-            case NORTH:
-                return 180;
-            case EAST:
-                return 270;
-            case SOUTH:
-                return 0;
-            case WEST:
-                return 90;
-            }
-            break;
-
-        case WEST:
-            switch (to) {
-            case NORTH:
-                return 90;
-            case EAST:
-                return 180;
-            case SOUTH:
-                return 270;
-            case WEST:
-                return 0;
-            }
-            break;
-        default:
-            return 0;
-        }
-        return 0;
-    }
 
     public com.sk89q.worldedit.CuboidClipboard toWorldEditClipboard() {
         com.sk89q.worldedit.CuboidClipboard wecb = new com.sk89q.worldedit.CuboidClipboard(size, origin, offset);

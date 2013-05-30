@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.norcode.bukkit.schematica.ClipboardBlock;
+import net.minecraft.server.v1_5_R3.NBTTagCompound;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -12,8 +14,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import com.sk89q.jnbt.CompoundTag;
-import com.sk89q.worldedit.BlockVector;
 import com.sk89q.worldedit.blocks.BaseBlock;
+import org.bukkit.util.BlockVector;
 
 public class ChestData {
     private int id;
@@ -21,26 +23,26 @@ public class ChestData {
     private String lockedBy;
     private long lastActivity;
     private Location location;
-    private HashMap<BlockVector, BaseBlock> replacedBlocks;
-    private HashMap<BlockVector, CompoundTag> tileEntities;
+    private HashMap<BlockVector, ClipboardBlock> replacedBlocks;
+    private HashMap<BlockVector, NBTTagCompound> tileEntities;
 
-    public ChestData(int id, String planName, String lockedBy, long lastActivity, Location location, HashMap<BlockVector, CompoundTag> tileEntities, HashMap<BlockVector, BaseBlock> replacedBlocks) {
+    public ChestData(int id, String planName, String lockedBy, long lastActivity, Location location, HashMap<BlockVector, NBTTagCompound> tileEntities, HashMap<BlockVector, ClipboardBlock> replacedBlocks) {
         this.id = id;
         this.planName = planName;
         this.lockedBy = lockedBy;
         this.lastActivity = lastActivity;
         this.location = location;
         if (tileEntities == null) {
-            tileEntities = new HashMap<BlockVector, CompoundTag>();
+            tileEntities = new HashMap<BlockVector, NBTTagCompound>();
         }
         if (replacedBlocks == null) {
-            replacedBlocks = new HashMap<BlockVector, BaseBlock>();
+            replacedBlocks = new HashMap<BlockVector, ClipboardBlock>();
         }
         this.replacedBlocks = replacedBlocks;
         this.tileEntities = tileEntities;
     }
 
-    public void setTileEntities(BlockVector vec, CompoundTag tag) {
+    public void setTileEntities(BlockVector vec, NBTTagCompound tag) {
         tileEntities.put(vec, tag);
     }
 
@@ -48,9 +50,9 @@ public class ChestData {
         tileEntities.clear();
     }
 
-    public void setReplacedBlocks(Map<BlockVector, BaseBlock> baseBlocks) {
+    public void setReplacedBlocks(Map<BlockVector, ClipboardBlock> baseBlocks) {
         if (this.replacedBlocks == null) {
-            this.replacedBlocks = new HashMap<BlockVector, BaseBlock>();
+            this.replacedBlocks = new HashMap<BlockVector, ClipboardBlock>();
         } else {
             this.replacedBlocks.clear();
         }
@@ -89,7 +91,7 @@ public class ChestData {
     public void setLocation(Location location) {
         this.location = location;
     }
-    public HashMap<BlockVector, CompoundTag> getTileEntities() {
+    public HashMap<BlockVector, NBTTagCompound> getTileEntities() {
         return tileEntities;
     }
     public ItemStack toItemStack() {
@@ -110,7 +112,7 @@ public class ChestData {
         return stack;
     }
 
-    public HashMap<BlockVector, BaseBlock> getReplacedBlocks() {
+    public HashMap<BlockVector, ClipboardBlock> getReplacedBlocks() {
         return replacedBlocks;
     }
 }
