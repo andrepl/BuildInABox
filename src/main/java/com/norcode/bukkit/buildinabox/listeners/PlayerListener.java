@@ -31,12 +31,13 @@ public class PlayerListener implements Listener {
         if (block.getTypeId() == BuildInABox.BLOCK_ID) {
             if (block.hasMetadata("buildInABox")) {
                 BuildChest bc = (BuildChest) block.getMetadata("buildInABox").get(0).value();
-                if (bc.isBuilding()) {
+                if (!bc.canInteract()) {
                     event.setCancelled(true);
                     event.setUseInteractedBlock(Result.DENY);
                     event.setUseItemInHand(Result.DENY);
                     return;
                 }
+
                 bc.updateActivity();
                 if (bc.isPreviewing()) {
                     if (event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
@@ -126,25 +127,14 @@ public class PlayerListener implements Listener {
     }
 
 
-    @EventHandler(ignoreCancelled=true)
-    public void onPlaceEnderchest(final BlockPlaceEvent event) {
-        if (event.getBlock().getTypeId() == BuildInABox.BLOCK_ID) {
-            if (plugin.getConfig().getBoolean("prevent-placing-enderchests", false)) {
-                ChestData data = plugin.getDataStore().fromItemStack(event.getItemInHand());
-                if (data == null) {
-                    event.setCancelled(true);
-                }
-            }
-        }
-    }
-
-    @EventHandler(ignoreCancelled=true, priority=EventPriority.HIGH)
+    @EventHandler(ignoreCancelled=true, priority=EventPriority.NORMAL)
     public void onBlockPlace(final BlockPlaceEvent event) {
         ChestData data = plugin.getDataStore().fromItemStack(event.getItemInHand());
         if (data != null) {
             if (!event.getPlayer().hasPermission("biab.place." + data.getPlanName().toLowerCase())) {
                 event.getPlayer().sendMessage(BuildInABox.getErrorMsg("no-permission"));
                 event.setCancelled(true);
+                event.setBuild(false);
                 return;
             }
             data.setLocation(event.getBlock().getLocation());
@@ -160,6 +150,9 @@ public class PlayerListener implements Listener {
                     }
                 }
             }, 1);
+        } else if (plugin.getConfig().getBoolean("prevent-placing-enderchests", false)) {
+            event.setCancelled(true);
+            event.setBuild(false);
         }
     }
 

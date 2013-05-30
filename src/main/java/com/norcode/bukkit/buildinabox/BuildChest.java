@@ -160,6 +160,7 @@ public class BuildChest {
                         endPreview(player);
                     }
                 }, cancelled ? 1 : previewDuration);
+                buildTask = null;
             }
             @Override
             public BlockProcessResult processBlockUpdate(
@@ -322,6 +323,7 @@ public class BuildChest {
                     }
                     player.sendMessage(BuildInABox.getSuccessMsg("building-complete"));
                     building = false;
+                    buildTask = null;
                     return;
                 }
                 @Override
@@ -458,6 +460,7 @@ public class BuildChest {
                         launchFireworks(fireworksLevel);
                     }
                     building = false;
+                    buildTask = null;
                     player.sendMessage(BuildInABox.getSuccessMsg("removal-complete"));
                     return;
                 }
@@ -602,6 +605,9 @@ public class BuildChest {
         }
     }
 
+    public boolean canInteract() {
+        return (buildTask == null && !building);
+    }
     public class UnlockingTask extends LockingTask {
         public UnlockingTask(String playerName, long totalTime) {
             super(playerName, totalTime);
