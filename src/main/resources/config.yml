@@ -8,7 +8,10 @@ storage-backend: file
 language: english
 
 # Use this block ID Instead of enderchest. (most blocks will NOT work, it must be directional)
-chest-block: 130 
+chest-block: 130
+
+# GOLD_HOE
+selection-wand-id: 294
 
 # Automatically update the plugin
 # true - Automatically download and apply updates

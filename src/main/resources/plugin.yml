@@ -12,6 +12,8 @@ commands:
     description: give a player a Build-in-a-Box Building.
 
 permissions:
+  biab.select:
+    default: op
   biab.save:
     default: op
   biab.permanent:

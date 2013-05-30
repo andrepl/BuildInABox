@@ -6,9 +6,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
+import com.norcode.bukkit.schematica.Session;
 import net.h31ix.anticheat.Anticheat;
 import net.h31ix.anticheat.api.AnticheatAPI;
 import net.h31ix.anticheat.manage.CheckType;
@@ -18,7 +17,6 @@ import net.milkbowl.vault.economy.Economy;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
-import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -222,7 +220,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
                 tpl += "{"+i+"}, ";
             }
         }
-        return new MessageFormat(convertColors(tpl)).format(args);
+        return new MessageFormat(ChatColor.translateAlternateColorCodes('&', tpl)).format(args);
     }
 
     public void removeCarryEffect(Player p) {
@@ -238,6 +236,19 @@ public class BuildInABox extends JavaPlugin implements Listener {
         p.setMetadata("biab-carryeffect", new FixedMetadataValue(getInstance(), true));
         p.addPotionEffect(new PotionEffect(PotionEffectType.getByName(getConfig().getString("carry-effect-type")), 1200, 1));
     }
+
+    public Session getPlayerSession(Player p) {
+        Session session;
+        if (p.hasMetadata("biab-selection-session")) {
+            session = (Session) p.getMetadata("biab-selection-session").get(0).value();
+        } else {
+            session = new Session(p.getName());
+            p.setMetadata("biab-selection-session", new FixedMetadataValue(this, session));
+
+        }
+        return session;
+    }
+
 
     private boolean initializeDataStore() {
         String storageType = getConfig().getString("storage-backend", "file").toLowerCase();
@@ -341,15 +352,6 @@ public class BuildInABox extends JavaPlugin implements Listener {
         }
     }
 
-    static final Pattern colorPattern = Pattern.compile("(&[0-9a-flmnor])", Pattern.CASE_INSENSITIVE);
-    public static String convertColors(String s) {
-        Matcher m = colorPattern.matcher(s);
-        StringBuffer sb = new StringBuffer();
-        while (m.find())
-            m.appendReplacement(sb, ChatColor.COLOR_CHAR + m.group(1).substring(1));
-        m.appendTail(sb);
-        return sb.toString();
-    }
 
     public void doUpdater() {
         String autoUpdate = getConfig().getString("auto-update", "notify-only").toLowerCase();

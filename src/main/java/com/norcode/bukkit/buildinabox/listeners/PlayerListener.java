@@ -1,5 +1,6 @@
 package com.norcode.bukkit.buildinabox.listeners;
 
+import com.norcode.bukkit.schematica.Session;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -9,6 +10,7 @@ import org.bukkit.event.Event.Result;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.metadata.FixedMetadataValue;
 
 import com.norcode.bukkit.buildinabox.BuildChest;
@@ -18,12 +20,35 @@ import com.norcode.bukkit.buildinabox.BuildChest.UnlockingTask;
 import com.norcode.bukkit.buildinabox.FakeBlockPlaceEvent;
 
 public class PlayerListener implements Listener {
+
     BuildInABox plugin;
+
     public PlayerListener(BuildInABox plugin) {
         this.plugin = plugin;
     }
 
-    @EventHandler(ignoreCancelled=true)
+    @EventHandler(ignoreCancelled=true, priority = EventPriority.LOW)
+    public void onPlayerSelection(PlayerInteractEvent event) {
+        if (event.getItem().getTypeId() == plugin.getConfig().getInt("selection-wand-id", 294)) { // GOLD_HOE
+            if (!event.getPlayer().hasPermission("biab.select")) {
+                 return;
+            }
+            Session session = plugin.getPlayerSession(event.getPlayer());
+            if (event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
+                session.getSelection().setPt1(event.getClickedBlock().getLocation());
+            } else if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
+                session.getSelection().setPt2(event.getClickedBlock().getLocation());
+            } else {
+                return;
+            }
+            event.setCancelled(true);
+            event.setUseInteractedBlock(Result.DENY);
+            event.setUseItemInHand(Result.DENY);
+        }
+    }
+
+    @EventHandler(ignoreCancelled=true, priority = EventPriority.NORMAL)
+
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         Block block = event.getClickedBlock();
@@ -160,6 +185,11 @@ public class PlayerListener implements Listener {
                 }
             }, 1);
         }
+    }
+
+    @EventHandler(ignoreCancelled=true)
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        event.getPlayer().removeMetadata("biab-selection-session", plugin);
     }
 
     @EventHandler(ignoreCancelled=false, priority=EventPriority.HIGHEST)
