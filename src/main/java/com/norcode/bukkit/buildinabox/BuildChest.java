@@ -11,6 +11,7 @@ import java.util.Set;
 
 import com.norcode.bukkit.buildinabox.util.CuboidClipboard;
 
+import com.sk89q.jnbt.IntTag;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
@@ -29,7 +30,6 @@ import org.bukkit.material.EnderChest;
 import org.bukkit.metadata.FixedMetadataValue;
 
 import com.sk89q.jnbt.CompoundTag;
-import com.sk89q.jnbt.IntTag;
 import com.sk89q.jnbt.Tag;
 import com.sk89q.worldedit.BlockVector;
 import com.sk89q.worldedit.Vector;
@@ -52,8 +52,7 @@ public class BuildChest {
     public BuildChest(ChestData data) {
         this.plugin = BuildInABox.getInstance();
         this.data = data;
-        this.plan = BuildInABox.getInstance().getDataStore()
-                .getBuildingPlan(data.getPlanName());
+        this.plan = BuildInABox.getInstance().getDataStore().getBuildingPlan(data.getPlanName());
     }
 
     public ChestData getData() {
@@ -209,7 +208,7 @@ public class BuildChest {
         for (int x=0;x<clipboard.getSize().getBlockX();x++) {
             for (int y = 0;y<clipboard.getSize().getBlockY();y++) {
                 for (int z=0;z<clipboard.getSize().getBlockZ();z++) {
-                    if (clipboard.getPoint(new Vector(x,y,z)).getType() > 0) {
+                    if (clipboard.getPoint(new Vector(x, y, z)).getType() > 0) {
                         Vector v = origin.add(offset);
                         loc = new Location(getBlock().getWorld(), v.getBlockX()+x, v.getBlockY()+y, v.getBlockZ()+z);
                         loadedChunks.add(loc.getChunk());
@@ -222,6 +221,7 @@ public class BuildChest {
     }
 
     public void build(final Player player) {
+        building = true;
         buildTask = new BuildingPlanTask(plan.getRotatedClipboard(getEnderChest().getFacing()), BuildChest.this, BlockFace.DOWN, 50, false) {
             @Override
             public void onComplete() {
@@ -248,8 +248,6 @@ public class BuildChest {
                 return;
             }
         }
-        previewing = false;
-        building = true;
         player.sendMessage(BuildInABox.getNormalMsg("building", plan.getDisplayName()));
         final World world = player.getWorld();
         final boolean allowPickup = plugin.getConfig().getBoolean("allow-pickup", true);
@@ -315,15 +313,16 @@ public class BuildChest {
                     building = false;
                     data.clearTileEntities();
                     if (!plugin.getConfig().getBoolean("allow-pickup")) {
-                      plugin.getDataStore().deleteChest(data.getId());
-                      getBlock().removeMetadata("buildInABox", plugin);
-                  }
-                  int fireworksLevel = plugin.getConfig().getInt("build-animation.fireworks", 0);
-                  if (fireworksLevel > 0) {
-                      launchFireworks(fireworksLevel);
-                  }
-                  building = false;
-                  return;
+                        plugin.getDataStore().deleteChest(data.getId());
+                        getBlock().removeMetadata("buildInABox", plugin);
+                    }
+                    int fireworksLevel = plugin.getConfig().getInt("build-animation.fireworks", 0);
+                    if (fireworksLevel > 0) {
+                        launchFireworks(fireworksLevel);
+                    }
+                    player.sendMessage(BuildInABox.getSuccessMsg("building-complete"));
+                    building = false;
+                    return;
                 }
                 @Override
                 public BuildingPlanTask.BlockProcessResult processBlockUpdate(BuildingPlanTask.BlockUpdate blockUpdate) {
@@ -347,7 +346,7 @@ public class BuildChest {
                     if (wc.equals(data.getLocation())) {
                         wc.getBlock().setMetadata("buildInABox", new FixedMetadataValue(plugin, BuildChest.this));
                     } else if (protectBlocks && allowPickup) {
-                        wc.getBlock().setMetadata("biab-block", new FixedMetadataValue(plugin, true));
+                        wc.getBlock().setMetadata("biab-block", new FixedMetadataValue(plugin, BuildChest.this));
                     }
                     return BlockProcessResult.PROCESSED;
                 }
