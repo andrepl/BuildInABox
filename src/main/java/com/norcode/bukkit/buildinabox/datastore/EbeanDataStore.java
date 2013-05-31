@@ -1,7 +1,6 @@
 package com.norcode.bukkit.buildinabox.datastore;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 
@@ -12,15 +11,14 @@ import javax.persistence.Lob;
 import javax.persistence.PersistenceException;
 import javax.persistence.Table;
 
+import com.norcode.bukkit.schematica.ClipboardBlock;
+import net.minecraft.server.v1_5_R3.NBTTagCompound;
 import org.bukkit.Location;
-import org.bukkit.configuration.ConfigurationSection;
 
 import com.norcode.bukkit.buildinabox.BuildInABox;
 import com.norcode.bukkit.buildinabox.BuildingPlan;
 import com.norcode.bukkit.buildinabox.ChestData;
-import com.sk89q.jnbt.CompoundTag;
-import com.sk89q.worldedit.BlockVector;
-import com.sk89q.worldedit.blocks.BaseBlock;
+import org.bukkit.util.BlockVector;
 
 public class EbeanDataStore extends YamlDataStore {
     private HashMap<Integer, ChestBean> chestBeans = new HashMap<Integer, ChestBean>();
@@ -47,8 +45,8 @@ public class EbeanDataStore extends YamlDataStore {
         Location loc;
         for (ChestBean bean: this.plugin.getDatabase().find(ChestBean.class).findList()) {
             loc = deserializeLocation(bean.getLocation());
-            HashMap<BlockVector, CompoundTag> tileEntities = deserializeTileEntities(bean.getTileEntities());
-            HashMap<BlockVector, BaseBlock> replacedBlocks = deserializeReplacedBlocks(bean.getReplacedBlocks());
+            HashMap<BlockVector, NBTTagCompound> tileEntities = deserializeTileEntities(bean.getTileEntities());
+            HashMap<BlockVector, ClipboardBlock> replacedBlocks = deserializeReplacedBlocks(bean.getReplacedBlocks());
             chests.put(bean.getId(), new ChestData(bean.getId(), bean.getPlanName(), bean.getLockedBy(), bean.getLastActivity(), loc, tileEntities, replacedBlocks));
             chestBeans.put(bean.getId(), bean);
         }

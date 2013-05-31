@@ -8,12 +8,12 @@ import java.util.logging.Level;
 
 
 import com.norcode.bukkit.schematica.Clipboard;
+import com.norcode.bukkit.schematica.ClipboardBlock;
 import com.norcode.bukkit.schematica.Session;
 import com.norcode.bukkit.schematica.exceptions.IncompleteSelectionException;
 import com.norcode.bukkit.schematica.exceptions.SchematicLoadException;
 import com.norcode.bukkit.schematica.exceptions.SchematicSaveException;
 import org.bukkit.block.BlockFace;
-import org.bukkit.craftbukkit.libs.jline.internal.Log;
 import org.bukkit.entity.Player;
 
 import org.bukkit.material.Directional;
@@ -23,11 +23,7 @@ import org.bukkit.plugin.PluginManager;
 
 import org.bukkit.Material;
 
-import com.norcode.bukkit.buildinabox.util.CuboidClipboard;
-
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
-import com.sk89q.worldedit.data.DataException;
-import com.sk89q.worldedit.schematic.SchematicFormat;
 import org.bukkit.util.BlockVector;
 
 public class BuildingPlan {
@@ -38,7 +34,8 @@ public class BuildingPlan {
     BuildInABox plugin;
     
     public static final EnumSet<Material> coverableBlocks = EnumSet.of(Material.LONG_GRASS, Material.SNOW, Material.AIR, Material.RED_MUSHROOM, Material.BROWN_MUSHROOM, Material.DEAD_BUSH, Material.FIRE, Material.RED_ROSE, Material.YELLOW_FLOWER, Material.SAPLING);
-    
+
+
     public BuildingPlan(BuildInABox plugin, String name, String filename, String displayName, List<String> description) {
         this.plugin = plugin;
         this.name = name;
@@ -101,10 +98,14 @@ public class BuildingPlan {
 
 
     public static BlockVector findEnderChest(Clipboard cc) {
-        for (int x = 0; x < cc.getSize().getBlockX(); x++) {
-            for (int y = 0; y < cc.getSize().getBlockY(); y++) {
-                for (int z = 0; z < cc.getSize().getBlockZ(); z++) {
-                    if (cc.getBlock(x, y, z).getType() == BuildInABox.BLOCK_ID) {
+        BlockVector size = cc.getSize();
+        BuildInABox.getInstance().debug("searching a " + size.getBlockX() + "x" + size.getBlockY() + "x" + size.getBlockZ() + " area for EnderChests");
+        for (int x = 0; x < size.getBlockX(); x++) {
+            for (int y = 0; y < size.getBlockY(); y++) {
+                for (int z = 0; z < size.getBlockZ(); z++) {
+                    ClipboardBlock block = cc.getBlock(x, y, z);
+                    BuildInABox.getInstance().debug("searching " + x + "," + y + "," + z + "  for enderchest");
+                    if (block.getType() == BuildInABox.getInstance().cfg.getChestBlockId()) {
                         return new BlockVector(-x, -y, -z);
                     }
                 }
@@ -119,9 +120,11 @@ public class BuildingPlan {
         Session session = plugin.getPlayerSession(player);
         try {
             session.copy();
+            BuildInABox.getInstance().debug("Clipboard Copied: " + session.getClipboard());
         } catch (IncompleteSelectionException e) {
             return null;
         }
+
         Clipboard clipboard = session.getClipboard();
 
         BlockVector chestOffset = findEnderChest(clipboard);
@@ -129,10 +132,14 @@ public class BuildingPlan {
             player.sendMessage(BuildInABox.getErrorMsg("enderchest-not-found"));
             return null;
         }
-        
-        Directional md = (Directional) Material.getMaterial(BuildInABox.BLOCK_ID).getNewData((byte) clipboard.getBlock(-chestOffset.getBlockX(), -chestOffset.getBlockY(), -chestOffset.getBlockZ()).getData());
+        clipboard.setOffset(chestOffset);
+        Directional md = (Directional) Material.getMaterial(BuildInABox.getInstance().cfg.getChestBlockId()).getNewData(clipboard.getBlock(-chestOffset.getBlockX(), -chestOffset.getBlockY(), -chestOffset.getBlockZ()).getData());
         if (!md.getFacing().equals(BlockFace.NORTH)) {
-            clipboard.rotate2D(BuildInABox.getRotationDegrees(md.getFacing(), BlockFace.NORTH));
+            int deg = BuildInABox.getRotationDegrees(md.getFacing(), BlockFace.NORTH);
+            BuildInABox.getInstance().debug("rotating " + deg + " degrees");
+            clipboard.rotate2D(deg);
+
+            BuildInABox.getInstance().debug("Rotated Clipboard Dimensions: " + clipboard.toString());
             chestOffset = findEnderChest(clipboard);
         }
         clipboard.setOffset(chestOffset);

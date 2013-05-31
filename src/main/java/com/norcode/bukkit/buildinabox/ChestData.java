@@ -42,7 +42,7 @@ public class ChestData {
         this.tileEntities = tileEntities;
     }
 
-    public void setTileEntities(BlockVector vec, NBTTagCompound tag) {
+    public void setTileEntity(BlockVector vec, NBTTagCompound tag) {
         tileEntities.put(vec, tag);
     }
 
@@ -95,8 +95,9 @@ public class ChestData {
         return tileEntities;
     }
     public ItemStack toItemStack() {
-        ItemStack stack = new ItemStack(Material.getMaterial(BuildInABox.BLOCK_ID));
-        ItemMeta meta = BuildInABox.getInstance().getServer().getItemFactory().getItemMeta(Material.getMaterial(BuildInABox.BLOCK_ID));
+        Material mat = Material.getMaterial(BuildInABox.getInstance().cfg.getChestBlockId());
+        ItemStack stack = new ItemStack(mat);
+        ItemMeta meta = BuildInABox.getInstance().getServer().getItemFactory().getItemMeta(mat);
         List<String> lore = new ArrayList<String>();
         lore.add(BuildInABox.LORE_PREFIX + BuildInABox.LORE_HEADER);
         BuildingPlan plan = BuildInABox.getInstance().getDataStore().getBuildingPlan(planName);

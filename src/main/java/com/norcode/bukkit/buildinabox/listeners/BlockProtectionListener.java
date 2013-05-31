@@ -32,7 +32,7 @@ public class BlockProtectionListener implements Listener {
     }
     @EventHandler(ignoreCancelled=true)
     public void onBlockBreak(final BlockBreakEvent event) {
-        if (event.getBlock().hasMetadata("biab-block") || (event.getBlock().getTypeId() == BuildInABox.BLOCK_ID && event.getBlock().hasMetadata("buildInABox"))) {
+        if (event.getBlock().hasMetadata("biab-block") || (event.getBlock().getTypeId() == plugin.cfg.getChestBlockId() && event.getBlock().hasMetadata("buildInABox"))) {
             event.setCancelled(true);
         }
     }
@@ -89,7 +89,7 @@ public class BlockProtectionListener implements Listener {
     
     @EventHandler(ignoreCancelled=true)
     public void onPlayerInteract(PlayerInteractEvent event) {
-        if (plugin.getConfig().getBoolean("lock-containers", true)) {
+        if (plugin.cfg.isLockingEnabled()) {
             if (lockableBlockTypes.contains(event.getClickedBlock().getType())) {
                 if (event.getClickedBlock().hasMetadata("biab-block")) {
                     BuildChest bc = (BuildChest) event.getClickedBlock().getMetadata("biab-block").get(0).value();

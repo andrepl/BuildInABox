@@ -1,54 +1,53 @@
 package com.norcode.bukkit.buildinabox;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import com.norcode.bukkit.buildinabox.util.CuboidClipboard;
-
 import com.norcode.bukkit.schematica.Clipboard;
 import com.norcode.bukkit.schematica.ClipboardBlock;
+import com.norcode.bukkit.schematica.MaterialID;
 import net.minecraft.server.v1_5_R3.NBTTagCompound;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.BlockState;
-import org.bukkit.block.Chest;
+import net.minecraft.server.v1_5_R3.Packet61WorldEvent;
+import org.bukkit.block.*;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.craftbukkit.v1_5_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockCanBuildEvent;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.material.EnderChest;
+import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.material.Directional;
 import org.bukkit.metadata.FixedMetadataValue;
-
-import com.sk89q.jnbt.CompoundTag;
-import com.sk89q.jnbt.IntTag;
-import com.sk89q.jnbt.Tag;
-import com.sk89q.worldedit.blocks.BaseBlock;
-import com.sk89q.worldedit.blocks.TileEntityBlock;
-import com.sk89q.worldedit.data.DataException;
-import com.sk89q.worldedit.schematic.SchematicFormat;
 import org.bukkit.util.BlockVector;
 
 public class BuildChest {
     BuildInABox plugin;
     private boolean previewing = false;
+    private boolean building = false;
     private BuildingPlan plan;
     private LockingTask lockingTask = null;
-    private BuildingPlanTask buildTask = null;
+    private BuildManager.BuildTask buildTask = null;
     private ChestData data;
-    private boolean building = false;
     private long lastClicked = -1;
     private Action lastClickType = null;
+
+    private static HashSet<Integer> silentBlocks = new HashSet<Integer>();
+    static {
+        silentBlocks.add(Material.GLASS.getId());
+        silentBlocks.add(Material.THIN_GLASS.getId());
+        silentBlocks.add(Material.REDSTONE_LAMP_OFF.getId());
+        silentBlocks.add(Material.REDSTONE_LAMP_ON.getId());
+        silentBlocks.add(Material.GLOWSTONE.getId());
+        silentBlocks.add(Material.ICE.getId());
+    }
 
     public BuildChest(ChestData data) {
         this.plugin = BuildInABox.getInstance();
@@ -90,35 +89,39 @@ public class BuildChest {
 
     public void endPreview(final Player player) {
         if (!previewing) return;
-        buildTask = new BuildingPlanTask(plan.getRotatedClipboard(getEnderChest().getFacing()), BuildChest.this, BlockFace.DOWN, 50, true) {
-                    @Override
-                    public void onComplete() {
-                        previewing = false;
-                        getBlock().removeMetadata("buildInABox", plugin);
-                        getBlock().setTypeIdAndData(0, (byte) 0, false);
-                        getBlock().getWorld().dropItem(getBlock().getLocation().add(0.5,0.5,0.5), data.toItemStack());
-                        data.setLocation(null);
-                        data.setLastActivity(System.currentTimeMillis());
-                        plugin.getDataStore().saveChest(data);
-                    }
+        final World world = player.getWorld();
+        Clipboard clipboard = plan.getRotatedClipboard(getDirectional().getFacing());
+        Block b = getBlock();
+        BlockVector o = clipboard.getOffset();
+        clipboard.setOrigin(new BlockVector(b.getX() + o.getBlockX(), b.getY() + o.getBlockY(), b.getZ() + o.getBlockZ()));
+        buildTask = new BuildManager.BuildTask(clipboard, clipboard.getPasteQueue(false, null), 150) {
+            @Override
+            public void processBlock(BlockVector clipboardPoint) {
+                Location loc = clipboard.getWorldLocationFor(clipboardPoint, world);
+                player.sendBlockChange(loc, loc.getBlock().getType(), loc.getBlock().getData());
+            }
 
-                    @Override
-                    public BlockProcessResult processBlockUpdate(
-                            BlockUpdate update) {
-                        Location wc = getWorldLocationFor(update.getPos());
-                        player.sendBlockChange(wc, wc.getBlock().getType(), (byte) wc.getBlock().getData());
-                        return BlockProcessResult.PROCESSED;
-                    }
+            @Override
+            public void onComplete() {
+                previewing = false;
+                getBlock().removeMetadata("buildInABox", plugin);
+                getBlock().setTypeIdAndData(0, (byte) 0, false);
+                getBlock().getWorld().dropItem(getBlock().getLocation().add(0.5,0.5,0.5), data.toItemStack());
+                data.setLocation(null);
+                data.setLastActivity(System.currentTimeMillis());
+                plugin.getDataStore().saveChest(data);
+                buildTask = null;
+            }
         };
-        buildTask.start();
+        plugin.getBuildManager().scheduleTask(buildTask);
     }
 
     public boolean isPreviewing() {
         return previewing;
     }
 
-    public EnderChest getEnderChest() {
-        return (EnderChest) getBlock().getState().getData();
+    public Directional getDirectional() {
+        return (Directional) Material.getMaterial(plugin.cfg.getChestBlockId()).getNewData(getBlock().getData());
     }
 
     public Block getBlock() {
@@ -133,20 +136,43 @@ public class BuildChest {
     }
 
     public void preview(final Player player) {
-        final long previewDuration = (plugin.getConfig().getInt("preview-duration", 5000) * 20)/1000; // millis to ticks.
-        final boolean checkBuildPermissions = plugin.getConfig().getBoolean("check-build-permissions", true);
+        final World world = player.getWorld();
+        final long previewDuration = (plugin.cfg.getPreviewDuration() * 20)/1000; // millis to ticks.
+        final boolean checkBuildPermissions = plugin.cfg.isBuildPermissionCheckEnabled();
+
+        Clipboard clipboard = plan.getRotatedClipboard(getDirectional().getFacing());
+        Block b = getBlock();
+        BlockVector o = clipboard.getOffset();
+        clipboard.setOrigin(new BlockVector(b.getX() + o.getBlockX(), b.getY() + o.getBlockY(), b.getZ() + o.getBlockZ()));
         previewing = true;
-        buildTask = new BuildingPlanTask(
-                plan.getRotatedClipboard(getEnderChest().getFacing()),
-                BuildChest.this, BlockFace.UP, 50, false) {
+        buildTask = new BuildManager.BuildTask(clipboard, clipboard.getPasteQueue(false, null), 250) {
+            boolean cancelled = false;
             @Override
-            public void onRunStart() {
-                plugin.exemptPlayer(player);
+            public void processBlock(BlockVector clipboardPoint) {
+                ClipboardBlock block = clipboard.getBlock(clipboardPoint);
+                Location loc = clipboard.getWorldLocationFor(clipboardPoint, world);
+                if (checkBuildPermissions) {
+                    BlockCanBuildEvent canBuildEvent = new BlockCanBuildEvent(loc.getBlock(), block.getType(), true);
+                    plugin.getServer().getPluginManager().callEvent(canBuildEvent);
+                    if (!canBuildEvent.isBuildable()) {
+                        cancelled = true;
+                        return;
+                    }
+                    if (player.isOnline()) {
+                        BuildInABox.getInstance().exemptPlayer(player);
+                        FakeBlockPlaceEvent event = new FakeBlockPlaceEvent(loc, player);
+                        plugin.getServer().getPluginManager().callEvent(event);
+                        BuildInABox.getInstance().unexemptPlayer(player);
+                        if (event.wasCancelled() || !event.canBuild()) {
+                            cancelled = true;
+                            return;
+                        }
+                    }
+                }
+                player.sendBlockChange(loc, block.getType(), block.getData());
+
             }
-            @Override
-            public void onRunEnd() {
-                plugin.unexemptPlayer(player);
-            }
+
             @Override
             public void onComplete() {
                 if (cancelled) {
@@ -155,57 +181,36 @@ public class BuildChest {
                 } else {
                     player.sendMessage(getDescription());
                 }
+                buildTask = null;
                 Bukkit.getScheduler().runTaskLater(plugin, new Runnable() {
                     public void run() {
                         endPreview(player);
                     }
                 }, cancelled ? 1 : previewDuration);
             }
-            @Override
-            public BlockProcessResult processBlockUpdate(
-                    BlockUpdate update) {
-                ClipboardBlock bb = update.getBlock();
-                Location wc = getWorldLocationFor(update.getPos());
-                if (wc.equals(getBlock().getLocation())) {
-                    return BlockProcessResult.DISCARD;
-                }
-                if (wc.getBlockY() >= getBlock().getLocation().getBlockY() && !BuildingPlan.coverableBlocks.contains(wc.getBlock().getType())) {
-                    cancelled = true;
-                    return BlockProcessResult.DISCARD;
-                }
-                if (checkBuildPermissions) {
-                    FakeBlockPlaceEvent event = new FakeBlockPlaceEvent(wc, player);
-                    plugin.getServer().getPluginManager().callEvent(event);
-                    if (event.isCancelled() && event.wasCancelled()) {
-                        cancelled = true;
-                        return BlockProcessResult.DISCARD;
-                    }
-                }
-                player.sendBlockChange(wc, bb.getType(), (byte) bb.getData());
-                return BlockProcessResult.PROCESSED;
-            }
         };
-        buildTask.start();
+        plugin.getBuildManager().scheduleTask(buildTask);
     }
 
     public Set<Chunk> protectBlocks(Clipboard clipboard) {
         HashSet<Chunk> loadedChunks = new HashSet<Chunk>();
+        Block b = getBlock();
         if (clipboard == null) {
-            Location chestLoc = getBlock().getLocation();
-            EnderChest ec = (EnderChest) Material.getMaterial(BuildInABox.BLOCK_ID).getNewData(chestLoc.getBlock().getData());
-            BlockFace dir = ec.getFacing();
+            BlockFace dir = getDirectional().getFacing();
             clipboard = plan.getRotatedClipboard(dir);
         }
+        BlockVector offset = clipboard.getOffset().clone().toBlockVector();
+        clipboard.setOrigin(new BlockVector(b.getX() + offset.getBlockX(), b.getY() + offset.getBlockY(), b.getZ() + offset.getBlockZ()));
         Location loc;
-        BlockVector offset = clipboard.getOffset();
-        BlockVector origin = new BlockVector(getBlock().getX(), getBlock().getY(), getBlock().getZ());
         for (int x=0;x<clipboard.getSize().getBlockX();x++) {
             for (int y = 0;y<clipboard.getSize().getBlockY();y++) {
                 for (int z=0;z<clipboard.getSize().getBlockZ();z++) {
                     if (clipboard.getBlock(x,y,z).getType() > 0) {
-                        BlockVector v = origin.add(offset).toBlockVector();
-                        loc = new Location(getBlock().getWorld(), v.getBlockX()+x, v.getBlockY()+y, v.getBlockZ()+z);
-                        loadedChunks.add(loc.getChunk());
+                        loc = clipboard.getWorldLocationFor(new BlockVector(x,y,z), b.getWorld());
+                        if (!loc.getChunk().isLoaded()) {
+                            loadedChunks.add(loc.getChunk());
+                        }
+                        loc.getChunk().load();
                         getBlock().getWorld().getBlockAt(loc).setMetadata("biab-block", new FixedMetadataValue(plugin, this));
                     }
                 }
@@ -215,26 +220,30 @@ public class BuildChest {
     }
 
     public void build(final Player player) {
-        buildTask = new BuildingPlanTask(plan.getRotatedClipboard(getEnderChest().getFacing()), BuildChest.this, BlockFace.DOWN, 50, false) {
+        final World world = player.getWorld();
+        Clipboard clipboard = plan.getRotatedClipboard(getDirectional().getFacing());
+        Block b = getBlock();
+        BlockVector offset = clipboard.getOffset();
+        clipboard.setOrigin(new BlockVector(b.getX() + offset.getBlockX(), b.getY() + offset.getBlockY(), b.getZ() + offset.getBlockZ()));
+        buildTask = new BuildManager.BuildTask(clipboard, clipboard.getPasteQueue(false, null), 250) {
+            @Override
+            public void processBlock(BlockVector clipboardPoint) {
+                Location loc = clipboard.getWorldLocationFor(clipboardPoint, world);
+                player.sendBlockChange(loc, loc.getBlock().getType(), loc.getBlock().getData());
+            }
             @Override
             public void onComplete() {
                 previewing = false;
+                buildTask = null;
                 startBuild(player);
-            }
 
-            @Override
-            public BlockProcessResult processBlockUpdate(
-                    BlockUpdate update) {
-                Location wc = getWorldLocationFor(update.getPos());
-                player.sendBlockChange(wc, wc.getBlock().getType(), (byte) wc.getBlock().getData());
-                return BlockProcessResult.PROCESSED;
             }
         };
-        buildTask.start();
+        plugin.getBuildManager().scheduleTask(buildTask);
     }
 
     private void startBuild(final Player player) {
-        double cost = plugin.getConfig().getDouble("build-cost", 0);
+        double cost = plugin.cfg.getBuildCost();
         if (cost > 0 && BuildInABox.hasEconomy()) {
             if (!BuildInABox.getEconomy().withdrawPlayer(player.getName(), cost).transactionSuccess()) {
                 player.sendMessage(BuildInABox.getErrorMsg("insufficient-funds", BuildInABox.getEconomy().format(cost)));
@@ -245,7 +254,6 @@ public class BuildChest {
         building = true;
         player.sendMessage(BuildInABox.getNormalMsg("building", plan.getDisplayName()));
         final World world = player.getWorld();
-        final boolean allowPickup = plugin.getConfig().getBoolean("allow-pickup", true);
         data.setLocation(getLocation());
         data.setLastActivity(System.currentTimeMillis());
         plugin.getDataStore().saveChest(data);
@@ -255,7 +263,9 @@ public class BuildChest {
                 nearby.add(p);
             }
         }
-        Clipboard clipboard = plan.getRotatedClipboard(BlockFace.NORTH);
+        Clipboard clipboard = plan.getRotatedClipboard(BlockFace.NORTH); // NORTH = no rotation
+        // this is to assign the saved tileEntity data into the clipboard before copying. our location data is stored
+        // in the NORTH orientation.
         if (data.getTileEntities() != null) {
             NBTTagCompound tag;
             for (Entry<BlockVector, NBTTagCompound> entry: data.getTileEntities().entrySet()) {
@@ -266,97 +276,86 @@ public class BuildChest {
                 clipboard.getBlock(entry.getKey()).setTag(tag);
             }
         }
-        clipboard.rotate2D(BuildInABox.getRotationDegrees(BlockFace.NORTH, getEnderChest().getFacing()));
-        List<BlockVector> vectorQueue = clipboard.getPasteQueue(plugin.getConfig().getBoolean("build-animation.shuffle", true), null);
-        final boolean protectBlocks = plugin.getConfig().getBoolean("protect-buildings", true);
-        final BlockVector origin = getLocation().toVector().add(clipboard.getOffset()).toBlockVector();
-        plugin.getBuildManager().scheduleTask(
-            new BuildManager.BuildTask(clipboard, vectorQueue, plugin.getConfig().getInt("build-animation.blocks-per-tick", 5)) {
 
-                private void saveReplacedBlock(BlockVector c, Location wc) {
-                    // save blocks below ground level for restoration.
-                    getData().getReplacedBlocks().put(c,
-                            new ClipboardBlock(wc.getBlock().getTypeId(),
-                                    wc.getBlock().getData()));
+        clipboard.rotate2D(BuildInABox.getRotationDegrees(BlockFace.NORTH, getDirectional().getFacing()));
+        Block b = getBlock();
+        BlockVector off = clipboard.getOffset();
+        clipboard.setOrigin(new BlockVector(b.getX() + off.getBlockX(), b.getY() + off.getBlockY(), b.getZ() + off.getBlockZ()));
+        List<BlockVector> vectorQueue = clipboard.getPasteQueue(plugin.cfg.isBuildAnimationShuffled(), null);
+        final BIABConfig.AnimationStyle animationStyle = plugin.cfg.getBuildAnimationStyle();
+        buildTask = new BuildManager.BuildTask(clipboard, vectorQueue, plugin.cfg.getBuildBlocksPerTick()) {
+
+            private void saveReplacedBlock(BlockVector c, Location wc) {
+                // save blocks below ground level for restoration.
+                plugin.debug("Saving replaced block @ " + c);
+                getData().getReplacedBlocks().put(c,
+                        new ClipboardBlock(wc.getBlock().getTypeId(), wc.getBlock().getData()));
+            }
+
+            @Override
+            public void processBlock(BlockVector clipboardPoint) {
+                Location loc = clipboard.getWorldLocationFor(clipboardPoint, world);
+                if (loc.equals(getBlock().getLocation())) return; // DONT REPLACE THE ENDERCHEST
+                ClipboardBlock cb = clipboard.getBlock(clipboardPoint);
+                if (clipboardPoint.getY() < -clipboard.getOffset().getBlockY()) {
+                    saveReplacedBlock(clipboardPoint, loc);
                 }
-
-                @Override
-                public void processBlock(BlockVector clipboardPoint) {
-                    int x = origin.getBlockX() + clipboardPoint.getBlockX();
-                    int y = origin.getBlockY() + clipboardPoint.getBlockY();
-                    int z = origin.getBlockZ() + clipboardPoint.getBlockZ();
-
-                    this.clipboard.copyBlockToWorld(clipboard.getBlock(clipboardPoint), new Location(world, x, y, z));
+                if (animationStyle != BIABConfig.AnimationStyle.NONE && !silentBlocks.contains(cb.getType())) {
+                    playBuildAnimation(loc, cb.getType(), cb.getData(), nearby, animationStyle);
                 }
-
-                @Override
-                public void onComplete() {
-                    building = false;
-                    data.clearTileEntities();
-                    if (!plugin.getConfig().getBoolean("allow-pickup")) {
-                        plugin.getDataStore().deleteChest(data.getId());
-                        getBlock().removeMetadata("buildInABox", plugin);
-                    }
-                    int fireworksLevel = plugin.getConfig().getInt("build-animation.fireworks", 0);
-                    if (fireworksLevel > 0) {
-                        //TODO: launchFireworks(fireworksLevel);
-                    }
-                    building = false;
+                this.clipboard.copyBlockToWorld(clipboard.getBlock(clipboardPoint), loc);
+                if (plugin.cfg.isBuildingProtectionEnabled() && plugin.cfg.isPickupEnabled()) {
+                    loc.getBlock().setMetadata("biab-block", new FixedMetadataValue(plugin, BuildChest.this));
                 }
-            });
-//        buildTask = new BuildingPlanTask(clipboard, this, BlockFace.UP,
-//
-//                @Override
-//                public void onRunStart() {
-//                    plugin.exemptPlayer(player);
-//                }
-//                @Override
-//                public void onRunEnd() {
-//                    plugin.unexemptPlayer(player);
-//                }
-//                @Override
-//                public BuildingPlanTask.BlockProcessResult processBlockUpdate(BuildingPlanTask.BlockUpdate blockUpdate) {
-//                    ClipboardBlock bb = blockUpdate.getBlock();
-//                    BlockVector c = blockUpdate.getPos();
-//                    Location wc = getWorldLocationFor(c);
-//                    if (bb.getType() == 0) return BlockProcessResult.DISCARD;
-//                    if (wc.equals(getBlock().getLocation())) return BlockProcessResult.DISCARD;
-//                    if (blockUpdate.isCanQueue()) {
-//                        if (BuildingPlanTask.postBuildBlockIds.contains(bb.getType())) {
-//                            return BlockProcessResult.QUEUE_FINAL;
-//                        } else if (postLayerBlockIds.contains(bb.getType())) {
-//                            return BlockProcessResult.QUEUE_AFTER_LAYER;
-//                        }
-//                    }
-//                    if (c.getBlockY() < getBlock().getY()) {
-//                        saveReplacedBlock(c, wc);
-//                    }
-//                    sendAnimationPacket(wc.getBlockX(), wc.getBlockY(), wc.getBlockZ(), bb.getType());
-//                    copyFromClipboard(bb,wc,player);
-//                    if (wc.equals(data.getLocation())) {
-//                        wc.getBlock().setMetadata("buildInABox", new FixedMetadataValue(plugin, BuildChest.this));
-//                    } else if (protectBlocks && allowPickup) {
-//                        wc.getBlock().setMetadata("biab-block", new FixedMetadataValue(plugin, true));
-//                    }
-//                    return BlockProcessResult.PROCESSED;
-//                }
-//        };
-//        buildTask.start();
+            }
+
+            @Override
+            public void onComplete() {
+                building = false;
+                buildTask = null;
+                data.clearTileEntities();
+                if (!plugin.cfg.isPickupEnabled()) {
+                    plugin.getDataStore().deleteChest(data.getId());
+                    getBlock().removeMetadata("buildInABox", plugin);
+                }
+                player.sendMessage(BuildInABox.getSuccessMsg("build-complete"));
+                int fireworksLevel = plugin.cfg.getBuildFireworks();
+                if (fireworksLevel > 0) {
+                    //TODO: launchFireworks(fireworksLevel);
+                }
+                building = false;
+            }
+        };
+        plugin.getBuildManager().scheduleTask(buildTask);
+    }
+
+    private void playBuildAnimation(Location loc, int type, byte data, List<Player> nearby, BIABConfig.AnimationStyle style) {
+        Packet61WorldEvent packet = null;
+        switch (style) {
+        case BREAK:
+            packet = new Packet61WorldEvent(2001, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), loc.getBlock().getTypeId(), false);
+            break;
+        case SMOKE:
+            packet = new Packet61WorldEvent(2000, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), 4, false);
+            break;
+        }
+        for (Player p: nearby) {
+            if (p.isOnline()) {
+                ((CraftPlayer) p).getHandle().playerConnection.sendPacket(packet);
+            }
+        }
+
     }
 
     public void unlock(Player player) {
-        long total = plugin.getConfig().getLong("unlock-time", 10);
+        long total = plugin.cfg.getUnlockTime();
         if (data.getLockedBy().equals(player.getName())) {
-            total = plugin.getConfig().getLong("unlock-time-own", 5);
+            total = plugin.cfg.getLockTime();
         }
-        double cost = plugin.getConfig().getDouble("unlock-cost", 0);
+        double cost = plugin.cfg.getUnlockCost();
         if (cost > 0 && BuildInABox.hasEconomy()) {
-            if (!BuildInABox.getEconomy()
-                    .withdrawPlayer(player.getName(), cost)
-                    .transactionSuccess()) {
-                player.sendMessage(BuildInABox.getErrorMsg(
-                        "insufficient-funds",
-                        BuildInABox.getEconomy().format(cost)));
+            if (!BuildInABox.getEconomy().withdrawPlayer(player.getName(), cost).transactionSuccess()) {
+                player.sendMessage(BuildInABox.getErrorMsg("insufficient-funds", BuildInABox.getEconomy().format(cost)));
                 return;
             }
         }
@@ -365,15 +364,11 @@ public class BuildChest {
     }
 
     public void lock(Player player) {
-        long total = plugin.getConfig().getLong("lock-time", 10);
-        double cost = plugin.getConfig().getDouble("lock-cost", 0);
+        long total = plugin.cfg.getLockTime();
+        double cost = plugin.cfg.getLockCost();
         if (cost > 0 && BuildInABox.hasEconomy()) {
-            if (!BuildInABox.getEconomy()
-                    .withdrawPlayer(player.getName(), cost)
-                    .transactionSuccess()) {
-                player.sendMessage(BuildInABox.getErrorMsg(
-                        "insufficient-funds",
-                        BuildInABox.getEconomy().format(cost)));
+            if (!BuildInABox.getEconomy().withdrawPlayer(player.getName(), cost).transactionSuccess()) {
+                player.sendMessage(BuildInABox.getErrorMsg("insufficient-funds", BuildInABox.getEconomy().format(cost)));
                 return;
             }
         }
@@ -382,132 +377,111 @@ public class BuildChest {
     }
 
     public void pickup(final Player player) {
-        double cost = plugin.getConfig().getDouble("pickup-cost", 0);
+        double cost = plugin.cfg.getPickupCost();
         if (cost > 0 && BuildInABox.hasEconomy()) {
-            if (!BuildInABox.getEconomy()
-                    .withdrawPlayer(player.getName(), cost)
-                    .transactionSuccess()) {
-                player.sendMessage(BuildInABox.getErrorMsg(
-                        "insufficient-funds",
-                        BuildInABox.getEconomy().format(cost)));
+            if (!BuildInABox.getEconomy().withdrawPlayer(player.getName(), cost).transactionSuccess()) {
+                player.sendMessage(BuildInABox.getErrorMsg("insufficient-funds", BuildInABox.getEconomy().format(cost)));
                 return;
             }
         }
-        final int blocksPerTick = plugin.getConfig().getInt(
-                "pickup-animation.blocks-per-tick", 20);
-        final boolean shuffle = plugin.getConfig().getBoolean("pickup-animation.shuffle", true);
+
         final List<Player> nearby = new ArrayList<Player>();
         for (Player p : player.getWorld().getPlayers()) {
             nearby.add(p);
         }
-        if (!isLocked()) {
-            player.sendMessage(BuildInABox.getNormalMsg("removing", this.getPlan()
-                    .getDisplayName()));
-            building = true;
-            data.clearTileEntities();
-            buildTask = new BuildingPlanTask(plan.getRotatedClipboard(getEnderChest().getFacing()), this, BlockFace.DOWN, blocksPerTick, shuffle) {
-
-                @Override
-                public void onComplete() {
-                    BaseBlock bb;
-                    clipboard.rotate2D(CuboidClipboard.getRotationDegrees(getEnderChest().getFacing(), BlockFace.NORTH));
-                    Vector v;
-                    for (int x=0;x<clipboard.getSize().getBlockX();x++) {
-                        for (int z=0;z<clipboard.getSize().getBlockZ();z++) {
-                            for (int y=0;y<clipboard.getSize().getBlockY();y++) {
-                                v = new Vector(x,y,z);
-                                if (x == -clipboard.getOffset().getBlockX() && y == -clipboard.getOffset().getBlockY() && z == -clipboard.getOffset().getBlockZ()) {
-                                    continue;
-                                }
-                                bb = clipboard.getPoint(v);
-                                if (bb instanceof TileEntityBlock) {
-                                    TileEntityBlock teb = bb;
-                                    HashMap<String, Tag> values = new HashMap<String, Tag>();
-                                    if (teb.getNbtData() != null && teb.getNbtData().getValue() != null) {
-                                        for (Entry<String, Tag> e: teb.getNbtData().getValue().entrySet()) {
-                                            values.put(e.getKey(), e.getValue());
-                                        }
-                                        CompoundTag tag = new CompoundTag("", values);
-                                        data.setTileEntities(new BlockVector(x,y,z), tag);
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    getBlock().setType(Material.AIR);
-                    getBlock().removeMetadata("buildInABox", plugin);
-                    getBlock().removeMetadata("biab-block", plugin);
-                    data.getLocation().getWorld().dropItem(new Location(data.getLocation().getWorld(), data.getLocation().getX() + 0.5, data.getLocation().getY() + 0.5, data.getLocation().getZ() + 0.5), data.toItemStack());
-                    data.setLocation(null);
-                    data.setLastActivity(System.currentTimeMillis());
-                    data.setReplacedBlocks(null);
-                    plugin.getDataStore().saveChest(data);
-                    int fireworksLevel = plugin.getConfig().getInt("pickup-animation.fireworks", 0);
-                    if (fireworksLevel > 0) {
-                        launchFireworks(fireworksLevel);
-                    }
-                    building = false;
-                    player.sendMessage(BuildInABox.getSuccessMsg("removal-complete"));
-                    return;
-                }
-
-                @Override
-                public BlockProcessResult processBlockUpdate(BlockUpdate blockUpdate) {
-                    BaseBlock bb = blockUpdate.getBlock();
-                    BlockVector c = blockUpdate.getPos();
-                    Location wc = getWorldLocationFor(c);
-                    if (bb.getType() == 0) return BlockProcessResult.DISCARD;
-                    if (bb.getType() == BuildInABox.BLOCK_ID) {
-                        if (wc.getBlock().hasMetadata("buildInABox")) {
-                            return BlockProcessResult.DISCARD;
-                        }
-                    }
-                    if (blockUpdate.isCanQueue()) {
-                        if (postBuildBlockIds.contains(bb.getType())) {
-                            return BlockProcessResult.QUEUE_FINAL;
-                        } else if (!postLayerBlockIds.contains(bb.getType())) {
-                            return BlockProcessResult.QUEUE_AFTER_LAYER;
-                        }
-                    }
-                    if (bb instanceof TileEntityBlock) {
-                        if (((TileEntityBlock)bb).hasNbtData()) {
-                            BlockState state = wc.getBlock().getState();
-                            BaseBlock worldBlock = bukkitWorld.getBlock(new Vector(wc.getBlockX(), wc.getBlockY(), wc.getBlockZ()));
-                            clipboard.setBlock(c, worldBlock);
-                            if (state instanceof org.bukkit.inventory.InventoryHolder) {
-                                org.bukkit.inventory.InventoryHolder chest = (org.bukkit.inventory.InventoryHolder) state;
-                                Inventory inven = chest.getInventory();
-                                if (chest instanceof Chest) {
-                                    inven = ((Chest) chest).getBlockInventory();
-                                }
-                                inven.clear();
-                            }
-                        }
-                    }
-                    sendAnimationPacket(wc.getBlockX(), wc.getBlockY(), wc.getBlockZ(), bb.getType());
-                    if (c.getBlockY() < -clipboard.getOffset().getBlockY()) {
-                        if (data.getReplacedBlocks().containsKey(c)) {
-                            BaseBlock replacement = data.getReplacedBlocks().get(c);
-                            if (replacement != null) {
-                                wc.getBlock().setTypeIdAndData(replacement.getType(), (byte) replacement.getData(), false);
-                            }
-                        } else {
-                            wc.getBlock().setTypeIdAndData(0,(byte) 0, false);
-                        }
-                    } else {
-                        wc.getBlock().setTypeIdAndData(0, (byte)0, false);
-                    }
-                    wc.getBlock().removeMetadata("biab-block", BuildInABox.getInstance());
-                    wc.getBlock().removeMetadata("buildInABox", BuildInABox.getInstance());
-                    return BlockProcessResult.PROCESSED;
-                }
-            };
-            buildTask.start();
-        } else {
+        if (isLocked()) {
             player.sendMessage(BuildInABox.getErrorMsg("building-is-locked",
                     getPlan().getDisplayName(), getLockedBy()));
         }
+
+        player.sendMessage(BuildInABox.getNormalMsg("removing", this.getPlan().getDisplayName()));
+        building = true;
+        data.clearTileEntities();
+        Block b = getBlock();
+        final World world = player.getWorld();
+        final BIABConfig.AnimationStyle animationStyle = plugin.cfg.getPickupAnimationStyle();
+        Clipboard clipboard = plan.getRotatedClipboard(getDirectional().getFacing());
+        clipboard.setOrigin(new BlockVector(b.getX() + clipboard.getOffset().getBlockX(), b.getY() + clipboard.getOffset().getBlockY(), b.getZ() + clipboard.getOffset().getBlockZ()));
+        buildTask = new BuildManager.BuildTask(clipboard, clipboard.getCutQueue(plugin.cfg.isPickupAnimationShuffled(), null), plugin.cfg.getPickupBlocksPerTick()) {
+
+            @Override
+            public void processBlock(BlockVector clipboardPoint) {
+                Location loc = clipboard.getWorldLocationFor(clipboardPoint, world);
+                if (loc.equals(getBlock().getLocation())) {
+                    return;
+                }
+
+                BlockState state = loc.getBlock().getState();
+                if (MaterialID.isTileEntityBlock(state.getTypeId())) {
+                    clipboard.copyBlockFromWorld(loc.getBlock(), clipboardPoint);
+                }
+
+                if (state instanceof InventoryHolder) {
+                    InventoryHolder holder = (InventoryHolder) state;
+                    Inventory inv = holder.getInventory();
+                    if (holder instanceof Chest) {
+                        inv = ((Chest) holder).getBlockInventory();
+                    }
+                    inv.clear();
+                } else if (state instanceof Jukebox) {
+                    ((Jukebox) state).setPlaying(null);
+                }
+
+                if (!animationStyle.equals(BIABConfig.AnimationStyle.NONE)) {
+                    playBuildAnimation(loc, loc.getBlock().getTypeId(), loc.getBlock().getData(), nearby, animationStyle);
+                }
+                if (clipboardPoint.getBlockY() < -clipboard.getOffset().getBlockY()) {
+                    if (data.getReplacedBlocks().containsKey(clipboardPoint)) {
+                        ClipboardBlock replacement = data.getReplacedBlocks().get(clipboardPoint);
+                        if (replacement != null) {
+                            loc.getBlock().setTypeIdAndData(replacement.getType(), replacement.getData(), false);
+                        }
+                    } else {
+                        loc.getBlock().setTypeIdAndData(0,(byte) 0, false);
+                    }
+                } else {
+                    loc.getBlock().setTypeIdAndData(0, (byte) 0, false);
+                }
+                loc.getBlock().removeMetadata("biab-block", plugin);
+                loc.getBlock().removeMetadata("buildInABox", plugin);
+            }
+
+            @Override
+            public void onComplete() {
+                ClipboardBlock cb;
+                clipboard.rotate2D(BuildInABox.getRotationDegrees(getDirectional().getFacing(), BlockFace.NORTH));
+                for (int x=0;x<clipboard.getSize().getBlockX();x++) {
+                    for (int z=0;z<clipboard.getSize().getBlockZ();z++) {
+                        for (int y=0;y<clipboard.getSize().getBlockY();y++) {
+                            if (x == -clipboard.getOffset().getBlockX() && y == -clipboard.getOffset().getBlockY() && z == -clipboard.getOffset().getBlockZ()) {
+                                continue;
+                            }
+                            cb = clipboard.getBlock(x,y,z);
+                            if (cb.hasTag()) {
+                                data.setTileEntity(new BlockVector(x,y,z), (NBTTagCompound) cb.getTag().clone());
+                            }
+                        }
+                    }
+                }
+
+                getBlock().setType(Material.AIR);
+                getBlock().removeMetadata("buildInABox", plugin);
+                getBlock().removeMetadata("biab-block", plugin);
+                data.getLocation().getWorld().dropItem(new Location(data.getLocation().getWorld(), data.getLocation().getX() + 0.5, data.getLocation().getY() + 0.5, data.getLocation().getZ() + 0.5), data.toItemStack());
+                data.setLocation(null);
+                data.setLastActivity(System.currentTimeMillis());
+                data.setReplacedBlocks(null);
+                plugin.getDataStore().saveChest(data);
+                int fireworksLevel = plugin.getConfig().getInt("pickup-animation.fireworks", 0);
+                if (fireworksLevel > 0) {
+                    //TODO: launchFireworks(fireworksLevel);
+                }
+                building = false;
+                player.sendMessage(BuildInABox.getSuccessMsg("removal-complete"));
+                buildTask = null;
+            }
+        };
+        plugin.getBuildManager().scheduleTask(buildTask);
     }
 
     public class LockingTask implements Runnable {
@@ -682,22 +656,19 @@ public class BuildChest {
     }
 
     public void unprotect() {
-        Clipboard clipboard = getPlan().getRotatedClipboard(this.getEnderChest().getFacing());
-        Location loc = null;
+        Clipboard clipboard = getPlan().getRotatedClipboard(this.getDirectional().getFacing());
+        Location loc;
         BlockVector offset = clipboard.getOffset();
-        Vector origin = new Vector(getBlock().getX(), getBlock().getY(),
+        BlockVector origin = new BlockVector(getBlock().getX(), getBlock().getY(),
                 getBlock().getZ());
         for (int x = 0; x < clipboard.getSize().getBlockX(); x++) {
             for (int y = 0; y < clipboard.getSize().getBlockY(); y++) {
                 for (int z = 0; z < clipboard.getSize().getBlockZ(); z++) {
                     if (clipboard.getBlock(x, y, z).getType() > 0) {
-                        Vector v = origin.add(offset);
-                        loc = new Location(getBlock().getWorld(), v.getBlockX()
-                                + x, v.getBlockY() + y, v.getBlockZ() + z);
-                        getBlock().getWorld().getBlockAt(loc)
-                                .removeMetadata("biab-block", plugin);
-                        getBlock().getWorld().getBlockAt(loc)
-                                .removeMetadata("buildInABox", plugin);
+                        BlockVector v = (BlockVector) origin.clone().add(offset);
+                        loc = new Location(getBlock().getWorld(), v.getBlockX() + x, v.getBlockY() + y, v.getBlockZ() + z);
+                        getBlock().getWorld().getBlockAt(loc).removeMetadata("biab-block", plugin);
+                        getBlock().getWorld().getBlockAt(loc).removeMetadata("buildInABox", plugin);
                     }
                 }
             }

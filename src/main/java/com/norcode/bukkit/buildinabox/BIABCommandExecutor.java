@@ -5,8 +5,10 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.norcode.bukkit.schematica.Selection;
 import com.norcode.bukkit.schematica.exceptions.SchematicSaveException;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -15,6 +17,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.util.BlockVector;
 
 public class BIABCommandExecutor implements TabExecutor {
     BuildInABox plugin;
@@ -41,18 +44,49 @@ public class BIABCommandExecutor implements TabExecutor {
         } else if (action.equals("delete")) {
             cmdDelete(sender, args);
             return true;
-        } else if (action.toLowerCase().startsWith("setdisplayname")) {
+        } else if (action.startsWith("setdisplayname")) {
             cmdSetDisplayName(sender, args);
             return true;
-        } else if (action.toLowerCase().startsWith("setdesc")) {
+        } else if (action.startsWith("setdesc")) {
             cmdSetDescription(sender, args);
             return true;
-        } else if (action.toLowerCase().startsWith("permanent")) {
+        } else if (action.startsWith("permanent")) {
             cmdPermanent(sender, args);
             return true;
+        } else if (action.equals("pos1")) {
+            cmdSetSelectionPoint(1, sender, args);
+        } else if (action.equals("pos2")) {
+            cmdSetSelectionPoint(2, sender, args);
         }
         sender.sendMessage(BuildInABox.getErrorMsg("unexpected-argument", action));
         return true;
+    }
+
+    private void cmdSetSelectionPoint(int point, CommandSender sender, LinkedList<String> args) {
+        if (!sender.hasPermission("biab.select")) {
+            sender.sendMessage(BuildInABox.getErrorMsg("no-permission"));
+            return;
+        }
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(BuildInABox.getErrorMsg("cannot-use-from-console"));
+            return;
+        }
+        Player p = (Player) sender;
+        Selection sel = plugin.getPlayerSession(p).getSelection();
+        Location l = p.getLocation().getBlock().getLocation();
+        switch (point) {
+            case 1:
+                sel.setPt1(l);
+                p.sendMessage(BuildInABox.getSuccessMsg("selection-pt1-set", l.toVector()));
+                break;
+            case 2:
+                sel.setPt2(p.getLocation().getBlock().getLocation());
+                p.sendMessage(BuildInABox.getSuccessMsg("selection-pt2-set", l.toVector()));
+                break;
+            default:
+                return;
+        }
+
     }
 
     private void cmdPermanent(CommandSender sender, LinkedList<String> args) {
@@ -250,8 +284,8 @@ public class BIABCommandExecutor implements TabExecutor {
                 return;
             }
             //ChestData data = plugin.getDataStore().createChest(plan.getName());
-            ItemStack stack = new ItemStack(BuildInABox.BLOCK_ID, 1);
-            ItemMeta meta = plugin.getServer().getItemFactory().getItemMeta(Material.getMaterial(BuildInABox.BLOCK_ID));
+            ItemStack stack = new ItemStack(plugin.cfg.getChestBlockId(), 1);
+            ItemMeta meta = plugin.getServer().getItemFactory().getItemMeta(Material.getMaterial(plugin.cfg.getChestBlockId()));
             meta.setDisplayName(plan.getDisplayName());
             List<String> lore = new ArrayList<String>();
             lore.add(BuildInABox.LORE_PREFIX + BuildInABox.LORE_HEADER);
@@ -294,6 +328,12 @@ public class BIABCommandExecutor implements TabExecutor {
           }
           if ("give".startsWith(action)) {
               results.add("give");
+          }
+          if ("pos1".startsWith(action) && sender.hasPermission("biab.select")) {
+              results.add("pos1");
+          }
+          if ("pos2".startsWith(action) && sender.hasPermission("biab.select")) {
+              results.add("pos2");
           }
       } else if (args.size() == 1) {
           if (action.equals("save") || action.equals("give") || action.equals("setdisplayname") || action.equals("setdescription")) {

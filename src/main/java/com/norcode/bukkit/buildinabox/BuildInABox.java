@@ -32,7 +32,6 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
 import com.norcode.bukkit.buildinabox.datastore.DataStore;
@@ -52,11 +51,9 @@ import fr.neatmonster.nocheatplus.hooks.NCPExemptionManager;
 public class BuildInABox extends JavaPlugin implements Listener {
     public static String LORE_PREFIX = ChatColor.DARK_GREEN + "" + ChatColor.DARK_RED + "" + ChatColor.DARK_GRAY + "" + ChatColor.DARK_BLUE;
     public static String LORE_HEADER = ChatColor.GOLD + "Build-in-a-Box";
-    public static int BLOCK_ID = 130;
     private static BuildInABox instance;
     private DataStore datastore = null;
     private Updater updater = null;
-    private boolean debugMode = false;
     private BukkitTask inventoryScanTask;
     private MessageFile messages = null;
     private Economy economy = null;
@@ -69,7 +66,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
     public Permission wildcardPickupPerm;
     public Permission wildcardLockPerm;
     public Permission wildcardUnlockPerm;
-
+    public BIABConfig cfg;
     @Override
     public void onLoad() {
         instance = this;
@@ -83,10 +80,10 @@ public class BuildInABox extends JavaPlugin implements Listener {
     public void onEnable() {
         saveDefaultConfig();
         reloadConfig();
+        cfg = new BIABConfig(this);
+        cfg.reload();
         enableEconomy();
         setupAntiCheat();
-        debugMode = getConfig().getBoolean("debug", false);
-        BLOCK_ID = getConfig().getInt("chest-block", 130);
         loadMessages();
         LORE_HEADER = getMsg("display-name"); 
         doUpdater();
@@ -96,11 +93,11 @@ public class BuildInABox extends JavaPlugin implements Listener {
             getServer().getPluginCommand("biab").setExecutor(new BIABCommandExecutor(this));
             getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
             getServer().getPluginManager().registerEvents(new ItemListener(this), this);
-            if (getConfig().getBoolean("protect-buildings")) {
+            if (cfg.isBuildingProtectionEnabled()) {
                 getServer().getPluginManager().registerEvents(new BlockProtectionListener(), this);
             }
         }
-        if (getConfig().getBoolean("carry-effect", false)) {
+        if (cfg.isCarryEffectEnabled()) {
             inventoryScanTask = getServer().getScheduler().runTaskTimer(this, new Runnable() {
                 List<String> playerNames = null;
                 int listIdx = 0;
@@ -123,7 +120,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
                 }
             }, 20, 20);
         }
-        buildManager = new BuildManager(this, getConfig().getInt("max-blocks-per-tick", 500));
+        buildManager = new BuildManager(this, cfg.getMaxBlocksPerTick());
         buildManagerTask = getServer().getScheduler().runTaskTimer(this, buildManager, 1, 1);
     }
 
@@ -203,7 +200,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
     }
 
     private void loadMessages() {
-        String lang = getConfig().getString("language", "english").toLowerCase();
+        String lang = cfg.getLanguage();
         File tDir = new File(getDataFolder(), "lang");
         if (!tDir.exists()) {
             tDir.mkdir();
@@ -230,7 +227,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
 
     public void removeCarryEffect(Player p) {
         p.removeMetadata("biab-carryeffect", getInstance());
-        p.removePotionEffect(PotionEffectType.getByName(getConfig().getString("carry-effect-type")));
+        p.removePotionEffect(cfg.getCarryEffect());
     }
 
     public boolean hasCarryEffect(Player p) {
@@ -239,7 +236,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
 
     public void applyCarryEffect(Player p) {
         p.setMetadata("biab-carryeffect", new FixedMetadataValue(getInstance(), true));
-        p.addPotionEffect(new PotionEffect(PotionEffectType.getByName(getConfig().getString("carry-effect-type")), 1200, 1));
+        p.addPotionEffect(new PotionEffect(cfg.getCarryEffect(), 1200, 1));
     }
 
     public Session getPlayerSession(Player p) {
@@ -256,10 +253,10 @@ public class BuildInABox extends JavaPlugin implements Listener {
 
 
     private boolean initializeDataStore() {
-        String storageType = getConfig().getString("storage-backend", "file").toLowerCase();
-        if (storageType.equals("file")) {
+
+        if (cfg.getStorageBackend().equals(BIABConfig.StorageBackend.FILE)) {
             datastore = new YamlDataStore(this);
-        } else if (storageType.equals("ebean")) {
+        } else if (cfg.getStorageBackend().equals(BIABConfig.StorageBackend.EBEAN)) {
             datastore = new EbeanDataStore(this);
         } else {
             getLogger().severe("No datastore configured.");
@@ -267,7 +264,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
         }
         datastore.load();
         long now = System.currentTimeMillis();
-        long expiry = getConfig().getLong("data-expiry", 1000*60*60*24*90L);
+        long expiry = cfg.getDataExpiry();
         long tooOldTime = now - expiry;// if the chest hasn't been touched in 90 days expire the data
         HashSet<Chunk> loadedChunks = new HashSet<Chunk>();
         for (ChestData cd: new ArrayList<ChestData>(datastore.getAllChests())) {
@@ -296,12 +293,12 @@ public class BuildInABox extends JavaPlugin implements Listener {
                     continue;
                 }
             }
-            if (bc.getBlock().getTypeId() != BLOCK_ID) {
+            if (bc.getBlock().getTypeId() != cfg.getChestBlockId()) {
                     datastore.deleteChest(cd.getId());
                     continue;
             }
             bc.getBlock().setMetadata("buildInABox", new FixedMetadataValue(this, bc));
-            if (!getConfig().getBoolean("protect-buildings"))
+            if (cfg.isBuildingProtectionEnabled())
                     continue;
             Set<Chunk> protectedChunks = bc.protectBlocks(null);
             if (protectedChunks == null)
@@ -363,10 +360,10 @@ public class BuildInABox extends JavaPlugin implements Listener {
 
 
     public void doUpdater() {
-        String autoUpdate = getConfig().getString("auto-update", "notify-only").toLowerCase();
-        if (autoUpdate.equals("true")) {
+
+        if (cfg.getAutoUpdate().equals(BIABConfig.AutoUpdate.TRUE)) {
             updater = new Updater(this, "build-in-a-box", this.getFile(), UpdateType.DEFAULT, true);
-        } else if (autoUpdate.equals("false")) {
+        } else if (cfg.getAutoUpdate().equals(BIABConfig.AutoUpdate.FALSE)) {
             getLogger().info("Auto-updater is disabled.  Skipping check.");
         } else {
             updater = new Updater(this, "build-in-a-box", this.getFile(), UpdateType.NO_DOWNLOAD, true);
@@ -378,7 +375,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
     }
 
     public void debug(String s) {
-        if (debugMode) {
+        if (cfg.isDebugModeEnabled()) {
             getLogger().info(s);
         }
     }
@@ -392,7 +389,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
     }
 
     public void checkCarrying(Player p) {
-        if (!getConfig().getBoolean("carry-effect", false)) return;
+        if (!cfg.isCarryEffectEnabled()) return;
         ChestData data;
         boolean effect = false;
         for (ItemStack stack: p.getInventory().getContents()) {

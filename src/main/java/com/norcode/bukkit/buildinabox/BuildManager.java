@@ -5,6 +5,7 @@ import org.bukkit.util.BlockVector;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * Manages all building jobs on the entire server.
@@ -34,21 +35,24 @@ public class BuildManager implements Runnable {
             return;
         }
         BuildTask task;
-        boolean oneTicked = false;
+        LinkedList<BuildTask> cachedTasks = new LinkedList<BuildTask>();
         for (int i=0;i<maxBlocksPerTick;i++) {
+            if (buildTasks.isEmpty()) break;
             task = buildTasks.pop();
-            if (task == null) break;
             if (!task.tick()) {
                 i--;
+                cachedTasks.push(task);
+                continue;
             } else {
                 task.callsThisTick++;
             }
-            if (task.getRemainingBlocks() > 0) {
+            if (task.getRemainingBlocks() > 0 && !task.cancelled) {
                 buildTasks.add(task);
             } else {
                 task.complete();
             }
         }
+        buildTasks.addAll(cachedTasks);
         for (int i=0;i<buildTasks.size();i++) {
             buildTasks.get(i).callsThisTick = 0;
         }
@@ -58,8 +62,12 @@ public class BuildManager implements Runnable {
         this.buildTasks.add(task);
     }
 
-    public static abstract class BuildTask {
+    public void cancelTask(BuildTask task) {
+        buildTasks.remove(task);
+    }
 
+    public static abstract class BuildTask {
+        protected boolean cancelled = false;
         protected Clipboard clipboard;
         protected int blocksPerTick;
         protected int callsThisTick = 0;

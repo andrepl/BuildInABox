@@ -2,6 +2,8 @@ package com.norcode.bukkit.buildinabox.datastore;
 import java.util.Collection;
 import java.util.HashMap;
 
+import com.norcode.bukkit.schematica.ClipboardBlock;
+import net.minecraft.server.v1_5_R3.NBTTagCompound;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 
@@ -9,9 +11,7 @@ import com.norcode.bukkit.buildinabox.BuildInABox;
 import com.norcode.bukkit.buildinabox.BuildingPlan;
 import com.norcode.bukkit.buildinabox.ChestData;
 import com.norcode.bukkit.buildinabox.util.ConfigAccessor;
-import com.sk89q.jnbt.CompoundTag;
-import com.sk89q.worldedit.BlockVector;
-import com.sk89q.worldedit.blocks.BaseBlock;
+import org.bukkit.util.BlockVector;
 
 
 public class YamlDataStore extends DataStore {
@@ -61,8 +61,8 @@ public class YamlDataStore extends DataStore {
             if (id > 0) {
                 if (id > maxId) maxId = id;
                 loc = deserializeLocation(sec.getString("location"));
-                HashMap<BlockVector, CompoundTag> tileEntities = deserializeTileEntities(sec.getString("tile-entities"));
-                HashMap<BlockVector, BaseBlock> replacedBlocks = deserializeReplacedBlocks(sec.getString("replaced-blocks"));
+                HashMap<BlockVector, NBTTagCompound> tileEntities = deserializeTileEntities(sec.getString("tile-entities"));
+                HashMap<BlockVector, ClipboardBlock> replacedBlocks = deserializeReplacedBlocks(sec.getString("replaced-blocks"));
                 chests.put(id, new ChestData(id, sec.getString("plan"), sec.getString("locked-by"), sec.getLong("last-activity"), loc, tileEntities, replacedBlocks));
             }
         }

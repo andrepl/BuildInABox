@@ -29,15 +29,17 @@ public class PlayerListener implements Listener {
 
     @EventHandler(ignoreCancelled=true, priority = EventPriority.LOW)
     public void onPlayerSelection(PlayerInteractEvent event) {
-        if (event.getItem().getTypeId() == plugin.getConfig().getInt("selection-wand-id", 294)) { // GOLD_HOE
+        if (event.getItem() != null && event.getItem().getTypeId() == plugin.getConfig().getInt("selection-wand-id", 294)) { // GOLD_HOE
             if (!event.getPlayer().hasPermission("biab.select")) {
                  return;
             }
             Session session = plugin.getPlayerSession(event.getPlayer());
             if (event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
                 session.getSelection().setPt1(event.getClickedBlock().getLocation());
+                event.getPlayer().sendMessage(BuildInABox.getMsg("selection-pt1-set", event.getClickedBlock().getLocation().toVector()));
             } else if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
                 session.getSelection().setPt2(event.getClickedBlock().getLocation());
+                event.getPlayer().sendMessage(BuildInABox.getMsg("selection-pt2-set", event.getClickedBlock().getLocation().toVector()));
             } else {
                 return;
             }
@@ -52,7 +54,7 @@ public class PlayerListener implements Listener {
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         Block block = event.getClickedBlock();
-        if (block.getTypeId() == BuildInABox.BLOCK_ID) {
+        if (block.getTypeId() == plugin.cfg.getChestBlockId()) {
             if (block.hasMetadata("buildInABox")) {
                 BuildChest bc = (BuildChest) block.getMetadata("buildInABox").get(0).value();
                 if (bc.isBuilding()) {
@@ -152,7 +154,7 @@ public class PlayerListener implements Listener {
 
     @EventHandler(ignoreCancelled=true)
     public void onPlaceEnderchest(final BlockPlaceEvent event) {
-        if (event.getBlock().getTypeId() == BuildInABox.BLOCK_ID) {
+        if (event.getBlock().getTypeId() == plugin.cfg.getChestBlockId()) {
             if (plugin.getConfig().getBoolean("prevent-placing-enderchests", false)) {
                 ChestData data = plugin.getDataStore().fromItemStack(event.getItemInHand());
                 if (data == null) {
