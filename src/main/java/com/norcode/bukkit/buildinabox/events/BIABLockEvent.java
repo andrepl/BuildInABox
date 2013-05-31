@@ -6,18 +6,31 @@ import org.bukkit.event.Cancellable;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.player.PlayerEvent;
 
-public class BIABUnlockAttemptEvent extends PlayerEvent implements Cancellable {
+public class BIABLockEvent extends PlayerEvent implements Cancellable {
+    public static enum Type {
+        LOCK_ATTEMPT,
+        LOCK_SUCCESS,
+        LOCK_CANCEL,
+        UNLOCK_ATTEMPT,
+        UNLOCK_SUCCESS,
+        UNLOCK_CANCEL
+    }
     private static final HandlerList handlers = new HandlerList();
     private BuildChest buildChest;
     private boolean cancelled = false;
+    private Type type;
 
-    public BIABUnlockAttemptEvent(Player player, BuildChest buildChest) {
+    public BIABLockEvent(Player player, BuildChest buildChest, Type type) {
         super(player);
         this.buildChest = buildChest;
     }
 
     public BuildChest getBuildChest() {
         return buildChest;
+    }
+
+    public Type getType() {
+        return type;
     }
 
     @Override

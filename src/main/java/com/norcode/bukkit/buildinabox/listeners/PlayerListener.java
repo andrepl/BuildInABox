@@ -1,5 +1,6 @@
 package com.norcode.bukkit.buildinabox.listeners;
 
+import com.norcode.bukkit.buildinabox.events.BIABLockEvent;
 import com.norcode.bukkit.buildinabox.events.BIABPlaceEvent;
 import com.norcode.bukkit.schematica.Session;
 import org.bukkit.block.Block;
@@ -79,6 +80,11 @@ public class PlayerListener implements Listener {
                         if (!bc.getLockingTask().lockingPlayer.equals(player.getName())) {
                             if (plugin.getConfig().getBoolean("allow-unlocking-others", true)) {
                                 if (player.hasPermission("biab.unlock.others")) {
+                                    BIABLockEvent le = new BIABLockEvent(event.getPlayer(), bc, (bc.getLockingTask() instanceof UnlockingTask) ? BIABLockEvent.Type.UNLOCK_CANCEL : BIABLockEvent.Type.LOCK_CANCEL);
+                                    plugin.getServer().getPluginManager().callEvent(le);
+                                    if (le.isCancelled()) {
+                                        return;
+                                    }
                                     String msgKey = "lock-attempt-cancelled";
                                     if (bc.getLockingTask() instanceof UnlockingTask) {
                                         msgKey = "un" + msgKey;
@@ -125,14 +131,14 @@ public class PlayerListener implements Listener {
                                         if (player.hasPermission("biab.unlock.others")) {
                                             bc.unlock(player);
                                         } else {
-                                            player.sendMessage(BuildInABox.getErrorMsg("no-perimssion"));
+                                            player.sendMessage(BuildInABox.getErrorMsg("no-permission"));
                                         }
                                     }
                                 } else {
                                     if (player.hasPermission("biab.lock." + bc.getPlan().getName().toLowerCase())) {
                                         bc.lock(player);
                                     } else {
-                                        player.sendMessage(BuildInABox.getErrorMsg("no-perimssion"));
+                                        player.sendMessage(BuildInABox.getErrorMsg("no-permission"));
                                     }
                                 }
                             }

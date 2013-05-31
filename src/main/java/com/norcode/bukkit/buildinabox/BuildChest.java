@@ -6,10 +6,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import com.norcode.bukkit.buildinabox.events.BIABBuildEndEvent;
-import com.norcode.bukkit.buildinabox.events.BIABBuildStartEvent;
-import com.norcode.bukkit.buildinabox.events.BIABPreviewEndEvent;
-import com.norcode.bukkit.buildinabox.events.BIABPreviewStartEvent;
+import com.norcode.bukkit.buildinabox.events.*;
 import com.norcode.bukkit.schematica.Clipboard;
 import com.norcode.bukkit.schematica.ClipboardBlock;
 import com.norcode.bukkit.schematica.MaterialID;
@@ -366,6 +363,11 @@ public class BuildChest {
     }
 
     public void unlock(Player player) {
+        BIABLockEvent event = new BIABLockEvent(player, this, BIABLockEvent.Type.UNLOCK_ATTEMPT);
+        plugin.getServer().getPluginManager().callEvent(event);
+        if (event.isCancelled()) {
+            return;
+        }
         long total = plugin.cfg.getUnlockTime();
         if (data.getLockedBy().equals(player.getName())) {
             total = plugin.cfg.getLockTime();
@@ -382,6 +384,11 @@ public class BuildChest {
     }
 
     public void lock(Player player) {
+        BIABLockEvent event = new BIABLockEvent(player, this, BIABLockEvent.Type.LOCK_ATTEMPT);
+        plugin.getServer().getPluginManager().callEvent(event);
+        if (event.isCancelled()) {
+            return;
+        }
         long total = plugin.cfg.getLockTime();
         double cost = plugin.cfg.getLockCost();
         if (cost > 0 && BuildInABox.hasEconomy()) {
@@ -390,6 +397,7 @@ public class BuildChest {
                 return;
             }
         }
+
         lockingTask = new LockingTask(player.getName(), total);
         lockingTask.run();
     }
@@ -402,7 +410,11 @@ public class BuildChest {
                 return;
             }
         }
-
+        BIABPickupStartEvent pickupStartEvent = new BIABPickupStartEvent(player, BuildChest.this);
+        plugin.getServer().getPluginManager().callEvent(pickupStartEvent);
+        if (pickupStartEvent.isCancelled()) {
+            return;
+        }
         final List<Player> nearby = new ArrayList<Player>();
         for (Player p : player.getWorld().getPlayers()) {
             nearby.add(p);
@@ -490,13 +502,15 @@ public class BuildChest {
                 data.setLastActivity(System.currentTimeMillis());
                 data.setReplacedBlocks(null);
                 plugin.getDataStore().saveChest(data);
-                int fireworksLevel = plugin.getConfig().getInt("pickup-animation.fireworks", 0);
+                int fireworksLevel = plugin.cfg.getPickupFireworks();
                 if (fireworksLevel > 0) {
                     //TODO: launchFireworks(fireworksLevel);
                 }
                 building = false;
                 player.sendMessage(BuildInABox.getSuccessMsg("removal-complete"));
                 buildTask = null;
+                BIABPickupEndEvent pickupEndEvent = new BIABPickupEndEvent(player, BuildChest.this);
+                plugin.getServer().getPluginManager().callEvent(pickupEndEvent);
             }
         };
         plugin.getBuildManager().scheduleTask(buildTask);
@@ -512,6 +526,10 @@ public class BuildChest {
             this.startTime = System.currentTimeMillis();
             this.totalTime = totalTimeSeconds * 1000;
             this.lockingPlayer = playerName;
+        }
+
+        protected void onSuccess() {
+            plugin.getServer().getPluginManager().callEvent(new BIABLockEvent(plugin.getServer().getPlayer(lockingPlayer), BuildChest.this, BIABLockEvent.Type.LOCK_SUCCESS));
         }
 
         protected String getCancelMessage() {
@@ -544,8 +562,9 @@ public class BuildChest {
         }
 
         public void run() {
-            if (cancelled)
+            if (cancelled) {
                 return;
+            }
             Player player = plugin.getServer().getPlayer(lockingPlayer);
             if (!player.isOnline()) {
                 cancel();
@@ -554,8 +573,7 @@ public class BuildChest {
                 try {
                     double distance = player.getLocation().distance(
                             data.getLocation());
-                    if (distance > plugin.getConfig().getDouble(
-                            "max-locking-distance", 5)) {
+                    if (distance > plugin.cfg.getMaxLockingDistance()) {
                         cancel();
                         return;
                     }
@@ -567,13 +585,12 @@ public class BuildChest {
                 long elapsed = System.currentTimeMillis() - startTime;
                 if (elapsed > totalTime)
                     elapsed = totalTime;
-                int pct = (int) Math
-                        .floor((elapsed / (double) totalTime) * 100);
+                int pct = (int) Math.floor((elapsed / (double) totalTime) * 100);
                 if (pct < 100) {
                     player.sendMessage(getProgressMessage(pct));
-                    plugin.getServer().getScheduler()
-                            .runTaskLater(plugin, this, 20);
+                    plugin.getServer().getScheduler().runTaskLater(plugin, this, 20);
                 } else {
+                    onSuccess();
                     data.setLockedBy(getLockedBy());
                     data.setLastActivity(System.currentTimeMillis());
                     plugin.getDataStore().saveChest(data);
@@ -589,6 +606,10 @@ public class BuildChest {
             super(playerName, totalTime);
         }
 
+        protected void onSuccess() {
+            plugin.getServer().getPluginManager().callEvent(new BIABLockEvent(plugin.getServer().getPlayer(lockingPlayer), BuildChest.this, BIABLockEvent.Type.UNLOCK_SUCCESS));
+        }
+
         @Override
         public String getCancelMessage() {
             return BuildInABox.getErrorMsg("unlock-cancelled-self");
@@ -596,14 +617,12 @@ public class BuildChest {
 
         @Override
         public String getSuccessMessage() {
-            return BuildInABox.getSuccessMsg("unlock-success-self", getPlan()
-                    .getName());
+            return BuildInABox.getSuccessMsg("unlock-success-self", getPlan().getName());
         }
 
         @Override
         public String getProgressMessage(int percentage) {
-            return BuildInABox.getNormalMsg("unlock-progress", getPlan()
-                    .getName(), percentage);
+            return BuildInABox.getNormalMsg("unlock-progress", getPlan().getName(), percentage);
         }
 
         @Override
@@ -615,7 +634,7 @@ public class BuildChest {
     public String[] getDescription() {
         List<String> desc = new ArrayList<String>(2);
         String header = ChatColor.GOLD + getPlan().getName();
-        if (previewing || plugin.getConfig().getBoolean("allow-locking", true)) {
+        if (previewing || plugin.cfg.isLockingEnabled()) {
             header += " - "
                     + (previewing ? ChatColor.GREEN
                             + BuildInABox.getMsg("preview")
@@ -633,14 +652,11 @@ public class BuildChest {
                     + ChatColor.WHITE + " | " + ChatColor.GOLD
                     + BuildInABox.getMsg("right-click-to-confirm"));
         } else if (isLocked()) {
-            desc.add(ChatColor.GOLD
-                    + BuildInABox.getMsg("right-click-twice-to-unlock"));
+            desc.add(ChatColor.GOLD + BuildInABox.getMsg("right-click-twice-to-unlock"));
         } else {
-            String instructions = ChatColor.GOLD
-                    + BuildInABox.getMsg("left-click-twice-to-pickup");
-            if (plugin.getConfig().getBoolean("allow-locking", true)) {
-                instructions += ChatColor.WHITE + " | " + ChatColor.GOLD
-                        + BuildInABox.getMsg("right-click-twice-to-lock");
+            String instructions = ChatColor.GOLD + BuildInABox.getMsg("left-click-twice-to-pickup");
+            if (plugin.cfg.isLockingEnabled()) {
+                instructions += ChatColor.WHITE + " | " + ChatColor.GOLD + BuildInABox.getMsg("right-click-twice-to-lock");
             }
             desc.add(instructions);
         }
