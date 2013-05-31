@@ -36,10 +36,6 @@
         <url>http://repo.gravitydevelopment.net/</url>
     </repository>
     <repository>
-      <id>sk89q-repo</id>
-      <url>http://maven.sk89q.com/repo/</url>
-    </repository>
-    <repository>
       <id>bukkit-releases-repo</id>
       <url>http://repo.bukkit.org/content/repositories/releases/</url>
     </repository>
@@ -65,11 +61,6 @@
       <groupId>com.norcode.bukkit.schematica</groupId>
         <artifactId>Schematica</artifactId>
         <version>0.1.0</version>
-    </dependency>
-    <dependency>
-      <groupId>com.sk89q</groupId>
-        <artifactId>worldedit</artifactId>
-        <version>5.5.6</version>
     </dependency>
     <dependency>
         <groupId>net.milkbowl.vault</groupId>
