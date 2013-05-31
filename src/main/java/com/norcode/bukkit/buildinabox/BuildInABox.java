@@ -42,7 +42,6 @@ import com.norcode.bukkit.buildinabox.listeners.BlockProtectionListener;
 import com.norcode.bukkit.buildinabox.listeners.ItemListener;
 import com.norcode.bukkit.buildinabox.listeners.PlayerListener;
 import com.norcode.bukkit.buildinabox.util.MessageFile;
-import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 
 import fr.neatmonster.nocheatplus.NoCheatPlus;
 import fr.neatmonster.nocheatplus.hooks.NCPExemptionManager;
@@ -368,10 +367,6 @@ public class BuildInABox extends JavaPlugin implements Listener {
         } else {
             updater = new Updater(this, "build-in-a-box", this.getFile(), UpdateType.NO_DOWNLOAD, true);
         }
-    }
-
-    public WorldEditPlugin getWorldEdit() {
-        return (WorldEditPlugin) this.getServer().getPluginManager().getPlugin("WorldEdit");
     }
 
     public void debug(String s) {

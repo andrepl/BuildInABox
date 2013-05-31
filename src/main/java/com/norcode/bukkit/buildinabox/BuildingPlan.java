@@ -23,7 +23,6 @@ import org.bukkit.plugin.PluginManager;
 
 import org.bukkit.Material;
 
-import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import org.bukkit.util.BlockVector;
 
 public class BuildingPlan {
@@ -115,7 +114,6 @@ public class BuildingPlan {
     }
 
     public static BuildingPlan fromClipboard(BuildInABox plugin, Player player, String name) throws SchematicSaveException {
-        WorldEditPlugin we = plugin.getWorldEdit();
         BuildingPlan plan = null;
         Session session = plugin.getPlayerSession(player);
         try {
