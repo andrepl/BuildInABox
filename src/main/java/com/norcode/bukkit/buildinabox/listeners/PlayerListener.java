@@ -1,5 +1,6 @@
 package com.norcode.bukkit.buildinabox.listeners;
 
+import com.norcode.bukkit.buildinabox.events.BIABPlaceEvent;
 import com.norcode.bukkit.schematica.Session;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -170,6 +171,12 @@ public class PlayerListener implements Listener {
         if (data != null) {
             if (!event.getPlayer().hasPermission("biab.place." + data.getPlanName().toLowerCase())) {
                 event.getPlayer().sendMessage(BuildInABox.getErrorMsg("no-permission"));
+                event.setCancelled(true);
+                return;
+            }
+            BIABPlaceEvent placeEvent = new BIABPlaceEvent(event.getPlayer(), event.getBlock().getLocation(), event.getItemInHand(), data);
+            plugin.getServer().getPluginManager().callEvent(placeEvent);
+            if (placeEvent.isCancelled()) {
                 event.setCancelled(true);
                 return;
             }

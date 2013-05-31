@@ -6,6 +6,10 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import com.norcode.bukkit.buildinabox.events.BIABBuildEndEvent;
+import com.norcode.bukkit.buildinabox.events.BIABBuildStartEvent;
+import com.norcode.bukkit.buildinabox.events.BIABPreviewEndEvent;
+import com.norcode.bukkit.buildinabox.events.BIABPreviewStartEvent;
 import com.norcode.bukkit.schematica.Clipboard;
 import com.norcode.bukkit.schematica.ClipboardBlock;
 import com.norcode.bukkit.schematica.MaterialID;
@@ -111,6 +115,8 @@ public class BuildChest {
                 data.setLastActivity(System.currentTimeMillis());
                 plugin.getDataStore().saveChest(data);
                 buildTask = null;
+                BIABPreviewEndEvent previewEndEvent = new BIABPreviewEndEvent(player, BuildChest.this);
+                plugin.getServer().getPluginManager().callEvent(previewEndEvent);
             }
         };
         plugin.getBuildManager().scheduleTask(buildTask);
@@ -146,7 +152,6 @@ public class BuildChest {
         clipboard.setOrigin(new BlockVector(b.getX() + o.getBlockX(), b.getY() + o.getBlockY(), b.getZ() + o.getBlockZ()));
         previewing = true;
         buildTask = new BuildManager.BuildTask(clipboard, clipboard.getPasteQueue(false, null), 250) {
-            boolean cancelled = false;
             @Override
             public void processBlock(BlockVector clipboardPoint) {
                 ClipboardBlock block = clipboard.getBlock(clipboardPoint);
@@ -189,6 +194,11 @@ public class BuildChest {
                 }, cancelled ? 1 : previewDuration);
             }
         };
+        BIABPreviewStartEvent previewStartEvent = new BIABPreviewStartEvent(player, this);
+        plugin.getServer().getPluginManager().callEvent(previewStartEvent);
+        if (previewStartEvent.isCancelled()) {
+            buildTask.cancelled = true;
+        }
         plugin.getBuildManager().scheduleTask(buildTask);
     }
 
@@ -243,6 +253,7 @@ public class BuildChest {
     }
 
     private void startBuild(final Player player) {
+        previewing = false;
         double cost = plugin.cfg.getBuildCost();
         if (cost > 0 && BuildInABox.hasEconomy()) {
             if (!BuildInABox.getEconomy().withdrawPlayer(player.getName(), cost).transactionSuccess()) {
@@ -250,7 +261,12 @@ public class BuildChest {
                 return;
             }
         }
-        previewing = false;
+        BIABBuildStartEvent buildStartEvent = new BIABBuildStartEvent(player, this);
+        plugin.getServer().getPluginManager().callEvent(buildStartEvent);
+        if (buildStartEvent.isCancelled()) {
+            return;
+        }
+
         building = true;
         player.sendMessage(BuildInABox.getNormalMsg("building", plan.getDisplayName()));
         final World world = player.getWorld();
@@ -324,6 +340,8 @@ public class BuildChest {
                     //TODO: launchFireworks(fireworksLevel);
                 }
                 building = false;
+                BIABBuildEndEvent buildEndEvent = new BIABBuildEndEvent(player, BuildChest.this);
+                plugin.getServer().getPluginManager().callEvent(buildEndEvent);
             }
         };
         plugin.getBuildManager().scheduleTask(buildTask);
