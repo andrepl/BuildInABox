@@ -1,10 +1,10 @@
 author: metalhedd
 main: com.norcode.bukkit.buildinabox.BuildInABox
-version: 0.1.7-SNAPSHOT
+version: 0.2.0-SNAPSHOT
 name: BuildInABox
 softdepend: [Vault, AntiCheat, NoCheatPlus]
-depend: [WorldEdit]
 database: true
+load: startup
 
 commands:
   biab:
@@ -12,6 +12,8 @@ commands:
     description: give a player a Build-in-a-Box Building.
 
 permissions:
+  biab.select:
+    default: op
   biab.save:
     default: op
   biab.permanent:

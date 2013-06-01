@@ -1,24 +1,24 @@
 package com.norcode.bukkit.buildinabox;
 
-import java.io.File;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
+import com.norcode.bukkit.buildinabox.datastore.DataStore;
+import com.norcode.bukkit.buildinabox.datastore.YamlDataStore;
+import com.norcode.bukkit.buildinabox.listeners.BlockProtectionListener;
+import com.norcode.bukkit.buildinabox.listeners.ItemListener;
+import com.norcode.bukkit.buildinabox.listeners.PlayerListener;
+import com.norcode.bukkit.buildinabox.listeners.ServerListener;
+import com.norcode.bukkit.buildinabox.util.MessageFile;
+import com.norcode.bukkit.schematica.Session;
+import fr.neatmonster.nocheatplus.NoCheatPlus;
+import fr.neatmonster.nocheatplus.hooks.NCPExemptionManager;
 import net.h31ix.anticheat.Anticheat;
 import net.h31ix.anticheat.api.AnticheatAPI;
 import net.h31ix.anticheat.manage.CheckType;
 import net.h31ix.updater.Updater;
 import net.h31ix.updater.Updater.UpdateType;
 import net.milkbowl.vault.economy.Economy;
-
 import org.bukkit.ChatColor;
-import org.bukkit.Chunk;
-import org.bukkit.WorldCreator;
+
+import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -32,42 +32,35 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
-import com.norcode.bukkit.buildinabox.datastore.DataStore;
-import com.norcode.bukkit.buildinabox.datastore.EbeanDataStore;
-import com.norcode.bukkit.buildinabox.datastore.EbeanDataStore.ChestBean;
-import com.norcode.bukkit.buildinabox.datastore.YamlDataStore;
-import com.norcode.bukkit.buildinabox.listeners.BlockProtectionListener;
-import com.norcode.bukkit.buildinabox.listeners.ItemListener;
-import com.norcode.bukkit.buildinabox.listeners.PlayerListener;
-import com.norcode.bukkit.buildinabox.util.MessageFile;
-import com.sk89q.worldedit.bukkit.WorldEditPlugin;
-
-import fr.neatmonster.nocheatplus.NoCheatPlus;
-import fr.neatmonster.nocheatplus.hooks.NCPExemptionManager;
+import java.io.File;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 
 public class BuildInABox extends JavaPlugin implements Listener {
     public static String LORE_PREFIX = ChatColor.DARK_GREEN + "" + ChatColor.DARK_RED + "" + ChatColor.DARK_GRAY + "" + ChatColor.DARK_BLUE;
     public static String LORE_HEADER = ChatColor.GOLD + "Build-in-a-Box";
-    public static int BLOCK_ID = 130;
     private static BuildInABox instance;
     private DataStore datastore = null;
     private Updater updater = null;
-    private boolean debugMode = false;
     private BukkitTask inventoryScanTask;
     private MessageFile messages = null;
     private Economy economy = null;
     private Anticheat antiCheat;
     private NoCheatPlus NCP;
+    private BuildManager buildManager;
+    private BukkitTask buildManagerTask;
     public Permission wildcardGivePerm;
     public Permission wildcardPlacePerm;
     public Permission wildcardPickupPerm;
     public Permission wildcardLockPerm;
     public Permission wildcardUnlockPerm;
-
+    public BIABConfig cfg;
+    public Random random = new Random();
     @Override
     public void onLoad() {
         instance = this;
@@ -80,11 +73,12 @@ public class BuildInABox extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        getConfig().options().copyDefaults(true);
         reloadConfig();
+        cfg = new BIABConfig(this);
+        cfg.reload();
         enableEconomy();
         setupAntiCheat();
-        debugMode = getConfig().getBoolean("debug", false);
-        BLOCK_ID = getConfig().getInt("chest-block", 130);
         loadMessages();
         LORE_HEADER = getMsg("display-name"); 
         doUpdater();
@@ -94,11 +88,13 @@ public class BuildInABox extends JavaPlugin implements Listener {
             getServer().getPluginCommand("biab").setExecutor(new BIABCommandExecutor(this));
             getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
             getServer().getPluginManager().registerEvents(new ItemListener(this), this);
-            if (getConfig().getBoolean("protect-buildings")) {
+            getServer().getPluginManager().registerEvents(new ServerListener(this), this);
+
+            if (cfg.isBuildingProtectionEnabled()) {
                 getServer().getPluginManager().registerEvents(new BlockProtectionListener(), this);
             }
         }
-        if (getConfig().getBoolean("carry-effect", false)) {
+        if (cfg.isCarryEffectEnabled()) {
             inventoryScanTask = getServer().getScheduler().runTaskTimer(this, new Runnable() {
                 List<String> playerNames = null;
                 int listIdx = 0;
@@ -121,6 +117,8 @@ public class BuildInABox extends JavaPlugin implements Listener {
                 }
             }, 20, 20);
         }
+        buildManager = new BuildManager(this, cfg.getMaxBlocksPerTick());
+        buildManagerTask = getServer().getScheduler().runTaskTimer(this, buildManager, 1, 1);
     }
 
     private void setupPermissions() {
@@ -199,7 +197,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
     }
 
     private void loadMessages() {
-        String lang = getConfig().getString("language", "english").toLowerCase();
+        String lang = cfg.getLanguage();
         File tDir = new File(getDataFolder(), "lang");
         if (!tDir.exists()) {
             tDir.mkdir();
@@ -221,12 +219,12 @@ public class BuildInABox extends JavaPlugin implements Listener {
                 tpl += "{"+i+"}, ";
             }
         }
-        return new MessageFormat(convertColors(tpl)).format(args);
+        return new MessageFormat(ChatColor.translateAlternateColorCodes('&', tpl)).format(args);
     }
 
     public void removeCarryEffect(Player p) {
         p.removeMetadata("biab-carryeffect", getInstance());
-        p.removePotionEffect(PotionEffectType.getByName(getConfig().getString("carry-effect-type")));
+        p.removePotionEffect(cfg.getCarryEffect());
     }
 
     public boolean hasCarryEffect(Player p) {
@@ -235,71 +233,55 @@ public class BuildInABox extends JavaPlugin implements Listener {
 
     public void applyCarryEffect(Player p) {
         p.setMetadata("biab-carryeffect", new FixedMetadataValue(getInstance(), true));
-        p.addPotionEffect(new PotionEffect(PotionEffectType.getByName(getConfig().getString("carry-effect-type")), 1200, 1));
+        p.addPotionEffect(new PotionEffect(cfg.getCarryEffect(), 1200, 1));
     }
 
+    public Session getPlayerSession(Player p) {
+        Session session;
+        if (p.hasMetadata("biab-selection-session")) {
+            session = (Session) p.getMetadata("biab-selection-session").get(0).value();
+        } else {
+            session = new Session(p.getName());
+            p.setMetadata("biab-selection-session", new FixedMetadataValue(this, session));
+
+        }
+        return session;
+    }
+
+
     private boolean initializeDataStore() {
-        String storageType = getConfig().getString("storage-backend", "file").toLowerCase();
-        if (storageType.equals("file")) {
+
+        if (cfg.getStorageBackend().equals(BIABConfig.StorageBackend.FILE)) {
             datastore = new YamlDataStore(this);
-        } else if (storageType.equals("ebean")) {
-            datastore = new EbeanDataStore(this);
         } else {
             getLogger().severe("No datastore configured.");
             return false;
         }
         datastore.load();
         long now = System.currentTimeMillis();
-        long expiry = getConfig().getLong("data-expiry", 1000*60*60*24*90L);
+        long expiry = cfg.getDataExpiry();
         long tooOldTime = now - expiry;// if the chest hasn't been touched in 90 days expire the data
-        HashSet<Chunk> loadedChunks = new HashSet<Chunk>();
         for (ChestData cd: new ArrayList<ChestData>(datastore.getAllChests())) {
-            if (cd.getLastActivity() < tooOldTime) {
+
+            if (cd.getWorldName() == null) {
+                if (cd.getLastActivity() < tooOldTime) {
                     debug("Chest Data is too old: " + cd.getLastActivity() + " vs " + tooOldTime);
                     datastore.deleteChest(cd.getId());
-                    continue;
-            }
-            if (cd.getLocation() == null)
-                    continue;
-            WorldCreator wc;
-            try {
-                wc = new WorldCreator(cd.getLocation().getWorld().getName());
-            } catch (NullPointerException ex) {
-                datastore.deleteChest(cd.getId());
-                continue;
-            }
-            if (getServer().createWorld(wc) == null) {
-                getLogger().warning("Deleting BuildChest @ " + cd.getLocation() + ": World '" + cd.getLocation().getWorld().getName() + "' Does not exist.");
-                datastore.deleteChest(cd.getId());
-                continue;
-            }
-            BuildChest bc = new BuildChest(cd);
-            if (!bc.getLocation().getChunk().isLoaded()) {
-                if (!bc.getLocation().getChunk().load()) {
-                    continue;
                 }
+                continue;
             }
-            if (bc.getBlock().getTypeId() != BLOCK_ID) {
-                    datastore.deleteChest(cd.getId());
-                    continue;
-            }
-            bc.getBlock().setMetadata("buildInABox", new FixedMetadataValue(this, bc));
-            if (!getConfig().getBoolean("protect-buildings"))
-                    continue;
-            Set<Chunk> protectedChunks = bc.protectBlocks(null);
-            if (protectedChunks == null)
-                    continue;
-            loadedChunks.addAll(protectedChunks);
         }
-        for (Chunk c: loadedChunks) {
-            c.getWorld().unloadChunkRequest(c.getX(), c.getZ(), true);
-        }
+
         return true;
+    }
+
+    public BuildManager getBuildManager() {
+        return buildManager;
     }
 
     @Override
     public void onDisable() {
-
+        this.buildManager.finishSafely();
         PluginManager pm = getServer().getPluginManager();
         pm.removePermission("biab.admin");
         pm.removePermission(wildcardGivePerm);
@@ -340,33 +322,20 @@ public class BuildInABox extends JavaPlugin implements Listener {
         }
     }
 
-    static final Pattern colorPattern = Pattern.compile("(&[0-9a-flmnor])", Pattern.CASE_INSENSITIVE);
-    public static String convertColors(String s) {
-        Matcher m = colorPattern.matcher(s);
-        StringBuffer sb = new StringBuffer();
-        while (m.find())
-            m.appendReplacement(sb, ChatColor.COLOR_CHAR + m.group(1).substring(1));
-        m.appendTail(sb);
-        return sb.toString();
-    }
 
     public void doUpdater() {
-        String autoUpdate = getConfig().getString("auto-update", "notify-only").toLowerCase();
-        if (autoUpdate.equals("true")) {
+
+        if (cfg.getAutoUpdate().equals(BIABConfig.AutoUpdate.TRUE)) {
             updater = new Updater(this, "build-in-a-box", this.getFile(), UpdateType.DEFAULT, true);
-        } else if (autoUpdate.equals("false")) {
+        } else if (cfg.getAutoUpdate().equals(BIABConfig.AutoUpdate.FALSE)) {
             getLogger().info("Auto-updater is disabled.  Skipping check.");
         } else {
             updater = new Updater(this, "build-in-a-box", this.getFile(), UpdateType.NO_DOWNLOAD, true);
         }
     }
 
-    public WorldEditPlugin getWorldEdit() {
-        return (WorldEditPlugin) this.getServer().getPluginManager().getPlugin("WorldEdit");
-    }
-
     public void debug(String s) {
-        if (debugMode) {
+        if (cfg.isDebugModeEnabled()) {
             getLogger().info(s);
         }
     }
@@ -380,7 +349,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
     }
 
     public void checkCarrying(Player p) {
-        if (!getConfig().getBoolean("carry-effect", false)) return;
+        if (!cfg.isCarryEffectEnabled()) return;
         ChestData data;
         boolean effect = false;
         for (ItemStack stack: p.getInventory().getContents()) {
@@ -413,10 +382,61 @@ public class BuildInABox extends JavaPlugin implements Listener {
        super.installDDL();
    }
 
-   @Override
-    public List<Class<?>> getDatabaseClasses() {
-       List<Class<?>> dbClasses = new ArrayList<Class<?>>();
-       dbClasses.add(ChestBean.class);
-       return dbClasses;
-    } 
+       @SuppressWarnings("incomplete-switch")
+    public static int getRotationDegrees(BlockFace from, BlockFace to) {
+        switch (from) {
+            case NORTH:
+                switch (to) {
+                    case NORTH:
+                        return 0;
+                    case EAST:
+                        return 90;
+                    case SOUTH:
+                        return 180;
+                    case WEST:
+                        return 270;
+                }
+                break;
+            case EAST:
+                switch (to) {
+                    case NORTH:
+                        return 270;
+                    case EAST:
+                        return 0;
+                    case SOUTH:
+                        return 90;
+                    case WEST:
+                        return 180;
+                }
+                break;
+            case SOUTH:
+                switch (to) {
+                    case NORTH:
+                        return 180;
+                    case EAST:
+                        return 270;
+                    case SOUTH:
+                        return 0;
+                    case WEST:
+                        return 90;
+                }
+                break;
+
+            case WEST:
+                switch (to) {
+                    case NORTH:
+                        return 90;
+                    case EAST:
+                        return 180;
+                    case SOUTH:
+                        return 270;
+                    case WEST:
+                        return 0;
+                }
+                break;
+            default:
+                return 0;
+        }
+        return 0;
+    }
 }

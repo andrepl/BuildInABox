@@ -1,5 +1,7 @@
 package com.norcode.bukkit.buildinabox.listeners;
 
+import com.norcode.bukkit.buildinabox.BuildInABox;
+import com.norcode.bukkit.buildinabox.ChestData;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -8,9 +10,6 @@ import org.bukkit.event.entity.ItemDespawnEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.inventory.ItemStack;
-
-import com.norcode.bukkit.buildinabox.BuildInABox;
-import com.norcode.bukkit.buildinabox.ChestData;
 
 public class ItemListener implements Listener {
     BuildInABox plugin;

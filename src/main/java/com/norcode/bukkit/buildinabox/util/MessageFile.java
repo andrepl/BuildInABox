@@ -1,22 +1,13 @@
 package com.norcode.bukkit.buildinabox.util;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.InputStreamReader;
-import java.io.FileInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.logging.Level;
-
+import com.norcode.bukkit.buildinabox.BuildInABox;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import com.norcode.bukkit.buildinabox.BuildInABox;
+import java.io.*;
+import java.util.logging.Level;
 
 public class MessageFile extends ConfigAccessor {
 

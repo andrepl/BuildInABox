@@ -1,40 +1,25 @@
 package com.norcode.bukkit.buildinabox;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import org.bukkit.block.Block;
+import com.norcode.bukkit.schematica.Clipboard;
+import com.norcode.bukkit.schematica.ClipboardBlock;
+import com.norcode.bukkit.schematica.Session;
+import com.norcode.bukkit.schematica.exceptions.IncompleteSelectionException;
+import com.norcode.bukkit.schematica.exceptions.SchematicLoadException;
+import com.norcode.bukkit.schematica.exceptions.SchematicSaveException;
+import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
-
 import org.bukkit.material.Directional;
-import org.bukkit.material.EnderChest;
-import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionDefault;
 import org.bukkit.plugin.PluginManager;
+import org.bukkit.util.BlockVector;
 
-import org.bukkit.Chunk;
-import org.bukkit.Location;
-import org.bukkit.Material;
-
-import com.norcode.bukkit.buildinabox.util.CuboidClipboard;
-
-import com.sk89q.worldedit.EditSession;
-import com.sk89q.worldedit.IncompleteRegionException;
-
-import com.sk89q.worldedit.LocalSession;
-import com.sk89q.worldedit.Vector;
-import com.sk89q.worldedit.bukkit.BukkitWorld;
-import com.sk89q.worldedit.bukkit.WorldEditPlugin;
-import com.sk89q.worldedit.data.DataException;
-import com.sk89q.worldedit.regions.Region;
-import com.sk89q.worldedit.schematic.SchematicFormat;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.logging.Level;
 
 public class BuildingPlan {
     String name;
@@ -42,9 +27,10 @@ public class BuildingPlan {
     String filename;
     List<String> description;
     BuildInABox plugin;
-    
+
     public static final EnumSet<Material> coverableBlocks = EnumSet.of(Material.LONG_GRASS, Material.SNOW, Material.AIR, Material.RED_MUSHROOM, Material.BROWN_MUSHROOM, Material.DEAD_BUSH, Material.FIRE, Material.RED_ROSE, Material.YELLOW_FLOWER, Material.SAPLING);
-    
+
+
     public BuildingPlan(BuildInABox plugin, String name, String filename, String displayName, List<String> description) {
         this.plugin = plugin;
         this.name = name;
@@ -106,13 +92,15 @@ public class BuildingPlan {
     }
 
 
-    public static Vector findEnderChest(CuboidClipboard cc) {
-        for (int x = 0; x < cc.getSize().getBlockX(); x++) {
-            for (int y = 0; y < cc.getSize().getBlockY(); y++) {
-                for (int z = 0; z < cc.getSize().getBlockZ(); z++) {
-                    Vector v = new Vector(x,y,z);
-                    if (cc.getPoint(v).getType() == BuildInABox.BLOCK_ID) {
-                        return new Vector(-v.getBlockX(), -v.getBlockY(), -v.getBlockZ());
+    public static BlockVector findEnderChest(Clipboard cc) {
+        BlockVector size = cc.getSize();
+        BuildInABox.getInstance().debug("searching a " + size.getBlockX() + "x" + size.getBlockY() + "x" + size.getBlockZ() + " area for EnderChests");
+        for (int x = 0; x < size.getBlockX(); x++) {
+            for (int y = 0; y < size.getBlockY(); y++) {
+                for (int z = 0; z < size.getBlockZ(); z++) {
+                    ClipboardBlock block = cc.getBlock(x, y, z);
+                    if (block.getType() == BuildInABox.getInstance().cfg.getChestBlockId()) {
+                        return new BlockVector(-x, -y, -z);
                     }
                 }
             }
@@ -120,50 +108,52 @@ public class BuildingPlan {
         return null;
     }
 
-    public static BuildingPlan fromClipboard(BuildInABox plugin, Player player, String name) {
-        WorldEditPlugin we = plugin.getWorldEdit();
+    public static BuildingPlan fromClipboard(BuildInABox plugin, Player player, String name) throws SchematicSaveException {
         BuildingPlan plan = null;
-        LocalSession session = we.getSession(player);
-        EditSession es = new EditSession(new BukkitWorld(player.getWorld()), we.getWorldEdit().getConfiguration().maxChangeLimit);
-        es.enableQueue();
-        CuboidClipboard cc = null;
+        Session session = plugin.getPlayerSession(player);
         try {
-            com.sk89q.worldedit.LocalPlayer wp = we.wrapPlayer(player);
-            Region region = session.getSelection(wp.getWorld());
-            Vector min = region.getMinimumPoint();
-            Vector max = region.getMaximumPoint();
-            Vector pos = session.getPlacementPosition(wp);
-
-            cc = new CuboidClipboard(
-                    max.subtract(min).add(new Vector(1, 1, 1)),
-                    min, min.subtract(pos));
-            cc.copy(es);
-            es.flushQueue();
-        } catch (IncompleteRegionException e) {
-            player.sendMessage(BuildInABox.getErrorMsg("world-edit-selection-needed"));
+            session.copy();
+            BuildInABox.getInstance().debug("Clipboard Copied: " + session.getClipboard());
+        } catch (IncompleteSelectionException e) {
             return null;
         }
-        Vector chestOffset = findEnderChest(cc);
+
+        Clipboard clipboard = session.getClipboard();
+
+        BlockVector chestOffset = findEnderChest(clipboard);
         if (chestOffset == null) {
             player.sendMessage(BuildInABox.getErrorMsg("enderchest-not-found"));
             return null;
         }
-        
-        Directional md = (Directional) Material.getMaterial(BuildInABox.BLOCK_ID).getNewData((byte)cc.getPoint(new Vector(-chestOffset.getBlockX(), -chestOffset.getBlockY(), -chestOffset.getBlockZ())).getData());
+        clipboard.setOffset(chestOffset);
+        Directional md = (Directional) Material.getMaterial(BuildInABox.getInstance().cfg.getChestBlockId()).getNewData(clipboard.getBlock(-chestOffset.getBlockX(), -chestOffset.getBlockY(), -chestOffset.getBlockZ()).getData());
         if (!md.getFacing().equals(BlockFace.NORTH)) {
-            cc.rotate2D(CuboidClipboard.getRotationDegrees(md.getFacing(), BlockFace.NORTH));
-            chestOffset = findEnderChest(cc);
+            int deg = BuildInABox.getRotationDegrees(md.getFacing(), BlockFace.NORTH);
+            clipboard.rotate2D(deg);
+            chestOffset = findEnderChest(clipboard);
         }
-        cc.setOffset(chestOffset);
+        clipboard.setOffset(chestOffset);
+        File outFile = new File(new File(plugin.getDataFolder(), "schematics"), name + ".schematic");
+        if (!outFile.exists()) {
+            try {
+                outFile.createNewFile();
+            } catch (IOException ex) {
+                throw new SchematicSaveException(ex.getMessage());
+            }
+        }
+        DataOutputStream os = null;
         try {
-            SchematicFormat.MCEDIT.save(cc.toWorldEditClipboard(), new File(new File(plugin.getDataFolder(), "schematics"), name + ".schematic"));
-            plan = new BuildingPlan(plugin, name, name+".schematic", name, null);
-            plugin.getDataStore().saveBuildingPlan(plan);
+            os = new DataOutputStream(new FileOutputStream(outFile));
+            os.write(clipboard.toSchematic());
         } catch (IOException e) {
-            e.printStackTrace();
-        } catch (DataException e) {
-            e.printStackTrace();
+            throw new SchematicSaveException(e.getMessage());
+        } finally {
+            if (os != null) {
+                try { os.close(); } catch (IOException e) {};
+            }
         }
+        plan = new BuildingPlan(plugin, name, name+".schematic", name, null);
+        plugin.getDataStore().saveBuildingPlan(plan);
         return plan;
     }
 
@@ -171,18 +161,34 @@ public class BuildingPlan {
         return new File(new File(plugin.getDataFolder(), "schematics"), filename);
     }
 
-    public CuboidClipboard getRotatedClipboard(BlockFace facing) {
-        try {
-            CuboidClipboard clipboard = new CuboidClipboard(SchematicFormat.MCEDIT.load(this.getSchematicFile()));
-            clipboard.rotate2D(CuboidClipboard.getRotationDegrees(BlockFace.NORTH, facing));
-            clipboard.setOffset(findEnderChest(clipboard));
-            return clipboard;
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (DataException e) {
-            e.printStackTrace();
+    public Clipboard getRotatedClipboard(BlockFace facing) {
+        if (facing == null) {
+            facing = BlockFace.NORTH;
         }
-        return null;
+        DataInputStream is = null;
+        byte[] data = null;
+
+        try {
+            is = new DataInputStream(new FileInputStream(this.getSchematicFile()));
+            data = new byte[is.available()];
+            is.readFully(data);
+            is.close();
+        } catch (IOException e) {
+            return null;
+        } finally {
+            if (is != null) {
+                try { is.close(); } catch (IOException e) {}
+            }
+        }
+        Clipboard clipboard = null;
+        try {
+            clipboard = Clipboard.fromSchematic(data);
+            clipboard.rotate2D(BuildInABox.getRotationDegrees(BlockFace.NORTH, facing));
+            clipboard.setOffset(findEnderChest(clipboard));
+        } catch (SchematicLoadException ex) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to load schematic.", ex);
+        }
+        return clipboard;
     }
 
 

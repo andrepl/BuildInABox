@@ -1,24 +1,18 @@
 package com.norcode.bukkit.buildinabox.listeners;
 
-import java.util.EnumSet;
-import java.util.Iterator;
-
+import com.norcode.bukkit.buildinabox.BuildChest;
+import com.norcode.bukkit.buildinabox.BuildInABox;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.event.Event.Result;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockBurnEvent;
-import org.bukkit.event.block.BlockFadeEvent;
-import org.bukkit.event.block.BlockPistonExtendEvent;
-import org.bukkit.event.block.BlockPistonRetractEvent;
-import org.bukkit.event.block.BlockSpreadEvent;
+import org.bukkit.event.block.*;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 
-import com.norcode.bukkit.buildinabox.BuildChest;
-import com.norcode.bukkit.buildinabox.BuildInABox;
+import java.util.EnumSet;
+import java.util.Iterator;
 
 public class BlockProtectionListener implements Listener {
     BuildInABox plugin;
@@ -32,7 +26,7 @@ public class BlockProtectionListener implements Listener {
     }
     @EventHandler(ignoreCancelled=true)
     public void onBlockBreak(final BlockBreakEvent event) {
-        if (event.getBlock().hasMetadata("biab-block") || (event.getBlock().getTypeId() == BuildInABox.BLOCK_ID && event.getBlock().hasMetadata("buildInABox"))) {
+        if (event.getBlock().hasMetadata("biab-block") || (event.getBlock().getTypeId() == plugin.cfg.getChestBlockId() && event.getBlock().hasMetadata("buildInABox"))) {
             event.setCancelled(true);
         }
     }
@@ -89,7 +83,7 @@ public class BlockProtectionListener implements Listener {
     
     @EventHandler(ignoreCancelled=true)
     public void onPlayerInteract(PlayerInteractEvent event) {
-        if (plugin.getConfig().getBoolean("lock-containers", true)) {
+        if (plugin.cfg.isLockingEnabled()) {
             if (lockableBlockTypes.contains(event.getClickedBlock().getType())) {
                 if (event.getClickedBlock().hasMetadata("biab-block")) {
                     BuildChest bc = (BuildChest) event.getClickedBlock().getMetadata("biab-block").get(0).value();

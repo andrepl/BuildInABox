@@ -7,8 +7,15 @@ storage-backend: file
 # Language selection (from lang/<language>.yml)
 language: english
 
+# milliseconds without any interaction before a BIAB's data is removed from the database.
+# eg. 90d 48h = 90 days + 48 hours.
+data-expiry: 90d
+
 # Use this block ID Instead of enderchest. (most blocks will NOT work, it must be directional)
-chest-block: 130 
+chest-block: 130
+
+# GOLD_HOE
+selection-wand-id: 294
 
 # Automatically update the plugin
 # true - Automatically download and apply updates
@@ -73,16 +80,21 @@ build-cost: 0
 # maximum distance you can be from the enderchest which you are 
 # locking/unlocking before the attempt is cancelled.
 max-locking-distance: 5
- 
+
+# Overall maximum block-building operations across the entire server, per tick.
+max-blocks-per-tick: 500
+
 # animation settings
 pickup-animation:
   disable: false
   shuffle: true
   fireworks: 0
   blocks-per-ticks: 20
+  style: SMOKE
 
 build-animation:
   disable: false
   shuffle: true
   fireworks: 0
   blocks-per-ticks: 5
+  style: BREAK
