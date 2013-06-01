@@ -37,6 +37,7 @@ import java.io.File;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 
 public class BuildInABox extends JavaPlugin implements Listener {
@@ -58,6 +59,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
     public Permission wildcardLockPerm;
     public Permission wildcardUnlockPerm;
     public BIABConfig cfg;
+    public Random random = new Random();
     @Override
     public void onLoad() {
         instance = this;

@@ -1,6 +1,7 @@
 package com.norcode.bukkit.buildinabox;
 
 import com.norcode.bukkit.buildinabox.events.*;
+import com.norcode.bukkit.buildinabox.util.RandomFireworksGenerator;
 import com.norcode.bukkit.schematica.Clipboard;
 import com.norcode.bukkit.schematica.ClipboardBlock;
 import com.norcode.bukkit.schematica.MaterialID;
@@ -9,6 +10,8 @@ import net.minecraft.server.v1_5_R3.Packet61WorldEvent;
 import org.bukkit.*;
 import org.bukkit.block.*;
 import org.bukkit.craftbukkit.v1_5_R3.entity.CraftPlayer;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockCanBuildEvent;
@@ -350,7 +353,7 @@ public class BuildChest {
                 player.sendMessage(BuildInABox.getSuccessMsg("build-complete"));
                 int fireworksLevel = plugin.cfg.getBuildFireworks();
                 if (fireworksLevel > 0) {
-                    //TODO: launchFireworks(fireworksLevel);
+                    launchFireworks(clipboard, fireworksLevel);
                 }
                 building = false;
                 BIABBuildEndEvent buildEndEvent = new BIABBuildEndEvent(player, BuildChest.this);
@@ -358,6 +361,26 @@ public class BuildChest {
             }
         };
         plugin.getBuildManager().scheduleTask(buildTask);
+    }
+
+    private void launchFireworks(Clipboard clipboard, int fireworksLevel) {
+        final BlockVector origin = clipboard.getOrigin();
+        final int x = clipboard.getSize().getBlockX();
+        final int z = clipboard.getSize().getBlockZ();
+        final Location loc = clipboard.getWorldLocationFor(new BlockVector(x,clipboard.getOrigin().getBlockY() + clipboard.getSize().getBlockY(),z), getLocation().getWorld());
+        for (int i=0;i<fireworksLevel;i++) {
+            BuildInABox.getInstance().getServer().getScheduler().runTaskLater(BuildInABox.getInstance(), new Runnable() {
+                public void run() {
+                    Firework fw;
+                    for (int j=0;j<Math.max(x*z,20);j++) {
+                        loc.setX(plugin.random.nextInt(x)+origin.getBlockX());
+                        loc.setZ(plugin.random.nextInt(z)+origin.getBlockZ());
+                        fw = (Firework) loc.getWorld().spawnEntity(loc, EntityType.FIREWORK);
+                        RandomFireworksGenerator.assignRandomFireworkMeta(fw);
+                    }
+                }
+            }, i*10);
+        }
     }
 
     private void playBuildAnimation(Location loc, int type, byte data, List<Player> nearby, BIABConfig.AnimationStyle style) {
@@ -521,7 +544,7 @@ public class BuildChest {
                 plugin.getDataStore().saveChest(data);
                 int fireworksLevel = plugin.cfg.getPickupFireworks();
                 if (fireworksLevel > 0) {
-                    //TODO: launchFireworks(fireworksLevel);
+                    launchFireworks(clipboard, fireworksLevel);
                 }
                 building = false;
                 player.sendMessage(BuildInABox.getSuccessMsg("removal-complete"));
