@@ -1,33 +1,29 @@
 package com.norcode.bukkit.buildinabox;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.Set;
-
 import com.norcode.bukkit.buildinabox.events.*;
 import com.norcode.bukkit.schematica.Clipboard;
 import com.norcode.bukkit.schematica.ClipboardBlock;
 import com.norcode.bukkit.schematica.MaterialID;
 import net.minecraft.server.v1_5_R3.NBTTagCompound;
 import net.minecraft.server.v1_5_R3.Packet61WorldEvent;
+import org.bukkit.*;
 import org.bukkit.block.*;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Chunk;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.craftbukkit.v1_5_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockCanBuildEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.material.Directional;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.util.BlockVector;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Set;
 
 public class BuildChest {
     BuildInABox plugin;
@@ -81,7 +77,10 @@ public class BuildChest {
     }
 
     public Location getLocation() {
-        return data.getLocation();
+        if (data.getWorldName() == null) {
+            return null;
+        }
+        return new Location(plugin.getServer().getWorld(data.getWorldName()), data.getX(), data.getY(), data.getZ());
     }
 
     public BuildingPlan getPlan() {
@@ -128,9 +127,9 @@ public class BuildChest {
     }
 
     public Block getBlock() {
-        if (data.getLocation() != null) {
+        if (getLocation() != null) {
             try {
-                return data.getLocation().getBlock();
+                return getLocation().getBlock();
             } catch (NullPointerException ex) {
                 return null;
             }
@@ -153,6 +152,14 @@ public class BuildChest {
             public void processBlock(BlockVector clipboardPoint) {
                 ClipboardBlock block = clipboard.getBlock(clipboardPoint);
                 Location loc = clipboard.getWorldLocationFor(clipboardPoint, world);
+                if (loc.getBlockY() >= getLocation().getBlockY() && !getLocation().equals(loc)) {
+                    // above ground block, check for obstruction
+                    if (loc.getBlock().getType().isSolid()) {
+                        cancelled = true;
+                        return;
+                    }
+
+                }
                 if (checkBuildPermissions) {
                     BlockCanBuildEvent canBuildEvent = new BlockCanBuildEvent(loc.getBlock(), block.getType(), true);
                     plugin.getServer().getPluginManager().callEvent(canBuildEvent);
@@ -300,7 +307,6 @@ public class BuildChest {
 
             private void saveReplacedBlock(BlockVector c, Location wc) {
                 // save blocks below ground level for restoration.
-                plugin.debug("Saving replaced block @ " + c);
                 getData().getReplacedBlocks().put(c,
                         new ClipboardBlock(wc.getBlock().getTypeId(), wc.getBlock().getData()));
             }
@@ -316,7 +322,17 @@ public class BuildChest {
                 if (animationStyle != BIABConfig.AnimationStyle.NONE && !silentBlocks.contains(cb.getType())) {
                     playBuildAnimation(loc, cb.getType(), cb.getData(), nearby, animationStyle);
                 }
+
+
+                BlockState oldState = loc.getBlock().getState();
                 this.clipboard.copyBlockToWorld(clipboard.getBlock(clipboardPoint), loc);
+                if (player.isValid() && player.isOnline()) {
+                    plugin.exemptPlayer(player);
+                    BlockPlaceEvent event = new BlockPlaceEvent(loc.getBlock(), oldState, loc.getBlock().getRelative(BlockFace.DOWN), null, player, true);
+                    plugin.getServer().getPluginManager().callEvent(event);
+                    plugin.unexemptPlayer(player);
+                }
+
                 if (plugin.cfg.isBuildingProtectionEnabled() && plugin.cfg.isPickupEnabled()) {
                     loc.getBlock().setMetadata("biab-block", new FixedMetadataValue(plugin, BuildChest.this));
                 }
@@ -348,7 +364,7 @@ public class BuildChest {
         Packet61WorldEvent packet = null;
         switch (style) {
         case BREAK:
-            packet = new Packet61WorldEvent(2001, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), loc.getBlock().getTypeId(), false);
+            packet = new Packet61WorldEvent(2001, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), type, false);
             break;
         case SMOKE:
             packet = new Packet61WorldEvent(2000, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), 4, false);
@@ -497,7 +513,8 @@ public class BuildChest {
                 getBlock().setType(Material.AIR);
                 getBlock().removeMetadata("buildInABox", plugin);
                 getBlock().removeMetadata("biab-block", plugin);
-                data.getLocation().getWorld().dropItem(new Location(data.getLocation().getWorld(), data.getLocation().getX() + 0.5, data.getLocation().getY() + 0.5, data.getLocation().getZ() + 0.5), data.toItemStack());
+                Location loc = getLocation();
+                loc.getWorld().dropItem(new Location(loc.getWorld(), loc.getX() + 0.5, loc.getY() + 0.5, loc.getZ() + 0.5), data.toItemStack());
                 data.setLocation(null);
                 data.setLastActivity(System.currentTimeMillis());
                 data.setReplacedBlocks(null);
@@ -571,8 +588,7 @@ public class BuildChest {
             } else {
                 // check distance from chest;
                 try {
-                    double distance = player.getLocation().distance(
-                            data.getLocation());
+                    double distance = player.getLocation().distance(getLocation());
                     if (distance > plugin.cfg.getMaxLockingDistance()) {
                         cancel();
                         return;

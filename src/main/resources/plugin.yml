@@ -3,8 +3,8 @@ main: com.norcode.bukkit.buildinabox.BuildInABox
 version: 0.2.0-SNAPSHOT
 name: BuildInABox
 softdepend: [Vault, AntiCheat, NoCheatPlus]
-depend: [WorldEdit]
 database: true
+load: startup
 
 commands:
   biab:

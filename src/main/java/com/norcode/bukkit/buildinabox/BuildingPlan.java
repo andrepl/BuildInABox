@@ -1,29 +1,25 @@
 package com.norcode.bukkit.buildinabox;
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.logging.Level;
-
-
 import com.norcode.bukkit.schematica.Clipboard;
 import com.norcode.bukkit.schematica.ClipboardBlock;
 import com.norcode.bukkit.schematica.Session;
 import com.norcode.bukkit.schematica.exceptions.IncompleteSelectionException;
 import com.norcode.bukkit.schematica.exceptions.SchematicLoadException;
 import com.norcode.bukkit.schematica.exceptions.SchematicSaveException;
+import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
-
 import org.bukkit.material.Directional;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionDefault;
 import org.bukkit.plugin.PluginManager;
-
-import org.bukkit.Material;
-
 import org.bukkit.util.BlockVector;
+
+import java.io.*;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.logging.Level;
 
 public class BuildingPlan {
     String name;
@@ -31,7 +27,7 @@ public class BuildingPlan {
     String filename;
     List<String> description;
     BuildInABox plugin;
-    
+
     public static final EnumSet<Material> coverableBlocks = EnumSet.of(Material.LONG_GRASS, Material.SNOW, Material.AIR, Material.RED_MUSHROOM, Material.BROWN_MUSHROOM, Material.DEAD_BUSH, Material.FIRE, Material.RED_ROSE, Material.YELLOW_FLOWER, Material.SAPLING);
 
 
@@ -103,7 +99,6 @@ public class BuildingPlan {
             for (int y = 0; y < size.getBlockY(); y++) {
                 for (int z = 0; z < size.getBlockZ(); z++) {
                     ClipboardBlock block = cc.getBlock(x, y, z);
-                    BuildInABox.getInstance().debug("searching " + x + "," + y + "," + z + "  for enderchest");
                     if (block.getType() == BuildInABox.getInstance().cfg.getChestBlockId()) {
                         return new BlockVector(-x, -y, -z);
                     }
@@ -134,10 +129,7 @@ public class BuildingPlan {
         Directional md = (Directional) Material.getMaterial(BuildInABox.getInstance().cfg.getChestBlockId()).getNewData(clipboard.getBlock(-chestOffset.getBlockX(), -chestOffset.getBlockY(), -chestOffset.getBlockZ()).getData());
         if (!md.getFacing().equals(BlockFace.NORTH)) {
             int deg = BuildInABox.getRotationDegrees(md.getFacing(), BlockFace.NORTH);
-            BuildInABox.getInstance().debug("rotating " + deg + " degrees");
             clipboard.rotate2D(deg);
-
-            BuildInABox.getInstance().debug("Rotated Clipboard Dimensions: " + clipboard.toString());
             chestOffset = findEnderChest(clipboard);
         }
         clipboard.setOffset(chestOffset);
@@ -170,8 +162,12 @@ public class BuildingPlan {
     }
 
     public Clipboard getRotatedClipboard(BlockFace facing) {
+        if (facing == null) {
+            facing = BlockFace.NORTH;
+        }
         DataInputStream is = null;
         byte[] data = null;
+
         try {
             is = new DataInputStream(new FileInputStream(this.getSchematicFile()));
             data = new byte[is.available()];

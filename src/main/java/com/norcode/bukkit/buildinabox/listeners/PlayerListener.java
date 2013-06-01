@@ -1,25 +1,24 @@
 package com.norcode.bukkit.buildinabox.listeners;
 
+import com.norcode.bukkit.buildinabox.BuildChest;
+import com.norcode.bukkit.buildinabox.BuildChest.UnlockingTask;
+import com.norcode.bukkit.buildinabox.BuildInABox;
+import com.norcode.bukkit.buildinabox.ChestData;
+import com.norcode.bukkit.buildinabox.FakeBlockPlaceEvent;
 import com.norcode.bukkit.buildinabox.events.BIABLockEvent;
 import com.norcode.bukkit.buildinabox.events.BIABPlaceEvent;
 import com.norcode.bukkit.schematica.Session;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event.Result;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.Event.Result;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.metadata.FixedMetadataValue;
-
-import com.norcode.bukkit.buildinabox.BuildChest;
-import com.norcode.bukkit.buildinabox.BuildInABox;
-import com.norcode.bukkit.buildinabox.ChestData;
-import com.norcode.bukkit.buildinabox.BuildChest.UnlockingTask;
-import com.norcode.bukkit.buildinabox.FakeBlockPlaceEvent;
 
 public class PlayerListener implements Listener {
 

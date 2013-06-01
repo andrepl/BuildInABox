@@ -1,17 +1,17 @@
 package com.norcode.bukkit.buildinabox.datastore;
-import java.util.Collection;
-import java.util.HashMap;
-
-import com.norcode.bukkit.schematica.ClipboardBlock;
-import net.minecraft.server.v1_5_R3.NBTTagCompound;
-import org.bukkit.Location;
-import org.bukkit.configuration.ConfigurationSection;
 
 import com.norcode.bukkit.buildinabox.BuildInABox;
 import com.norcode.bukkit.buildinabox.BuildingPlan;
 import com.norcode.bukkit.buildinabox.ChestData;
 import com.norcode.bukkit.buildinabox.util.ConfigAccessor;
+import com.norcode.bukkit.buildinabox.util.SerializationUtil;
+import com.norcode.bukkit.schematica.ClipboardBlock;
+import net.minecraft.server.v1_5_R3.NBTTagCompound;
+import org.bukkit.World;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.util.BlockVector;
+
+import java.util.*;
 
 
 public class YamlDataStore extends DataStore {
@@ -19,6 +19,7 @@ public class YamlDataStore extends DataStore {
     ConfigAccessor planCfg;
     ConfigAccessor chestCfg;
     int nextChestId = 0;
+    HashMap<String, HashSet<Integer>> worldCache = new HashMap<String, HashSet<Integer>>();
     HashMap<Integer, ChestData> chests = new HashMap<Integer, ChestData>();
     HashMap<String, BuildingPlan> plans = new HashMap<String, BuildingPlan>();
     boolean dirty = false;
@@ -46,7 +47,7 @@ public class YamlDataStore extends DataStore {
             }
         }
     }
-    
+
     void loadChests() {
         this.chestCfg.reloadConfig();
         this.chests.clear();
@@ -54,16 +55,34 @@ public class YamlDataStore extends DataStore {
         ConfigurationSection sec;
         int maxId = 0;
         int id;
-        Location loc;
+        String world = null;
+        Integer x = null, y = null, z = null;
         for (String key: this.chestCfg.getConfig().getKeys(false)) {
             sec = this.chestCfg.getConfig().getConfigurationSection(key);
             id = sec.getInt("id", 0);
             if (id > 0) {
                 if (id > maxId) maxId = id;
-                loc = deserializeLocation(sec.getString("location"));
-                HashMap<BlockVector, NBTTagCompound> tileEntities = deserializeTileEntities(sec.getString("tile-entities"));
-                HashMap<BlockVector, ClipboardBlock> replacedBlocks = deserializeReplacedBlocks(sec.getString("replaced-blocks"));
-                chests.put(id, new ChestData(id, sec.getString("plan"), sec.getString("locked-by"), sec.getLong("last-activity"), loc, tileEntities, replacedBlocks));
+                String locStr = sec.getString("location");
+                if (locStr != null && ! locStr.equals("")) {
+                    String[] parts = locStr.split(";");
+                    if (parts.length == 4) {
+                        world = parts[0];
+                        x = Integer.parseInt(parts[1]);
+                        y = Integer.parseInt(parts[2]);
+                        z = Integer.parseInt(parts[3]);
+                    }
+                }
+                // Store the id in a map keyed on world name
+                // for quicker lookups at world load time.
+                if (world != null) {
+                    if (!worldCache.containsKey(world)) {
+                        worldCache.put(world, new HashSet<Integer>());
+                    }
+                    worldCache.get(world).add(id);
+                }
+                HashMap<BlockVector, NBTTagCompound> tileEntities = SerializationUtil.deserializeTileEntities(sec.getString("tile-entities"));
+                HashMap<BlockVector, ClipboardBlock> replacedBlocks = SerializationUtil.deserializeReplacedBlocks(sec.getString("replaced-blocks"));
+                chests.put(id, new ChestData(id, sec.getString("plan"), sec.getString("locked-by"), sec.getLong("last-activity"), world, x, y, z, tileEntities, replacedBlocks));
             }
         }
         nextChestId = maxId;
@@ -97,7 +116,9 @@ public class YamlDataStore extends DataStore {
         sec.set("last-activity", now);
         sec.set("id", nextChestId);
         setDirty();
-        ChestData data = new ChestData(nextChestId, plan, null, now, null, null, null);
+        ChestData data = new ChestData(nextChestId, plan, null, now,
+                null, null, null, null, // world, x, y, z
+                null, null);            // tileEntities, replacedBlocks
         chests.put(nextChestId, data);
         return data;
     }
@@ -107,10 +128,10 @@ public class YamlDataStore extends DataStore {
         ConfigurationSection sec = this.chestCfg.getConfig().getConfigurationSection(Integer.toString(data.getId()));
         sec.set("plan",  data.getPlanName());
         sec.set("last-activity", data.getLastActivity());
-        sec.set("location", serializeLocation(data.getLocation()));
+        sec.set("location", data.getSerializedLocation());
         sec.set("locked-by", data.getLockedBy());
-        sec.set("replaced-blocks", serializeReplacedBlocks(data.getReplacedBlocks()));
-        sec.set("tile-entities", serializeTileEntities(data.getTileEntities()));
+        sec.set("replaced-blocks", SerializationUtil.serializeReplacedBlocks(data.getReplacedBlocks()));
+        sec.set("tile-entities", SerializationUtil.serializeTileEntities(data.getTileEntities()));
         this.setDirty();
     }
 
@@ -120,6 +141,34 @@ public class YamlDataStore extends DataStore {
         this.chests.remove(id);
         this.chestCfg.getConfig().set(Integer.toString(id), null);
         this.setDirty();
+    }
+
+    @Override
+    public void setWorldChests(World world, Collection<ChestData> chests) {
+        HashSet<Integer> ids = new HashSet<Integer>();
+        for (ChestData cd: chests) {
+            ids.add(cd.getId());
+        }
+        worldCache.put(world.getName(), ids);
+    }
+
+    @Override
+    public void clearWorldChests(World world) {
+        worldCache.put(world.getName(), new HashSet<Integer>());
+    }
+
+
+    @Override
+    public Collection<ChestData> getWorldChests(World world) {
+        if (worldCache.containsKey(world.getName())) {
+            Set<Integer> ids = worldCache.get(world.getName());
+            List<ChestData> results = new ArrayList<ChestData>(ids.size());
+            for (int i: worldCache.get(world.getName())) {
+                results.add(chests.get(i));
+            }
+            return results;
+        }
+        return null;
     }
 
     @Override

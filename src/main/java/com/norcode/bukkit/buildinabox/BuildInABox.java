@@ -1,23 +1,22 @@
 package com.norcode.bukkit.buildinabox;
 
-import java.io.File;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
+import com.norcode.bukkit.buildinabox.datastore.DataStore;
+import com.norcode.bukkit.buildinabox.datastore.YamlDataStore;
+import com.norcode.bukkit.buildinabox.listeners.BlockProtectionListener;
+import com.norcode.bukkit.buildinabox.listeners.ItemListener;
+import com.norcode.bukkit.buildinabox.listeners.PlayerListener;
+import com.norcode.bukkit.buildinabox.listeners.ServerListener;
+import com.norcode.bukkit.buildinabox.util.MessageFile;
 import com.norcode.bukkit.schematica.Session;
+import fr.neatmonster.nocheatplus.NoCheatPlus;
+import fr.neatmonster.nocheatplus.hooks.NCPExemptionManager;
 import net.h31ix.anticheat.Anticheat;
 import net.h31ix.anticheat.api.AnticheatAPI;
 import net.h31ix.anticheat.manage.CheckType;
 import net.h31ix.updater.Updater;
 import net.h31ix.updater.Updater.UpdateType;
 import net.milkbowl.vault.economy.Economy;
-
 import org.bukkit.ChatColor;
-import org.bukkit.Chunk;
-import org.bukkit.WorldCreator;
 import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -34,17 +33,10 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitTask;
 
-import com.norcode.bukkit.buildinabox.datastore.DataStore;
-import com.norcode.bukkit.buildinabox.datastore.EbeanDataStore;
-import com.norcode.bukkit.buildinabox.datastore.EbeanDataStore.ChestBean;
-import com.norcode.bukkit.buildinabox.datastore.YamlDataStore;
-import com.norcode.bukkit.buildinabox.listeners.BlockProtectionListener;
-import com.norcode.bukkit.buildinabox.listeners.ItemListener;
-import com.norcode.bukkit.buildinabox.listeners.PlayerListener;
-import com.norcode.bukkit.buildinabox.util.MessageFile;
-
-import fr.neatmonster.nocheatplus.NoCheatPlus;
-import fr.neatmonster.nocheatplus.hooks.NCPExemptionManager;
+import java.io.File;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class BuildInABox extends JavaPlugin implements Listener {
@@ -78,6 +70,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        getConfig().options().copyDefaults(true);
         reloadConfig();
         cfg = new BIABConfig(this);
         cfg.reload();
@@ -92,6 +85,8 @@ public class BuildInABox extends JavaPlugin implements Listener {
             getServer().getPluginCommand("biab").setExecutor(new BIABCommandExecutor(this));
             getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
             getServer().getPluginManager().registerEvents(new ItemListener(this), this);
+            getServer().getPluginManager().registerEvents(new ServerListener(this), this);
+
             if (cfg.isBuildingProtectionEnabled()) {
                 getServer().getPluginManager().registerEvents(new BlockProtectionListener(), this);
             }
@@ -255,8 +250,6 @@ public class BuildInABox extends JavaPlugin implements Listener {
 
         if (cfg.getStorageBackend().equals(BIABConfig.StorageBackend.FILE)) {
             datastore = new YamlDataStore(this);
-        } else if (cfg.getStorageBackend().equals(BIABConfig.StorageBackend.EBEAN)) {
-            datastore = new EbeanDataStore(this);
         } else {
             getLogger().severe("No datastore configured.");
             return false;
@@ -265,48 +258,17 @@ public class BuildInABox extends JavaPlugin implements Listener {
         long now = System.currentTimeMillis();
         long expiry = cfg.getDataExpiry();
         long tooOldTime = now - expiry;// if the chest hasn't been touched in 90 days expire the data
-        HashSet<Chunk> loadedChunks = new HashSet<Chunk>();
         for (ChestData cd: new ArrayList<ChestData>(datastore.getAllChests())) {
-            if (cd.getLastActivity() < tooOldTime) {
+
+            if (cd.getWorldName() == null) {
+                if (cd.getLastActivity() < tooOldTime) {
                     debug("Chest Data is too old: " + cd.getLastActivity() + " vs " + tooOldTime);
                     datastore.deleteChest(cd.getId());
-                    continue;
-            }
-            if (cd.getLocation() == null)
-                    continue;
-            WorldCreator wc;
-            try {
-                wc = new WorldCreator(cd.getLocation().getWorld().getName());
-            } catch (NullPointerException ex) {
-                datastore.deleteChest(cd.getId());
-                continue;
-            }
-            if (getServer().createWorld(wc) == null) {
-                getLogger().warning("Deleting BuildChest @ " + cd.getLocation() + ": World '" + cd.getLocation().getWorld().getName() + "' Does not exist.");
-                datastore.deleteChest(cd.getId());
-                continue;
-            }
-            BuildChest bc = new BuildChest(cd);
-            if (!bc.getLocation().getChunk().isLoaded()) {
-                if (!bc.getLocation().getChunk().load()) {
-                    continue;
                 }
+                continue;
             }
-            if (bc.getBlock().getTypeId() != cfg.getChestBlockId()) {
-                    datastore.deleteChest(cd.getId());
-                    continue;
-            }
-            bc.getBlock().setMetadata("buildInABox", new FixedMetadataValue(this, bc));
-            if (cfg.isBuildingProtectionEnabled())
-                    continue;
-            Set<Chunk> protectedChunks = bc.protectBlocks(null);
-            if (protectedChunks == null)
-                    continue;
-            loadedChunks.addAll(protectedChunks);
         }
-        for (Chunk c: loadedChunks) {
-            c.getWorld().unloadChunkRequest(c.getX(), c.getZ(), true);
-        }
+
         return true;
     }
 
@@ -417,14 +379,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
        super.installDDL();
    }
 
-   @Override
-    public List<Class<?>> getDatabaseClasses() {
-       List<Class<?>> dbClasses = new ArrayList<Class<?>>();
-       dbClasses.add(ChestBean.class);
-       return dbClasses;
-    }
-
-    @SuppressWarnings("incomplete-switch")
+       @SuppressWarnings("incomplete-switch")
     public static int getRotationDegrees(BlockFace from, BlockFace to) {
         switch (from) {
             case NORTH:

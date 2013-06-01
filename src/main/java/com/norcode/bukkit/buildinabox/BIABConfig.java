@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 
 public class BIABConfig {
     public static enum StorageBackend {
-        FILE, EBEAN
+        FILE,
     }
     public static enum AutoUpdate {
         TRUE, FALSE, NOTIFY_ONLY
@@ -29,6 +29,7 @@ public class BIABConfig {
         }
     }
     private BuildInABox plugin;
+    private String apiKey;
     private boolean debugModeEnabled;
     private AutoUpdate autoUpdate;
     private StorageBackend storageBackend;
@@ -102,7 +103,9 @@ public class BIABConfig {
     }
 
     public void reload() {
+
         ConfigurationSection cfg = plugin.getConfig();
+        apiKey = plugin.getConfig().getString("api-key");
         debugModeEnabled = cfg.getBoolean("debug");
         String au = cfg.getString("auto-update", "true");
         autoUpdate = AutoUpdate.valueOf(au.toUpperCase());

@@ -1,10 +1,5 @@
 package com.norcode.bukkit.buildinabox;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-
 import com.norcode.bukkit.schematica.Selection;
 import com.norcode.bukkit.schematica.exceptions.SchematicSaveException;
 import org.bukkit.ChatColor;
@@ -17,7 +12,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.util.BlockVector;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 public class BIABCommandExecutor implements TabExecutor {
     BuildInABox plugin;

@@ -90,9 +90,11 @@ pickup-animation:
   shuffle: true
   fireworks: 0
   blocks-per-ticks: 20
+  style: SMOKE
 
 build-animation:
   disable: false
   shuffle: true
   fireworks: 0
   blocks-per-ticks: 5
+  style: BREAK

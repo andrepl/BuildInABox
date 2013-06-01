@@ -5,7 +5,6 @@ import org.bukkit.util.BlockVector;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 /**
  * Manages all building jobs on the entire server.
