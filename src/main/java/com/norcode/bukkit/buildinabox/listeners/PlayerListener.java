@@ -19,6 +19,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.util.BlockVector;
 
 public class PlayerListener implements Listener {
 
@@ -35,18 +36,21 @@ public class PlayerListener implements Listener {
                  return;
             }
             Session session = plugin.getPlayerSession(event.getPlayer());
-            if (event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
-                session.getSelection().setPt1(event.getClickedBlock().getLocation());
-                event.getPlayer().sendMessage(BuildInABox.getMsg("selection-pt1-set", event.getClickedBlock().getLocation().toVector()));
-            } else if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
-                session.getSelection().setPt2(event.getClickedBlock().getLocation());
-                event.getPlayer().sendMessage(BuildInABox.getMsg("selection-pt2-set", event.getClickedBlock().getLocation().toVector()));
-            } else {
-                return;
+            if (event.getClickedBlock() != null) {
+                BlockVector v = event.getClickedBlock().getLocation().toVector().toBlockVector();
+                if (event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
+                    session.getSelection().setPt1(event.getClickedBlock().getLocation());
+                    event.getPlayer().sendMessage(BuildInABox.getNormalMsg("selection-pt1-set", v.getBlockX() + ", " + v.getBlockY() +", " + v.getBlockZ()));
+                } else if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
+                    session.getSelection().setPt2(event.getClickedBlock().getLocation());
+                    event.getPlayer().sendMessage(BuildInABox.getNormalMsg("selection-pt2-set", v.getBlockX() + ", " + v.getBlockY() +", " + v.getBlockZ()));
+                } else {
+                    return;
+                }
+                event.setCancelled(true);
+                event.setUseInteractedBlock(Result.DENY);
+                event.setUseItemInHand(Result.DENY);
             }
-            event.setCancelled(true);
-            event.setUseInteractedBlock(Result.DENY);
-            event.setUseItemInHand(Result.DENY);
         }
     }
 

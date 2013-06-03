@@ -14,7 +14,7 @@ data-expiry: 90d
 # Use this block ID Instead of enderchest. (most blocks will NOT work, it must be directional)
 chest-block: 130
 
-# GOLD_HOE
+# The Item ID of the selection tool. by default 294 (GOLD_HOE)
 selection-wand-id: 294
 
 # Automatically update the plugin
