@@ -78,11 +78,11 @@ public class BIABCommandExecutor implements TabExecutor {
         switch (point) {
             case 1:
                 sel.setPt1(l);
-                p.sendMessage(BuildInABox.getSuccessMsg("selection-pt1-set", l.toVector()));
+                p.sendMessage(BuildInABox.getSuccessMsg("selection-pt1-set", "X:" + l.getBlockX() + " " + "Y:" + l.getBlockY() + " " + "Z:" + l.getBlockZ()));
                 break;
             case 2:
                 sel.setPt2(p.getLocation().getBlock().getLocation());
-                p.sendMessage(BuildInABox.getSuccessMsg("selection-pt2-set", l.toVector()));
+                p.sendMessage(BuildInABox.getSuccessMsg("selection-pt2-set", "X:" + l.getBlockX() + " " + "Y:" + l.getBlockY() + " " + "Z:" + l.getBlockZ()));
                 break;
             default:
                 return;
