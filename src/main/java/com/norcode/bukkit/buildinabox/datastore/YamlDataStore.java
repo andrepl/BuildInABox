@@ -58,19 +58,24 @@ public class YamlDataStore extends DataStore {
         String world = null;
         Integer x = null, y = null, z = null;
         for (String key: this.chestCfg.getConfig().getKeys(false)) {
+            plugin.debug("Loading chest: " + key);
             sec = this.chestCfg.getConfig().getConfigurationSection(key);
             id = sec.getInt("id", 0);
+            plugin.debug(" ... id " + id);
             if (id > 0) {
                 if (id > maxId) maxId = id;
                 String locStr = sec.getString("location");
-                if (locStr != null && ! locStr.equals("")) {
+                if (locStr != null && !locStr.equals("")) {
                     String[] parts = locStr.split(";");
+                    plugin.debug(" ... location: " + locStr);
                     if (parts.length == 4) {
                         world = parts[0];
                         x = Integer.parseInt(parts[1]);
                         y = Integer.parseInt(parts[2]);
                         z = Integer.parseInt(parts[3]);
                     }
+                } else {
+                    plugin.debug(" ... no location data.");
                 }
                 // Store the id in a map keyed on world name
                 // for quicker lookups at world load time.
@@ -79,14 +84,19 @@ public class YamlDataStore extends DataStore {
                         worldCache.put(world, new HashSet<Integer>());
                     }
                     worldCache.get(world).add(id);
+                } else {
+                    plugin.debug("Chest w/ key: " + key + " has an invalid world.");
                 }
                 HashMap<BlockVector, NBTTagCompound> tileEntities = SerializationUtil.deserializeTileEntities(sec.getString("tile-entities"));
                 HashMap<BlockVector, ClipboardBlock> replacedBlocks = SerializationUtil.deserializeReplacedBlocks(sec.getString("replaced-blocks"));
                 chests.put(id, new ChestData(id, sec.getString("plan"), sec.getString("locked-by"), sec.getLong("last-activity"), world, x, y, z, tileEntities, replacedBlocks));
+            } else {
+                plugin.debug("Chest w/ key: " + key + " has no id.");
             }
         }
         nextChestId = maxId;
     }
+
     @Override
     public void load() {
         loadPlans();
