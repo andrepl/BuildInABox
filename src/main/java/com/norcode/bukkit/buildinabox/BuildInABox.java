@@ -89,7 +89,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
             getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
             getServer().getPluginManager().registerEvents(new ItemListener(this), this);
             getServer().getPluginManager().registerEvents(new ServerListener(this), this);
-
+            getServer().getPluginManager().registerEvents(this, this);
             if (cfg.isBuildingProtectionEnabled()) {
                 getServer().getPluginManager().registerEvents(new BlockProtectionListener(), this);
             }
@@ -313,8 +313,6 @@ public class BuildInABox extends JavaPlugin implements Listener {
                         case SUCCESS:
                             player.sendMessage(getNormalMsg("update-downloaded"));
                             break;
-                        default:
-                            // nothing
                         }
                     }
                 }
