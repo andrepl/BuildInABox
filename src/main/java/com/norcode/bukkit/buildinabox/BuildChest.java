@@ -345,6 +345,7 @@ public class BuildChest {
                 building = false;
                 buildTask = null;
                 data.clearTileEntities();
+                plugin.getDataStore().saveChest(data);
                 if (!plugin.cfg.isPickupEnabled()) {
                     plugin.getDataStore().deleteChest(data.getId());
                     getBlock().removeMetadata("buildInABox", plugin);
