@@ -2,7 +2,9 @@ display-name: "§6Build-in-a-Box"
 message-prefix: "§f[{0}§f] "
 selection-pt1-set: "Selection Point #1 set to {0}"
 selection-pt2-set: "Selection Point #2 set to {0}"
+select-chest-block: "Now use the selection tool to choose an ender-chest to save it in."
 world-edit-selection-needed: "You need to make a world-edit selection first."
+save-failed: Building plan failed to save.  Check server logs for details.
 punch-to-make-permanent: "Punch an enderchest to make the building permanent."
 enderchest-not-found: "Selection does not contain an enderchest."
 update-available: "An update is available at: {0}"
@@ -46,6 +48,7 @@ right-click-to-confirm: Right click to confirm
 right-click-twice-to-unlock: Right click twice to unlock
 left-click-twice-to-pickup: Left click twice to pick up
 right-click-twice-to-lock: Right click twice to unlock
+
 preview: PREVIEW
 locked: LOCKED
 unlocked: UNLOCKED

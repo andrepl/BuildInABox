@@ -44,6 +44,7 @@ public class YamlDataStore extends DataStore {
                         sec.getString("display-name", sec.getString("name")),
                         sec.getStringList("description"));
                 this.plans.put(plan.getName().toLowerCase(), plan);
+                plan.registerPermissions();
             }
         }
     }

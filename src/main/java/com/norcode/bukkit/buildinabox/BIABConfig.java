@@ -107,7 +107,7 @@ public class BIABConfig {
         apiKey = plugin.getConfig().getString("api-key");
         debugModeEnabled = cfg.getBoolean("debug");
         String au = cfg.getString("auto-update", "true");
-        autoUpdate = AutoUpdate.valueOf(au.toUpperCase());
+        autoUpdate = AutoUpdate.valueOf(au.toUpperCase().replace("-", "_"));
         if (autoUpdate == null) {
             autoUpdate = AutoUpdate.NOTIFY_ONLY;
         }

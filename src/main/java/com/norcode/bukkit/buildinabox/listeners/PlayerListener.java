@@ -1,13 +1,11 @@
 package com.norcode.bukkit.buildinabox.listeners;
 
-import com.norcode.bukkit.buildinabox.BuildChest;
+import com.norcode.bukkit.buildinabox.*;
 import com.norcode.bukkit.buildinabox.BuildChest.UnlockingTask;
-import com.norcode.bukkit.buildinabox.BuildInABox;
-import com.norcode.bukkit.buildinabox.ChestData;
-import com.norcode.bukkit.buildinabox.FakeBlockPlaceEvent;
 import com.norcode.bukkit.buildinabox.events.BIABLockEvent;
 import com.norcode.bukkit.buildinabox.events.BIABPlaceEvent;
 import com.norcode.bukkit.schematica.Session;
+import com.norcode.bukkit.schematica.exceptions.SchematicSaveException;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event.Result;
@@ -36,22 +34,42 @@ public class PlayerListener implements Listener {
             if (!event.getPlayer().hasPermission("biab.select")) {
                  return;
             }
-            Session session = plugin.getPlayerSession(event.getPlayer());
-            if (event.getClickedBlock() != null) {
-                Vector v = event.getClickedBlock().getLocation().toVector();
-                if (event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
-                    session.getSelection().setPt1(event.getClickedBlock().getLocation());
-                    event.getPlayer().sendMessage(BuildInABox.getNormalMsg("selection-pt1-set", "X:" + v.getBlockX() + " Y:" + v.getBlockY() + " Z:" + v.getBlockZ()));
-                } else if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
-                    session.getSelection().setPt2(event.getClickedBlock().getLocation());
-                    event.getPlayer().sendMessage(BuildInABox.getNormalMsg("selection-pt2-set", "X:" + v.getBlockX() + " Y:" + v.getBlockY() + " Z:" + v.getBlockZ()));
-                } else {
+            if (event.getPlayer().hasMetadata("biab-pending-save") && event.getClickedBlock().getTypeId() == plugin.cfg.getChestBlockId()) {
+                plugin.debug("Offset selected.");
+                BuildingPlan planData = (BuildingPlan) event.getPlayer().getMetadata("biab-pending-save").get(0).value();
+                event.getPlayer().removeMetadata("biab-pending-save", plugin);
+                BuildingPlan plan = null;
+                try {
+                    plan = BuildingPlan.fromClipboard(plugin, event.getPlayer(), planData.getName(), event.getClickedBlock().getLocation());
+                } catch (SchematicSaveException e) {
+                    e.printStackTrace();
+                    event.getPlayer().sendMessage(BuildInABox.getErrorMsg("save-failed"));
                     return;
                 }
-                event.setCancelled(true);
-                event.setUseInteractedBlock(Result.DENY);
-                event.setUseItemInHand(Result.DENY);
+                plan.setFilename(planData.getFilename());
+                plan.setDisplayName(planData.getDisplayName());
+                plan.setDescription(planData.getDescription());
+                plugin.getDataStore().saveBuildingPlan(plan);
+                plan.registerPermissions();
+                event.getPlayer().sendMessage(BuildInABox.getSuccessMsg("building-plan-saved", plan.getDisplayName()));
+            } else {
+                Session session = plugin.getPlayerSession(event.getPlayer());
+                if (event.getClickedBlock() != null) {
+                    Vector v = event.getClickedBlock().getLocation().toVector();
+                    if (event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
+                        session.getSelection().setPt1(event.getClickedBlock().getLocation());
+                        event.getPlayer().sendMessage(BuildInABox.getSuccessMsg("selection-pt1-set", "X:" + v.getBlockX() + " Y:" + v.getBlockY() + " Z:" + v.getBlockZ()));
+                    } else if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
+                        session.getSelection().setPt2(event.getClickedBlock().getLocation());
+                        event.getPlayer().sendMessage(BuildInABox.getSuccessMsg("selection-pt2-set", "X:" + v.getBlockX() + " Y:" + v.getBlockY() + " Z:" + v.getBlockZ()));
+                    } else {
+                        return;
+                    }
+                }
             }
+            event.setCancelled(true);
+            event.setUseInteractedBlock(Result.DENY);
+            event.setUseItemInHand(Result.DENY);
         }
     }
 

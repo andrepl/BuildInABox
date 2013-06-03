@@ -365,9 +365,10 @@ public class BuildChest {
 
     private void launchFireworks(Clipboard clipboard, int fireworksLevel) {
         final BlockVector origin = clipboard.getOrigin();
+        plugin.debug("Launching fwx from clipboard w/ origin: " + origin + " and size " + clipboard.getSize());
         final int x = clipboard.getSize().getBlockX();
         final int z = clipboard.getSize().getBlockZ();
-        final Location loc = clipboard.getWorldLocationFor(new BlockVector(x,clipboard.getOrigin().getBlockY() + clipboard.getSize().getBlockY(),z), getLocation().getWorld());
+        final Location loc = clipboard.getWorldLocationFor(new BlockVector(x,clipboard.getSize().getBlockY(),z), getLocation().getWorld());
         for (int i=0;i<fireworksLevel;i++) {
             BuildInABox.getInstance().getServer().getScheduler().runTaskLater(BuildInABox.getInstance(), new Runnable() {
                 public void run() {
@@ -375,6 +376,7 @@ public class BuildChest {
                     for (int j=0;j<Math.max(x*z,20);j++) {
                         loc.setX(plugin.random.nextInt(x)+origin.getBlockX());
                         loc.setZ(plugin.random.nextInt(z)+origin.getBlockZ());
+                        plugin.debug("Fireworks launching @ " + loc);
                         fw = (Firework) loc.getWorld().spawnEntity(loc, EntityType.FIREWORK);
                         RandomFireworksGenerator.assignRandomFireworkMeta(fw);
                     }

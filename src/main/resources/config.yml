@@ -21,7 +21,7 @@ selection-wand-id: 294
 # true - Automatically download and apply updates
 # false - do not check for updates.
 # notify-only - check for updates, but do not download or install them
-auto-update: true
+auto-update: notify-only
 
 # The time (in milliseconds) between 2 clicks on an enderchest for it to 
 # count as a double-click.

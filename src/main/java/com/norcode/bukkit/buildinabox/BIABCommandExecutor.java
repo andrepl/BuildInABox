@@ -12,11 +12,13 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.util.BlockVector;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class BIABCommandExecutor implements TabExecutor {
     BuildInABox plugin;
@@ -78,11 +80,11 @@ public class BIABCommandExecutor implements TabExecutor {
         switch (point) {
             case 1:
                 sel.setPt1(l);
-                p.sendMessage(BuildInABox.getSuccessMsg("selection-pt1-set", l.toVector()));
+                p.sendMessage(BuildInABox.getSuccessMsg("selection-pt1-set", "X:" + l.getBlockX() + " Y:" + l.getBlockY() + " Z:" + l.getBlockZ()));
                 break;
             case 2:
-                sel.setPt2(p.getLocation().getBlock().getLocation());
-                p.sendMessage(BuildInABox.getSuccessMsg("selection-pt2-set", l.toVector()));
+                sel.setPt2(l);
+                p.sendMessage(BuildInABox.getSuccessMsg("selection-pt2-set", "X:" + l.getBlockX() + " Y:" + l.getBlockY() + " Z:" + l.getBlockZ()));
                 break;
             default:
                 return;
@@ -230,13 +232,8 @@ public class BIABCommandExecutor implements TabExecutor {
             sender.sendMessage(BuildInABox.getErrorMsg("invalid-building-plan-name", buildingName));
             return;
         } catch (IllegalArgumentException ex) {}
-        BuildingPlan plan = null;
-        try {
-            plan = BuildingPlan.fromClipboard(plugin, (Player) sender, buildingName);
-        } catch (SchematicSaveException e) {
-            sender.sendMessage(BuildInABox.getErrorMsg("save-failed"));
-            return;
-        }
+        String filename = getValidFilename(buildingName+".schematic");
+        BuildingPlan plan = new BuildingPlan(plugin, buildingName, filename, null, null);
         String displayName = "";
         while (args.size() > 0 && !args.peek().equals("|")) {
             displayName += args.pop() + " ";
@@ -247,10 +244,15 @@ public class BIABCommandExecutor implements TabExecutor {
         if (args.size() > 0) {
             plan.setDescription(parseDescription(args));
         }
-        if (plan != null) {
-            sender.sendMessage(BuildInABox.getSuccessMsg("building-plan-saved", buildingName));
-            plugin.getDataStore().saveBuildingPlan(plan);
-        }
+        ((Player) sender).setMetadata("biab-pending-save", new FixedMetadataValue(plugin, plan));
+        sender.sendMessage(plugin.getNormalMsg("select-chest-block"));
+    }
+
+    public static String getValidFilename(String filename) {
+        String newFilename = filename.replaceAll("^[.\\\\/:*?\"<>|]?[\\\\/:*?\"<>|]*", "");
+        if(newFilename.length()==0)
+            return null;
+        return newFilename;
     }
 
     public void cmdGive(CommandSender sender, LinkedList<String> args) {
