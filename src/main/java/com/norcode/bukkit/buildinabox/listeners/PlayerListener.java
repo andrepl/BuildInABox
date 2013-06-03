@@ -20,6 +20,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.util.BlockVector;
+import org.bukkit.util.Vector;
 
 public class PlayerListener implements Listener {
 
@@ -37,13 +38,13 @@ public class PlayerListener implements Listener {
             }
             Session session = plugin.getPlayerSession(event.getPlayer());
             if (event.getClickedBlock() != null) {
-                BlockVector v = event.getClickedBlock().getLocation().toVector().toBlockVector();
+                Vector v = event.getClickedBlock().getLocation().toVector();
                 if (event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
                     session.getSelection().setPt1(event.getClickedBlock().getLocation());
-                    event.getPlayer().sendMessage(BuildInABox.getNormalMsg("selection-pt1-set", v.getBlockX() + ", " + v.getBlockY() +", " + v.getBlockZ()));
+                    event.getPlayer().sendMessage(BuildInABox.getNormalMsg("selection-pt1-set", "X:" + v.getBlockX() + " Y:" + v.getBlockY() + " Z:" + v.getBlockZ()));
                 } else if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
                     session.getSelection().setPt2(event.getClickedBlock().getLocation());
-                    event.getPlayer().sendMessage(BuildInABox.getNormalMsg("selection-pt2-set", v.getBlockX() + ", " + v.getBlockY() +", " + v.getBlockZ()));
+                    event.getPlayer().sendMessage(BuildInABox.getNormalMsg("selection-pt2-set", "X:" + v.getBlockX() + " Y:" + v.getBlockY() + " Z:" + v.getBlockZ()));
                 } else {
                     return;
                 }
