@@ -103,7 +103,6 @@ public class BIABConfig {
     }
 
     public void reload() {
-
         ConfigurationSection cfg = plugin.getConfig();
         apiKey = plugin.getConfig().getString("api-key");
         debugModeEnabled = cfg.getBoolean("debug");

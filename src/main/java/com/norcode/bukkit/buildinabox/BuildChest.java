@@ -350,7 +350,7 @@ public class BuildChest {
                     plugin.getDataStore().deleteChest(data.getId());
                     getBlock().removeMetadata("buildInABox", plugin);
                 }
-                player.sendMessage(BuildInABox.getSuccessMsg("build-complete"));
+                player.sendMessage(BuildInABox.getSuccessMsg("building-complete"));
                 int fireworksLevel = plugin.cfg.getBuildFireworks();
                 if (fireworksLevel > 0) {
                     launchFireworks(clipboard, fireworksLevel);
@@ -532,7 +532,10 @@ public class BuildChest {
                         }
                     }
                 }
-
+                int fireworksLevel = plugin.cfg.getPickupFireworks();
+                if (fireworksLevel > 0) {
+                    launchFireworks(clipboard, fireworksLevel);
+                }
                 getBlock().setType(Material.AIR);
                 getBlock().removeMetadata("buildInABox", plugin);
                 getBlock().removeMetadata("biab-block", plugin);
@@ -542,10 +545,6 @@ public class BuildChest {
                 data.setLastActivity(System.currentTimeMillis());
                 data.setReplacedBlocks(null);
                 plugin.getDataStore().saveChest(data);
-                int fireworksLevel = plugin.cfg.getPickupFireworks();
-                if (fireworksLevel > 0) {
-                    launchFireworks(clipboard, fireworksLevel);
-                }
                 building = false;
                 player.sendMessage(BuildInABox.getSuccessMsg("removal-complete"));
                 buildTask = null;

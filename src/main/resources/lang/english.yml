@@ -1,7 +1,7 @@
 display-name: "§6Build-in-a-Box"
 message-prefix: "§f[{0}§f] "
-selection-pt1-set: "Selection Point #1 set to {0}";
-selection-pt2-set: "Selection Point #2 set to {0}";
+selection-pt1-set: "Selection Point #1 set to {0}"
+selection-pt2-set: "Selection Point #2 set to {0}"
 world-edit-selection-needed: "You need to make a world-edit selection first."
 punch-to-make-permanent: "Punch an enderchest to make the building permanent."
 enderchest-not-found: "Selection does not contain an enderchest."
