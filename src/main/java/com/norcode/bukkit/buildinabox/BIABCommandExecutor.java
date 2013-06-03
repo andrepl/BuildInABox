@@ -54,8 +54,10 @@ public class BIABCommandExecutor implements TabExecutor {
             return true;
         } else if (action.equals("pos1")) {
             cmdSetSelectionPoint(1, sender, args);
+            return true;
         } else if (action.equals("pos2")) {
             cmdSetSelectionPoint(2, sender, args);
+            return true;
         }
         sender.sendMessage(BuildInABox.getErrorMsg("unexpected-argument", action));
         return true;
