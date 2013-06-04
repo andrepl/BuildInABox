@@ -37,7 +37,7 @@ public class ServerListener implements Listener {
                 continue;
             }
             bc.getBlock().setMetadata("buildInABox", new FixedMetadataValue(plugin, bc));
-            if (plugin.cfg.isBuildingProtectionEnabled())
+            if (!plugin.cfg.isBuildingProtectionEnabled())
                 continue;
             Set<Chunk> protectedChunks = bc.protectBlocks(null);
             if (protectedChunks == null)
