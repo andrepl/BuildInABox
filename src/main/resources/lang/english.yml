@@ -36,7 +36,7 @@ building-complete: "Building complete!"
 removing: "Removing {0}..."
 removal-complete: "Removal complete!"
 building-wont-fit: "{0} won''t fit here."
-building-is-locked: "{0} has been locked by {0}."
+building-is-locked: "{0} has been locked by {1}."
 unlock-cancelled-self: "Unlock attempt cancelled."
 lock-cancelled-self: "Lock attempt cancelled."
 lock-success-self: "Successfully locked {0}."
@@ -48,7 +48,7 @@ right-click-to-confirm: "Right click to confirm"
 right-click-twice-to-unlock: "Right click twice to unlock"
 left-click-twice-to-pickup: "Left click twice to pick up"
 right-click-twice-to-lock: "Right click twice to unlock"
-
+configuration-reloaded: Configuration Reloaded.
 preview: PREVIEW
 locked: LOCKED
 unlocked: UNLOCKED

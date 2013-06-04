@@ -5,7 +5,7 @@ name: BuildInABox
 softdepend: [Vault, NoCheatPlus, AntiCheat]
 commands:
   biab:
-    usage: "/<command> [list [<page>]|[give [<player>]|save|delete] <buildingname>]"
+    usage: "/<command> [list [<page>]|[give [<player>]|save|delete|reload] <buildingname>]"
     description: give a player a Build-in-a-Box Building.
 
 permissions:

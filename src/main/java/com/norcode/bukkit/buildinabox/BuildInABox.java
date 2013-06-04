@@ -21,9 +21,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.permissions.Permission;
@@ -89,6 +87,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
             getServer().getPluginCommand("biab").setExecutor(new BIABCommandExecutor(this));
             getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
             getServer().getPluginManager().registerEvents(new ItemListener(this), this);
+            getServer().getPluginManager().registerEvents(new ServerListener(this), this);
             if (cfg.isBuildingProtectionEnabled()) {
                 getServer().getPluginManager().registerEvents(new BlockProtectionListener(), this);
             }
@@ -145,13 +144,17 @@ public class BuildInABox extends JavaPlugin implements Listener {
         pm.addPermission(wildcardUnlockPerm);
     }
 
-    private void setupAntiCheat() {
+    public void setupAntiCheat() {
         if(getServer().getPluginManager().getPlugin("AntiCheat") != null)
         {
             antiCheat = (Anticheat) getServer().getPluginManager().getPlugin("AntiCheat");
+        } else {
+            antiCheat = null;
         }
         if (getServer().getPluginManager().getPlugin("NoCheatPlus") != null) {
             NCP = (NoCheatPlus) getServer().getPluginManager().getPlugin("NoCheatPlus");
+        } else {
+            NCP = null;
         }
     }
 
@@ -419,4 +422,5 @@ public class BuildInABox extends JavaPlugin implements Listener {
         }
         return 0;
     }
+
 }

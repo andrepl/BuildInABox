@@ -12,13 +12,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.util.BlockVector;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.regex.Pattern;
 
 public class BIABCommandExecutor implements TabExecutor {
     BuildInABox plugin;
@@ -60,9 +58,21 @@ public class BIABCommandExecutor implements TabExecutor {
         } else if (action.equals("pos2")) {
             cmdSetSelectionPoint(2, sender, args);
             return true;
+        } else if (action.equals("reload")) {
+            cmdReloadConfig(sender, args);
         }
         sender.sendMessage(BuildInABox.getErrorMsg("unexpected-argument", action));
         return true;
+    }
+
+    private void cmdReloadConfig(CommandSender sender, LinkedList<String> args) {
+        if (!sender.hasPermission("biab.admin")) {
+            sender.sendMessage(BuildInABox.getErrorMsg("no-permission"));
+            return;
+        }
+        plugin.reloadConfig();
+        plugin.cfg.reload();
+        sender.sendMessage(BuildInABox.getSuccessMsg("configuration-reloaded"));
     }
 
     private void cmdSetSelectionPoint(int point, CommandSender sender, LinkedList<String> args) {

@@ -6,6 +6,7 @@ import com.norcode.bukkit.buildinabox.events.BIABLockEvent;
 import com.norcode.bukkit.buildinabox.events.BIABPlaceEvent;
 import com.norcode.bukkit.schematica.Session;
 import com.norcode.bukkit.schematica.exceptions.SchematicSaveException;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event.Result;
@@ -18,17 +19,22 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.util.BlockVector;
 import org.bukkit.util.Vector;
+
+import java.util.EnumSet;
 
 public class PlayerListener implements Listener {
 
     BuildInABox plugin;
 
+    EnumSet lockableBlockTypes = EnumSet.of(Material.CHEST, Material.TRAPPED_CHEST,
+            Material.TRAP_DOOR, Material.WOODEN_DOOR, Material.IRON_DOOR, Material.FURNACE,
+            Material.DISPENSER, Material.DROPPER, Material.HOPPER, Material.BREWING_STAND,
+            Material.JUKEBOX, Material.ANVIL, Material.BURNING_FURNACE, Material.BEACON);
+
     public PlayerListener(BuildInABox plugin) {
         this.plugin = plugin;
     }
-
 
     @EventHandler(ignoreCancelled=true)
     public void onPlayerLogin(PlayerLoginEvent event) {
@@ -264,6 +270,23 @@ public class PlayerListener implements Listener {
             // prevent them from getting logged.
             ((FakeBlockPlaceEvent) event).setWasCancelled(event.isCancelled());
             event.setCancelled(true);
+        }
+    }
+
+
+    @EventHandler(ignoreCancelled=true)
+    public void onPlayerInteractLocked(PlayerInteractEvent event) {
+        if (plugin.cfg.isLockingEnabled()) {
+            if (lockableBlockTypes.contains(event.getClickedBlock().getType())) {
+                if (event.getClickedBlock().hasMetadata("biab-block")) {
+                    BuildChest bc = (BuildChest) event.getClickedBlock().getMetadata("biab-block").get(0).value();
+                    if (bc.isLocked() && !bc.getLockedBy().equals(event.getPlayer().getName())) {
+                        event.getPlayer().sendMessage(BuildInABox.getErrorMsg("building-is-locked", bc.getPlan().getDisplayName(), bc.getLockedBy()));
+                        event.setCancelled(true);
+                        event.setUseInteractedBlock(Result.DENY);
+                    }
+                }
+            }
         }
     }
 }
