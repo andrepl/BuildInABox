@@ -46,7 +46,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
     public static String LORE_HEADER = ChatColor.GOLD + "Build-in-a-Box";
     private static BuildInABox instance;
     private DataStore datastore = null;
-    private Updater updater = null;
+    public Updater updater = null;
     private BukkitTask inventoryScanTask;
     private MessageFile messages = null;
     private Economy economy = null;
@@ -89,7 +89,6 @@ public class BuildInABox extends JavaPlugin implements Listener {
             getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
             getServer().getPluginManager().registerEvents(new ItemListener(this), this);
             getServer().getPluginManager().registerEvents(new ServerListener(this), this);
-            getServer().getPluginManager().registerEvents(this, this);
             if (cfg.isBuildingProtectionEnabled()) {
                 getServer().getPluginManager().registerEvents(new BlockProtectionListener(), this);
             }
@@ -177,7 +176,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
     }
 
 
-    private void enableEconomy() {
+    public void enableEconomy() {
         if (getServer().getPluginManager().getPlugin("Vault") == null) {
             return;
         }
@@ -186,6 +185,11 @@ public class BuildInABox extends JavaPlugin implements Listener {
             economy = economyProvider.getProvider();
             BuildInABox.getInstance().debug("Found Vault!");
         }
+    }
+
+
+    public void disableEconomy() {
+        economy = null;
     }
 
     public static Economy getEconomy() {
@@ -298,27 +302,6 @@ public class BuildInABox extends JavaPlugin implements Listener {
         }
     }
 
-    @EventHandler(ignoreCancelled=true)
-    public void onPlayerLogin(PlayerLoginEvent event) {
-        if (event.getPlayer().hasPermission("biab.admin")) {
-            final String playerName = event.getPlayer().getName();
-            getServer().getScheduler().runTaskLaterAsynchronously(this, new Runnable() {
-                public void run() {
-                    Player player = getServer().getPlayer(playerName);
-                    if (player != null && player.isOnline()) {
-                        switch (updater.getResult()) {
-                        case UPDATE_AVAILABLE:
-                            player.sendMessage(getNormalMsg("update-available", "http://dev.bukkit.org/server-mods/build-in-a-box/"));
-                            break;
-                        case SUCCESS:
-                            player.sendMessage(getNormalMsg("update-downloaded"));
-                            break;
-                        }
-                    }
-                }
-            }, 20);
-        }
-    }
 
 
     public void doUpdater() {

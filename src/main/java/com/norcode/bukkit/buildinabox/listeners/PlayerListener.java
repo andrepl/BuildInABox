@@ -15,6 +15,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.util.BlockVector;
@@ -26,6 +27,30 @@ public class PlayerListener implements Listener {
 
     public PlayerListener(BuildInABox plugin) {
         this.plugin = plugin;
+    }
+
+
+    @EventHandler(ignoreCancelled=true)
+    public void onPlayerLogin(PlayerLoginEvent event) {
+        if (plugin.updater == null) return;
+        if (event.getPlayer().hasPermission("biab.admin")) {
+            final String playerName = event.getPlayer().getName();
+            plugin.getServer().getScheduler().runTaskLaterAsynchronously(plugin, new Runnable() {
+                public void run() {
+                    Player player = plugin.getServer().getPlayer(playerName);
+                    if (player != null && player.isOnline()) {
+                        switch (plugin.updater.getResult()) {
+                            case UPDATE_AVAILABLE:
+                                player.sendMessage(BuildInABox.getNormalMsg("update-available", "http://dev.bukkit.org/server-mods/build-in-a-box/"));
+                                break;
+                            case SUCCESS:
+                                player.sendMessage(BuildInABox.getNormalMsg("update-downloaded"));
+                                break;
+                        }
+                    }
+                }
+            }, 20);
+        }
     }
 
     @EventHandler(ignoreCancelled=true, priority = EventPriority.LOW)

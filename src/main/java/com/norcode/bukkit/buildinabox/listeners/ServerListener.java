@@ -6,6 +6,8 @@ import com.norcode.bukkit.buildinabox.ChestData;
 import org.bukkit.Chunk;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.server.PluginDisableEvent;
+import org.bukkit.event.server.PluginEnableEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.metadata.FixedMetadataValue;
 
@@ -16,6 +18,20 @@ public class ServerListener implements Listener {
 
     public ServerListener(BuildInABox plugin) {
         this.plugin = plugin;
+    }
+
+    @EventHandler
+    public void vaultEnabled(PluginEnableEvent event) {
+        if (event.getPlugin() != null && event.getPlugin().getName().equalsIgnoreCase("Vault")) {
+            plugin.enableEconomy();
+        }
+    }
+
+    @EventHandler
+    public void vaultDisabled(PluginDisableEvent event) {
+        if (event.getPlugin() != null && event.getPlugin().getName().equalsIgnoreCase("Vault")) {
+            plugin.disableEconomy();
+        }
     }
 
     @EventHandler
