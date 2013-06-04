@@ -291,7 +291,7 @@ public class BIABCommandExecutor implements TabExecutor {
             meta.setDisplayName(plan.getDisplayName());
             List<String> lore = new ArrayList<String>();
             lore.add(BuildInABox.LORE_PREFIX + BuildInABox.LORE_HEADER);
-            lore.add(ChatColor.BLACK + plan.getName());
+            lore.add(ChatColor.DARK_GRAY + plan.getName());
             lore.addAll(plan.getDescription());
             meta.setLore(lore);
             stack.setItemMeta(meta);

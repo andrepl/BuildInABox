@@ -373,10 +373,9 @@ public class BuildChest {
             BuildInABox.getInstance().getServer().getScheduler().runTaskLater(BuildInABox.getInstance(), new Runnable() {
                 public void run() {
                     Firework fw;
-                    for (int j=0;j<Math.max(x*z,20);j++) {
+                    for (int j=0;j<Math.min(x*z,10);j++) {
                         loc.setX(plugin.random.nextInt(x)+origin.getBlockX());
                         loc.setZ(plugin.random.nextInt(z)+origin.getBlockZ());
-                        plugin.debug("Fireworks launching @ " + loc);
                         fw = (Firework) loc.getWorld().spawnEntity(loc, EntityType.FIREWORK);
                         RandomFireworksGenerator.assignRandomFireworkMeta(fw);
                     }
