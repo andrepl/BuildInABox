@@ -64,6 +64,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
     @Override
     public void onLoad() {
         instance = this;
+
     }
 
     public void onUnload() {
@@ -88,8 +89,6 @@ public class BuildInABox extends JavaPlugin implements Listener {
             getServer().getPluginCommand("biab").setExecutor(new BIABCommandExecutor(this));
             getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
             getServer().getPluginManager().registerEvents(new ItemListener(this), this);
-            debug("Registering Server listener");
-            getServer().getPluginManager().registerEvents(new ServerListener(this), this);
             if (cfg.isBuildingProtectionEnabled()) {
                 getServer().getPluginManager().registerEvents(new BlockProtectionListener(), this);
             }

@@ -1,5 +1,6 @@
 package com.norcode.bukkit.buildinabox.datastore;
 
+import com.norcode.bukkit.buildinabox.BuildChest;
 import com.norcode.bukkit.buildinabox.BuildInABox;
 import com.norcode.bukkit.buildinabox.BuildingPlan;
 import com.norcode.bukkit.buildinabox.ChestData;
@@ -7,8 +8,11 @@ import com.norcode.bukkit.buildinabox.util.ConfigAccessor;
 import com.norcode.bukkit.buildinabox.util.SerializationUtil;
 import com.norcode.bukkit.schematica.ClipboardBlock;
 import net.minecraft.server.v1_5_R3.NBTTagCompound;
+import org.bukkit.Chunk;
 import org.bukkit.World;
+import org.bukkit.WorldCreator;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.util.BlockVector;
 
 import java.util.*;
@@ -50,17 +54,21 @@ public class YamlDataStore extends DataStore {
     }
 
     void loadChests() {
+        HashSet<Chunk> loadedChunks = new HashSet<Chunk>();
         this.chestCfg.reloadConfig();
         this.chests.clear();
         // Load Chests
         ConfigurationSection sec;
         int maxId = 0;
         int id;
-        String world = null;
+        World world;
+        String worldName = null;
         Integer x = null, y = null, z = null;
         for (String key: this.chestCfg.getConfig().getKeys(false)) {
+
             plugin.debug("Loading chest: " + key);
             sec = this.chestCfg.getConfig().getConfigurationSection(key);
+            world = null;
             id = sec.getInt("id", 0);
             plugin.debug(" ... id " + id);
             if (id > 0) {
@@ -70,30 +78,50 @@ public class YamlDataStore extends DataStore {
                     String[] parts = locStr.split(";");
                     plugin.debug(" ... location: " + locStr);
                     if (parts.length == 4) {
-                        world = parts[0];
+                        worldName = parts[0];
+                        world = plugin.getServer().createWorld(new WorldCreator(worldName));
                         x = Integer.parseInt(parts[1]);
                         y = Integer.parseInt(parts[2]);
                         z = Integer.parseInt(parts[3]);
                     }
                 } else {
                     plugin.debug(" ... no location data.");
+                    continue;
                 }
                 // Store the id in a map keyed on world name
                 // for quicker lookups at world load time.
                 if (world != null) {
-                    if (!worldCache.containsKey(world)) {
-                        worldCache.put(world, new HashSet<Integer>());
+                    HashMap<BlockVector, NBTTagCompound> tileEntities = SerializationUtil.deserializeTileEntities(sec.getString("tile-entities"));
+                    HashMap<BlockVector, ClipboardBlock> replacedBlocks = SerializationUtil.deserializeReplacedBlocks(sec.getString("replaced-blocks"));
+                    ChestData cd = new ChestData(id, sec.getString("plan"), sec.getString("locked-by"), sec.getLong("last-activity"), world.getName(), x, y, z, tileEntities, replacedBlocks);
+                    chests.put(id,cd);
+                    BuildChest bc = new BuildChest(cd);
+                    if (!bc.getLocation().getChunk().isLoaded()) {
+                        if (!bc.getLocation().getChunk().load()) {
+                            continue;
+                        }
                     }
-                    worldCache.get(world).add(id);
+                    if (bc.getBlock().getTypeId() != plugin.cfg.getChestBlockId()) {
+                        plugin.getDataStore().deleteChest(cd.getId());
+                        continue;
+                    }
+                    bc.getBlock().setMetadata("buildInABox", new FixedMetadataValue(plugin, bc));
+                    if (!plugin.cfg.isBuildingProtectionEnabled())
+                        continue;
+                    Set<Chunk> protectedChunks = bc.protectBlocks(null);
+                    if (protectedChunks == null)
+                        continue;
+                    loadedChunks.addAll(protectedChunks);
                 } else {
                     plugin.debug("Chest w/ key: " + key + " has an invalid world.");
                 }
-                HashMap<BlockVector, NBTTagCompound> tileEntities = SerializationUtil.deserializeTileEntities(sec.getString("tile-entities"));
-                HashMap<BlockVector, ClipboardBlock> replacedBlocks = SerializationUtil.deserializeReplacedBlocks(sec.getString("replaced-blocks"));
-                chests.put(id, new ChestData(id, sec.getString("plan"), sec.getString("locked-by"), sec.getLong("last-activity"), world, x, y, z, tileEntities, replacedBlocks));
+
             } else {
                 plugin.debug("Chest w/ key: " + key + " has no id.");
             }
+        }
+        for (Chunk c: loadedChunks) {
+            c.getWorld().unloadChunkRequest(c.getX(), c.getZ(), true);
         }
         nextChestId = maxId;
     }

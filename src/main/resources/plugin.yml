@@ -2,8 +2,7 @@ author: metalhedd
 main: com.norcode.bukkit.buildinabox.BuildInABox
 version: 0.2.0-SNAPSHOT
 name: BuildInABox
-load: startup
-
+softdepend: [Vault, NoCheatPlus, AntiCheat]
 commands:
   biab:
     usage: "/<command> [list [<page>]|[give [<player>]|save|delete] <buildingname>]"
