@@ -226,12 +226,11 @@ public class BIABCommandExecutor implements TabExecutor {
             sender.sendMessage(BuildInABox.getErrorMsg("cannot-use-from-console"));
             return;
         }
-        String buildingName = args.pop();
-        try {
-            int isNumeric = Integer.parseInt(buildingName, 16);
-            sender.sendMessage(BuildInABox.getErrorMsg("invalid-building-plan-name", buildingName));
+        if (args.size() == 0) {
+            sender.sendMessage(BuildInABox.getMsg("cmd-save-usage"));
             return;
-        } catch (IllegalArgumentException ex) {}
+        }
+        String buildingName = args.pop();
         String filename = getValidFilename(buildingName+".schematic");
         BuildingPlan plan = new BuildingPlan(plugin, buildingName, filename, null, null);
         String displayName = "";
@@ -245,7 +244,7 @@ public class BIABCommandExecutor implements TabExecutor {
             plan.setDescription(parseDescription(args));
         }
         ((Player) sender).setMetadata("biab-pending-save", new FixedMetadataValue(plugin, plan));
-        sender.sendMessage(plugin.getNormalMsg("select-chest-block"));
+        sender.sendMessage(BuildInABox.getNormalMsg("select-chest-block"));
     }
 
     public static String getValidFilename(String filename) {

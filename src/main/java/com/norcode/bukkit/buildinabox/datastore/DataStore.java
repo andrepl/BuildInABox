@@ -29,17 +29,20 @@ public abstract class DataStore {
                 if (meta.getLore().get(0).startsWith(BuildInABox.LORE_PREFIX) || meta.getLore().get(0).equals(ChatColor.GOLD + "Build-in-a-Box")) {
                     if (meta.getLore().size() > 1) {
                         int chestId;
-                        ChestData data;
+                        ChestData data = null;
                         boolean update = false;
-                        BuildingPlan planCheck = getBuildingPlan(meta.getLore().get(1).substring(2).toLowerCase());
-                        if (planCheck != null) {
-                            data = createChest(planCheck.getName());
-                            List<String> newLore = new ArrayList<String>();
-                            newLore.add(meta.getLore().get(0));
-                            newLore.add(ChatColor.BLACK + Integer.toHexString(data.getId()));
-                            meta.setLore(newLore);
-                            update = true;
-                        } else {
+                        // This mess is for compatibility with an earlier method of storing the plan.
+                        if (meta.getLore().get(1).substring(0,2).equals(ChatColor.DARK_GRAY.toString())) {
+                            BuildingPlan planCheck = getBuildingPlan(meta.getLore().get(1).substring(2).toLowerCase());
+                            if (planCheck != null) {
+                                data = createChest(planCheck.getName());
+                                List<String> newLore = new ArrayList<String>();
+                                newLore.add(meta.getLore().get(0));
+                                newLore.add(ChatColor.BLACK + Integer.toHexString(data.getId()));
+                                meta.setLore(newLore);
+                                update = true;
+                            }
+                        } else if (meta.getLore().get(1).substring(0,2).equals(ChatColor.BLACK.toString())) {
                             try {
                                 chestId = Integer.parseInt(meta.getLore().get(1).substring(2), 16);
                                 data = getChest(chestId);
@@ -47,8 +50,19 @@ public abstract class DataStore {
                                     return null;
                                 }
                             } catch (IllegalArgumentException ex) {
-                                return null;
+                                BuildingPlan planCheck = getBuildingPlan(meta.getLore().get(1).substring(2).toLowerCase());
+                                if (planCheck != null) {
+                                    data = createChest(planCheck.getName());
+                                    List<String> newLore = new ArrayList<String>();
+                                    newLore.add(meta.getLore().get(0));
+                                    newLore.add(ChatColor.BLACK + Integer.toHexString(data.getId()));
+                                    meta.setLore(newLore);
+                                    update = true;
+                                }
                             }
+                        }
+                        if (data == null) {
+                            return null;
                         }
                         BuildingPlan plan = getBuildingPlan(data.getPlanName());
                         if (plan != null) {
