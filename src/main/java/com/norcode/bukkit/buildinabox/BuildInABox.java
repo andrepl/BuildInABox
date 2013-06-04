@@ -88,6 +88,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
             getServer().getPluginCommand("biab").setExecutor(new BIABCommandExecutor(this));
             getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
             getServer().getPluginManager().registerEvents(new ItemListener(this), this);
+            debug("Registering Server listener");
             getServer().getPluginManager().registerEvents(new ServerListener(this), this);
             if (cfg.isBuildingProtectionEnabled()) {
                 getServer().getPluginManager().registerEvents(new BlockProtectionListener(), this);
@@ -272,7 +273,6 @@ public class BuildInABox extends JavaPlugin implements Listener {
                     debug("Chest Data is too old: " + cd.getLastActivity() + " vs " + tooOldTime);
                     datastore.deleteChest(cd.getId());
                 }
-                continue;
             }
         }
 

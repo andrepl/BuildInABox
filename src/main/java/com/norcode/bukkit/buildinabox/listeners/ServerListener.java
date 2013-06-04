@@ -36,7 +36,9 @@ public class ServerListener implements Listener {
 
     @EventHandler
     public void onWorldLoadEvent(WorldLoadEvent event) {
+        plugin.debug("WorldLoad:" + event.getWorld());
         Collection<ChestData> worldChests = plugin.getDataStore().getWorldChests(event.getWorld());
+        plugin.debug("WorldChests:" + event.getWorld() + ":" + worldChests.size());
         plugin.getDataStore().clearWorldChests(event.getWorld());
         if (worldChests == null) return;
         HashSet<Chunk> loadedChunks = new HashSet<Chunk>();
