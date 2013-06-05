@@ -5,7 +5,18 @@ name: ${project.name}
 softdepend: ${project.softdepends}
 commands:
   biab:
-    usage: "/<command> [list [<page>]|[give [<player>]|save|delete|reload] <buildingname>]"
+    usage:
+      - "/<command> list [<page>] - list available BIABs"
+      - "/<command> give [<player>] <buildingname> - give a BIAB to a player"
+      - "/<command> save <buildingname> - save a building plan"
+      - "/<command> delete <buildingname> - delete a building plan"
+      - "/<command> reload - reload the configuration"
+      - "/<command> setdescription <buildingname> <desc l.1> [|<desc l.2>...] - set the description"
+      - "/<command> setdisplayname <buildingname> <displayname>"
+      - "/<command> pos1 - set selection position 1"
+      - "/<command> pos2 - set selection position 2"
+      - "/<command> permanent - convert a portable biab to a permanent structure."
+
     description: give a player a Build-in-a-Box Building.
 
 permissions:

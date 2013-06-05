@@ -37,6 +37,7 @@ public class BuildChest {
     private ChestData data;
     private long lastClicked = -1;
     private Action lastClickType = null;
+    private String lastClickedBy;
 
     private static HashSet<Integer> silentBlocks = new HashSet<Integer>();
     static {
@@ -554,6 +555,14 @@ public class BuildChest {
             }
         };
         plugin.getBuildManager().scheduleTask(buildTask);
+    }
+
+    public String getLastClickedBy() {
+        return lastClickedBy;
+    }
+
+    public void setLastClickedBy(String lastClickedBy) {
+        this.lastClickedBy = lastClickedBy;
     }
 
     public class LockingTask implements Runnable {

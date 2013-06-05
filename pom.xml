@@ -11,6 +11,12 @@
     <project.description>It lets you construct a house from a enderchest out of thin air!</project.description>
   </properties>
     <build>
+        <resources>
+          <resource>
+              <directory>src/main/resources</directory>
+              <filtering>true</filtering>
+          </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -61,11 +67,6 @@
         <artifactId>craftbukkit</artifactId>
         <version>1.5.2-R0.1</version>
     </dependency>
-    <!--<dependency>-->
-      <!--<groupId>com.norcode.bukkit.schematica</groupId>-->
-        <!--<artifactId>Schematica</artifactId>-->
-        <!--<version>0.0.1-SNAPSHOT</version>-->
-    <!--</dependency>-->
     <dependency>
       <groupId>com.norcode.bukkit.schematica</groupId>
         <artifactId>Schematica</artifactId>

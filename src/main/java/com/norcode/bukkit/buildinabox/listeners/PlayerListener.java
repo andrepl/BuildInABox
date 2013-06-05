@@ -160,7 +160,9 @@ public class PlayerListener implements Listener {
                             }
                         }
                         player.removeMetadata("biab-permanent-timeout", plugin);
-                    } else if (now - bc.getLastClicked() < plugin.getConfig().getInt("double-click-interval",2000) && bc.getLastClickType().equals(event.getAction())) {
+                    } else if (now - bc.getLastClicked() < plugin.getConfig().getInt("double-click-interval",2000)
+                            && bc.getLastClickType().equals(event.getAction())
+                            && event.getPlayer().getName().equals(bc.getLastClickedBy())) {
                         if (event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
                             // pick up
                             if (!bc.isLocked()) {
@@ -198,9 +200,11 @@ public class PlayerListener implements Listener {
                         }
                         bc.setLastClicked(-1);
                         bc.setLastClickType(null);
+                        bc.setLastClickedBy(null);
                     } else {
                         bc.setLastClicked(now);
                         bc.setLastClickType(event.getAction());
+                        bc.setLastClickedBy(event.getPlayer().getName());
                         player.sendMessage(bc.getDescription());
                     }
                 }
