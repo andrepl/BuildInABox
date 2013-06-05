@@ -6,7 +6,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.authors>metalhedd</project.authors>
-    <project.main>com.norcode.bukkit.buildinabox</project.main>
+    <project.main>com.norcode.bukkit.buildinabox.BuildInABox</project.main>
     <project.softdepends>[Vault, NoCheatPlus, AntiCheat]</project.softdepends>
     <project.description>It lets you construct a house from a enderchest out of thin air!</project.description>
   </properties>
