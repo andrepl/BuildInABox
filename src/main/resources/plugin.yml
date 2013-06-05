@@ -1,8 +1,8 @@
-author: metalhedd
-main: com.norcode.bukkit.buildinabox.BuildInABox
-version: 0.2.0
-name: BuildInABox
-softdepend: [Vault, NoCheatPlus, AntiCheat]
+author: ${project.authors}
+main: ${project.main}
+version: ${project.version}
+name: ${project.name}
+softdepend: ${project.softdepends}
 commands:
   biab:
     usage: "/<command> [list [<page>]|[give [<player>]|save|delete|reload] <buildingname>]"
