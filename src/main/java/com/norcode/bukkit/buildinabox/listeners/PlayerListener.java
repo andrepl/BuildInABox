@@ -119,7 +119,7 @@ public class PlayerListener implements Listener {
                 }
 
                 bc.updateActivity();
-                if (bc.isPreviewing()) {
+                if (bc.isPreviewing() && bc.getPreviewingPlayer().equals(player.getName())) {
                     if (event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
                         // Cancel
                         bc.endPreview(player);
@@ -133,7 +133,7 @@ public class PlayerListener implements Listener {
                         if (!bc.getLockingTask().lockingPlayer.equals(player.getName())) {
                             if (plugin.getConfig().getBoolean("allow-unlocking-others", true)) {
                                 if (player.hasPermission("biab.unlock.others")) {
-                                    BIABLockEvent le = new BIABLockEvent(event.getPlayer(), bc, (bc.getLockingTask() instanceof UnlockingTask) ? BIABLockEvent.Type.UNLOCK_CANCEL : BIABLockEvent.Type.LOCK_CANCEL);
+                                    BIABLockEvent le = new BIABLockEvent(player, bc, (bc.getLockingTask() instanceof UnlockingTask) ? BIABLockEvent.Type.UNLOCK_CANCEL : BIABLockEvent.Type.LOCK_CANCEL);
                                     plugin.getServer().getPluginManager().callEvent(le);
                                     if (le.isCancelled()) {
                                         return;
@@ -162,7 +162,7 @@ public class PlayerListener implements Listener {
                         player.removeMetadata("biab-permanent-timeout", plugin);
                     } else if (now - bc.getLastClicked() < plugin.getConfig().getInt("double-click-interval",2000)
                             && bc.getLastClickType().equals(event.getAction())
-                            && event.getPlayer().getName().equals(bc.getLastClickedBy())) {
+                            && player.getName().equals(bc.getLastClickedBy())) {
                         if (event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
                             // pick up
                             if (!bc.isLocked()) {

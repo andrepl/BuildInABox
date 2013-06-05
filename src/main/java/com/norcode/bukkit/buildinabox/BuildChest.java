@@ -29,7 +29,7 @@ import java.util.Set;
 
 public class BuildChest {
     BuildInABox plugin;
-    private boolean previewing = false;
+    private String previewing = null;
     private boolean building = false;
     private BuildingPlan plan;
     private LockingTask lockingTask = null;
@@ -90,7 +90,7 @@ public class BuildChest {
     }
 
     public void endPreview(final Player player) {
-        if (!previewing) return;
+        if (previewing == null) return;
         final World world = player.getWorld();
         Clipboard clipboard = plan.getRotatedClipboard(getDirectional().getFacing());
         Block b = getBlock();
@@ -105,7 +105,7 @@ public class BuildChest {
 
             @Override
             public void onComplete() {
-                previewing = false;
+                previewing = player.getName();
                 getBlock().removeMetadata("buildInABox", plugin);
                 getBlock().setTypeIdAndData(0, (byte) 0, false);
                 getBlock().getWorld().dropItem(getBlock().getLocation().add(0.5,0.5,0.5), data.toItemStack());
@@ -121,9 +121,12 @@ public class BuildChest {
     }
 
     public boolean isPreviewing() {
-        return previewing;
+        return previewing != null;
     }
 
+    public String getPreviewingPlayer() {
+        return previewing;
+    }
     public Directional getDirectional() {
         return (Directional) Material.getMaterial(plugin.cfg.getChestBlockId()).getNewData(getBlock().getData());
     }
@@ -148,7 +151,7 @@ public class BuildChest {
         Block b = getBlock();
         BlockVector o = clipboard.getOffset();
         clipboard.setOrigin(new BlockVector(b.getX() + o.getBlockX(), b.getY() + o.getBlockY(), b.getZ() + o.getBlockZ()));
-        previewing = true;
+        previewing = player.getName();
         buildTask = new BuildManager.BuildTask(clipboard, clipboard.getPasteQueue(false, null), 250) {
             @Override
             public void processBlock(BlockVector clipboardPoint) {
@@ -250,7 +253,7 @@ public class BuildChest {
             }
             @Override
             public void onComplete() {
-                previewing = false;
+                previewing = null;
                 buildTask = null;
                 startBuild(player);
 
@@ -260,7 +263,7 @@ public class BuildChest {
     }
 
     private void startBuild(final Player player) {
-        previewing = false;
+        previewing = null;
         double cost = plugin.cfg.getBuildCost();
         if (cost > 0 && BuildInABox.hasEconomy()) {
             if (!BuildInABox.getEconomy().withdrawPlayer(player.getName(), cost).transactionSuccess()) {
@@ -685,9 +688,9 @@ public class BuildChest {
     public String[] getDescription() {
         List<String> desc = new ArrayList<String>(2);
         String header = ChatColor.GOLD + getPlan().getName();
-        if (previewing || plugin.cfg.isLockingEnabled()) {
+        if (isPreviewing() || plugin.cfg.isLockingEnabled()) {
             header += " - "
-                    + (previewing ? ChatColor.GREEN
+                    + (isPreviewing() ? ChatColor.GREEN
                             + BuildInABox.getMsg("preview")
                             : (isLocked() ? ChatColor.RED
                                     + BuildInABox.getMsg("locked")
@@ -697,7 +700,7 @@ public class BuildChest {
                                     + BuildInABox.getMsg("unlocked")));
         }
         desc.add(header);
-        if (previewing) {
+        if (isPreviewing()) {
             desc.add(ChatColor.GOLD
                     + BuildInABox.getMsg("left-click-to-cancel")
                     + ChatColor.WHITE + " | " + ChatColor.GOLD
