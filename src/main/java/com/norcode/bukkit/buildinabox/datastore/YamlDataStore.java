@@ -86,16 +86,15 @@ public class YamlDataStore extends DataStore {
                     }
                 } else {
                     plugin.debug(" ... no location data.");
-                    continue;
                 }
                 // Store the id in a map keyed on world name
                 // for quicker lookups at world load time.
+                HashMap<BlockVector, NBTTagCompound> tileEntities = SerializationUtil.deserializeTileEntities(sec.getString("tile-entities"));
+                HashMap<BlockVector, ClipboardBlock> replacedBlocks = SerializationUtil.deserializeReplacedBlocks(sec.getString("replaced-blocks"));
+                ChestData cd = new ChestData(id, sec.getString("plan"), sec.getString("locked-by"), sec.getLong("last-activity"), worldName, x, y, z, tileEntities, replacedBlocks);
+                chests.put(id,cd);
+                BuildChest bc = new BuildChest(cd);
                 if (world != null) {
-                    HashMap<BlockVector, NBTTagCompound> tileEntities = SerializationUtil.deserializeTileEntities(sec.getString("tile-entities"));
-                    HashMap<BlockVector, ClipboardBlock> replacedBlocks = SerializationUtil.deserializeReplacedBlocks(sec.getString("replaced-blocks"));
-                    ChestData cd = new ChestData(id, sec.getString("plan"), sec.getString("locked-by"), sec.getLong("last-activity"), world.getName(), x, y, z, tileEntities, replacedBlocks);
-                    chests.put(id,cd);
-                    BuildChest bc = new BuildChest(cd);
                     if (!bc.getLocation().getChunk().isLoaded()) {
                         if (!bc.getLocation().getChunk().load()) {
                             continue;
