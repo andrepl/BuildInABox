@@ -108,6 +108,9 @@ public class PlayerListener implements Listener {
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         Block block = event.getClickedBlock();
+        if (block == null) {
+            return;
+        }
         if (block.getTypeId() == plugin.cfg.getChestBlockId()) {
             if (block.hasMetadata("buildInABox")) {
                 BuildChest bc = (BuildChest) block.getMetadata("buildInABox").get(0).value();
