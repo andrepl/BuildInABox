@@ -94,6 +94,11 @@ public class YamlDataStore extends DataStore {
                 ChestData cd = new ChestData(id, sec.getString("plan"), sec.getString("locked-by"), sec.getLong("last-activity"), worldName, x, y, z, tileEntities, replacedBlocks);
                 chests.put(id,cd);
                 BuildChest bc = new BuildChest(cd);
+                if (bc.getPlan() == null) {
+                    plugin.getLogger().warning("" + sec.getString("plan") + " does not exist.  biab ID#" + bc.getId() + " Will not function");
+                    this.chestCfg.getConfig().set(key, null);
+                    continue;
+                }
                 if (world != null) {
                     if (!bc.getLocation().getChunk().isLoaded()) {
                         if (!bc.getLocation().getChunk().load()) {
