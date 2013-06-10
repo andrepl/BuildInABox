@@ -132,7 +132,14 @@ public class BuildingPlan {
         }
 
         clipboard.setOffset(chestOffset);
-        Directional md = (Directional) Material.getMaterial(BuildInABox.getInstance().cfg.getChestBlockId()).getNewData(clipboard.getBlock(-chestOffset.getBlockX(), -chestOffset.getBlockY(), -chestOffset.getBlockZ()).getData());
+        Directional md;
+        try {
+            md = (Directional) Material.getMaterial(BuildInABox.getInstance().cfg.getChestBlockId()).getNewData(clipboard.getBlock(-chestOffset.getBlockX(), -chestOffset.getBlockY(), -chestOffset.getBlockZ()).getData());
+        } catch (ArrayIndexOutOfBoundsException ex) {
+            plugin.debug("Attempted to store BIAB in an enderchest at clipboard position: " + (-chestOffset.getBlockX()) + ", " + (-chestOffset.getBlockY()) + "," + (-chestOffset.getBlockZ()) + ", but the clipboard is only: " + clipboard.getSize());
+            player.sendMessage(BuildInABox.getErrorMsg("enderchest-not-found"));
+            return null;
+        }
         if (!md.getFacing().equals(BlockFace.NORTH)) {
             int deg = BuildInABox.getRotationDegrees(md.getFacing(), BlockFace.NORTH);
             clipboard.rotate2D(deg);
