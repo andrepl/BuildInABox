@@ -6,7 +6,7 @@ select-chest-block: "Now use the selection tool to choose an ender-chest to save
 world-edit-selection-needed: "You need to make a world-edit selection first."
 save-failed: "Building plan failed to save.  Check server logs for details."
 punch-to-make-permanent: "Punch an enderchest to make the building permanent."
-enderchest-not-found: "Selection does not contain an enderchest."
+enderchest-not-found: "Selection does not contain an enderchest, make sure the area you selected completely ecompasses the chest."
 update-available: "An update is available at: {0}"
 update-downloaded: "An update has been downloaded and will take effect when the server restarts."
 lock-attempt-cancelled: "{0}''s locking attempt was cancelled."

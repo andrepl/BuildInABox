@@ -126,7 +126,7 @@ public class BuildingPlan {
                                                   clipboard.getOrigin().getBlockY() - offset.getBlockY(),
                                                   clipboard.getOrigin().getBlockZ() - offset.getBlockZ());
 
-        if (chestOffset == null) {
+        if (chestOffset == null || chestOffset.getBlockX() < 0 || chestOffset.getBlockY() < 0 || chestOffset.getBlockZ() != 0) {
             player.sendMessage(BuildInABox.getErrorMsg("enderchest-not-found"));
             return null;
         }
