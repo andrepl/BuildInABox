@@ -60,9 +60,47 @@ public class BIABCommandExecutor implements TabExecutor {
             return true;
         } else if (action.equals("reload")) {
             cmdReloadConfig(sender, args);
+        } else if (action.equals("expandselection")) {
+            cmdExpandSelection(sender, args);
         }
         sender.sendMessage(BuildInABox.getErrorMsg("unexpected-argument", action));
         return true;
+    }
+
+    private void cmdExpandSelection(CommandSender sender, LinkedList<String> args) {
+        if (!sender.hasPermission("biab.select")) {
+            sender.sendMessage(BuildInABox.getErrorMsg("no-permission"));
+            return;
+        }
+        Selection sel = plugin.getPlayerSession((Player) sender).getSelection();
+        if (args.size() < 2) {
+            sender.sendMessage("Usage: /biab expandselection <direction> <distance>");
+            sender.sendMessage("    Valid directions are: down, up, east, west, north south, d, u, e, w, n and s");
+            return;
+        }
+        String dir = args.pop().toLowerCase().substring(0,1);
+        Location min = sel.getMin();
+        Location max = sel.getMax();
+        int amt = 0;
+        try {
+            amt = Integer.parseInt(args.peek());
+        } catch (IllegalArgumentException ex) {
+            sender.sendMessage("expecting a number, not '" + args.peek() + "'");
+            return;
+        }
+
+        if (dir.equals("d")) {
+            min = min.clone();
+            min.setY(min.getY() - amt);
+        } else if (dir.equals("u")) {
+            max = max.clone();
+            max.setY(max.getY() + amt);
+        } else {
+            sender.sendMessage("Only down and up are currrently supported");
+        }
+        sel.setPt1(min);
+        sel.setPt2(max);
+        sender.sendMessage("New Selection: [X:" + min.getBlockX() + " Y:" + min.getBlockY() + " Z:" + min.getBlockZ() + "] => [X:" + max.getBlockX() + " Y:" + max.getBlockY() + " Z:" + max.getBlockZ());
     }
 
     private void cmdReloadConfig(CommandSender sender, LinkedList<String> args) {
@@ -346,6 +384,9 @@ public class BIABCommandExecutor implements TabExecutor {
           }
           if ("pos2".startsWith(action) && sender.hasPermission("biab.select")) {
               results.add("pos2");
+          }
+          if ("expandselection".startsWith(action) && sender.hasPermission("biab.select")) {
+              results.add("expandselection");
           }
       } else if (args.size() == 1) {
           if (action.equals("save") || action.equals("give") || action.equals("setdisplayname") || action.equals("setdescription")) {
