@@ -21,11 +21,9 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.material.Directional;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.util.BlockVector;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 
 public class BuildChest {
     BuildInABox plugin;
@@ -96,7 +94,7 @@ public class BuildChest {
         Block b = getBlock();
         BlockVector o = clipboard.getOffset();
         clipboard.setOrigin(new BlockVector(b.getX() + o.getBlockX(), b.getY() + o.getBlockY(), b.getZ() + o.getBlockZ()));
-        buildTask = new BuildManager.BuildTask(clipboard, clipboard.getPasteQueue(false, null), 150) {
+        buildTask = new BuildManager.BuildTask(clipboard, getPasteQueue(clipboard), 100) {
             @Override
             public void processBlock(BlockVector clipboardPoint) {
                 Location loc = clipboard.getWorldLocationFor(clipboardPoint, world);
@@ -118,6 +116,19 @@ public class BuildChest {
             }
         };
         plugin.getBuildManager().scheduleTask(buildTask);
+    }
+
+    private List<BlockVector> getPasteQueue(Clipboard clipboard) {
+        List<BlockVector> newQueue = new LinkedList<BlockVector>();
+        for (BlockVector bv: clipboard.getPasteQueue(plugin.cfg.isPickupAnimationShuffled(), new HashSet<Integer>())) {
+            if (clipboard.getBlock(bv).getType() == MaterialID.AIR) {
+                if (bv.getBlockY() >= -clipboard.getOffset().getBlockY()) {
+                    continue;
+                }
+            }
+            newQueue.add(bv);
+        }
+        return newQueue;
     }
 
     public boolean isPreviewing() {
@@ -339,7 +350,7 @@ public class BuildChest {
                     plugin.unexemptPlayer(player);
                 }
 
-                if (plugin.cfg.isBuildingProtectionEnabled() && plugin.cfg.isPickupEnabled()) {
+                if (plugin.cfg.isBuildingProtectionEnabled() && plugin.cfg.isPickupEnabled() && !loc.getBlock().getType().equals(Material.AIR)) {
                     loc.getBlock().setMetadata("biab-block", new FixedMetadataValue(plugin, BuildChest.this));
                 }
             }
@@ -476,7 +487,7 @@ public class BuildChest {
         final BIABConfig.AnimationStyle animationStyle = plugin.cfg.getPickupAnimationStyle();
         Clipboard clipboard = plan.getRotatedClipboard(getDirectional().getFacing());
         clipboard.setOrigin(new BlockVector(b.getX() + clipboard.getOffset().getBlockX(), b.getY() + clipboard.getOffset().getBlockY(), b.getZ() + clipboard.getOffset().getBlockZ()));
-        buildTask = new BuildManager.BuildTask(clipboard, clipboard.getCutQueue(plugin.cfg.isPickupAnimationShuffled(), null), plugin.cfg.getPickupBlocksPerTick()) {
+        buildTask = new BuildManager.BuildTask(clipboard, getCutQueue(clipboard), plugin.cfg.getPickupBlocksPerTick()) {
 
             @Override
             public void processBlock(BlockVector clipboardPoint) {
@@ -559,6 +570,20 @@ public class BuildChest {
         };
         plugin.getBuildManager().scheduleTask(buildTask);
     }
+
+    private List<BlockVector> getCutQueue(Clipboard clipboard) {
+        List<BlockVector> newQueue = new LinkedList<BlockVector>();
+        for (BlockVector bv: clipboard.getCutQueue(plugin.cfg.isPickupAnimationShuffled(), new HashSet<Integer>())) {
+            if (clipboard.getBlock(bv).getType() == MaterialID.AIR) {
+                if (bv.getBlockY() >= -clipboard.getOffset().getBlockY()) {
+                    continue;
+                }
+            }
+            newQueue.add(bv);
+        }
+        return newQueue;
+    }
+
 
     public String getLastClickedBy() {
         return lastClickedBy;
