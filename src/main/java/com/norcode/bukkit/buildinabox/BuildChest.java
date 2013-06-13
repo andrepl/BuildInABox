@@ -318,7 +318,7 @@ public class BuildChest {
         Block b = getBlock();
         BlockVector off = clipboard.getOffset();
         clipboard.setOrigin(new BlockVector(b.getX() + off.getBlockX(), b.getY() + off.getBlockY(), b.getZ() + off.getBlockZ()));
-        List<BlockVector> vectorQueue = clipboard.getPasteQueue(plugin.cfg.isBuildAnimationShuffled(), null);
+        List<BlockVector> vectorQueue = getPasteQueue(clipboard);
         final BIABConfig.AnimationStyle animationStyle = plugin.cfg.getBuildAnimationStyle();
         buildTask = new BuildManager.BuildTask(clipboard, vectorQueue, plugin.cfg.getBuildBlocksPerTick()) {
 
@@ -333,6 +333,7 @@ public class BuildChest {
                 Location loc = clipboard.getWorldLocationFor(clipboardPoint, world);
                 if (loc.equals(getBlock().getLocation())) return; // DONT REPLACE THE ENDERCHEST
                 ClipboardBlock cb = clipboard.getBlock(clipboardPoint);
+                plugin.debug("Processing Clipboard Block " + cb);
                 if (clipboardPoint.getY() < -clipboard.getOffset().getBlockY()) {
                     saveReplacedBlock(clipboardPoint, loc);
                 }
