@@ -12,7 +12,6 @@ import com.norcode.bukkit.buildinabox.listeners.PlayerListener;
 import com.norcode.bukkit.buildinabox.listeners.ServerListener;
 import com.norcode.bukkit.buildinabox.util.MessageFile;
 import com.norcode.bukkit.schematica.Session;
-import com.sun.xml.internal.bind.v2.util.QNameMap;
 import fr.neatmonster.nocheatplus.NoCheatPlus;
 import fr.neatmonster.nocheatplus.hooks.NCPExemptionManager;
 import net.h31ix.anticheat.Anticheat;
