@@ -7,7 +7,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.authors>metalhedd</project.authors>
     <project.main>com.norcode.bukkit.buildinabox.BuildInABox</project.main>
-    <project.softdepends>[Vault, NoCheatPlus, AntiCheat]</project.softdepends>
+    <project.softdepends>[Vault, NoCheatPlus, AntiCheat, WorldGuard, WorldEdit, GriefPrevention, GriefPreventionTNG]</project.softdepends>
     <project.description>It lets you construct a house from a enderchest out of thin air!</project.description>
   </properties>
     <build>
@@ -62,6 +62,10 @@
       <id>vault-repo</id>
       <url>http://ci.herocraftonline.com/plugin/repository/everything</url>
     </repository>
+    <repository>
+      <id>sk89q-repo</id>
+      <url>http://maven.sk89q.com/repo/</url>
+    </repository>
   </repositories>
   <dependencies>
     <dependency>
@@ -86,7 +90,18 @@
         <artifactId>Vault</artifactId>
         <version>1.2.26-SNAPSHOT</version>
     </dependency>
-
+    <dependency>
+        <groupId>com.norcode.bukkit.griefprevention</groupId>
+        <artifactId>GriefPreventionTNG</artifactId>
+        <version>0.92.4-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+       <groupId>me.ryanhamshire.GriefPrevention</groupId>
+       <artifactId>GriefPrevention</artifactId>
+        <version>7.7</version>
+        <scope>system</scope>
+       <systemPath>${basedir}/lib/GriefPrevention.jar</systemPath>
+    </dependency>
     <dependency>
        <groupId>fr.neatmonster.nocheatplus</groupId>
        <artifactId>NoCheatPlus</artifactId>
@@ -94,5 +109,16 @@
        <scope>system</scope>
        <systemPath>${basedir}/lib/NoCheatPlus.jar</systemPath>
      </dependency>
+      <dependency>
+          <groupId>com.sk89q</groupId>
+          <artifactId>worldguard</artifactId>
+          <version>5.7.3</version>
+      </dependency>
+      <dependency>
+          <groupId>com.sk89q</groupId>
+          <artifactId>worldedit</artifactId>
+          <version>5.5.6</version>
+      </dependency>
+
   </dependencies>
 </project>

@@ -2,12 +2,17 @@ package com.norcode.bukkit.buildinabox;
 
 import com.norcode.bukkit.buildinabox.datastore.DataStore;
 import com.norcode.bukkit.buildinabox.datastore.YamlDataStore;
+import com.norcode.bukkit.buildinabox.landprotection.GPTNGProvider;
+import com.norcode.bukkit.buildinabox.landprotection.GriefPreventionProvider;
+import com.norcode.bukkit.buildinabox.landprotection.ILandProtection;
+import com.norcode.bukkit.buildinabox.landprotection.WorldGuardProvider;
 import com.norcode.bukkit.buildinabox.listeners.BlockProtectionListener;
 import com.norcode.bukkit.buildinabox.listeners.ItemListener;
 import com.norcode.bukkit.buildinabox.listeners.PlayerListener;
 import com.norcode.bukkit.buildinabox.listeners.ServerListener;
 import com.norcode.bukkit.buildinabox.util.MessageFile;
 import com.norcode.bukkit.schematica.Session;
+import com.sun.xml.internal.bind.v2.util.QNameMap;
 import fr.neatmonster.nocheatplus.NoCheatPlus;
 import fr.neatmonster.nocheatplus.hooks.NCPExemptionManager;
 import net.h31ix.anticheat.Anticheat;
@@ -26,6 +31,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionDefault;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -36,10 +42,12 @@ import java.io.File;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 
 public class BuildInABox extends JavaPlugin implements Listener {
+    public Map<String, ILandProtection> landProtectionHooks;
     public static String LORE_PREFIX = ChatColor.DARK_GREEN + "" + ChatColor.DARK_RED + "" + ChatColor.DARK_GRAY + "" + ChatColor.DARK_BLUE;
     public static String LORE_HEADER = ChatColor.GOLD + "Build-in-a-Box";
     private static BuildInABox instance;
@@ -59,6 +67,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
     public Permission wildcardUnlockPerm;
     public BIABConfig cfg;
     public Random random = new Random();
+
     @Override
     public void onLoad() {
         instance = this;
@@ -117,6 +126,24 @@ public class BuildInABox extends JavaPlugin implements Listener {
         }
         buildManager = new BuildManager(this, cfg.getMaxBlocksPerTick());
         buildManagerTask = getServer().getScheduler().runTaskTimer(this, buildManager, 1, 1);
+
+        initializeLandProtection();
+    }
+
+    private void initializeLandProtection() {
+        PluginManager pm = getServer().getPluginManager();
+        Plugin plugin = pm.getPlugin("GriefPrevention");
+        if (plugin != null) {
+            landProtectionHooks.put(plugin.getName(), new GriefPreventionProvider(this));
+        }
+        plugin = pm.getPlugin("GriefPreventionTNG");
+        if (plugin != null) {
+            landProtectionHooks.put(plugin.getName(), new GPTNGProvider(this));
+        }
+        plugin = pm.getPlugin("WorldGuard");
+        if (plugin != null) {
+            landProtectionHooks.put(plugin.getName(), new WorldGuardProvider(this));
+        }
     }
 
     private void setupPermissions() {
@@ -423,4 +450,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
         return 0;
     }
 
+    public Map<String, ILandProtection> getLandProtection() {
+        return landProtectionHooks;
+    }
 }

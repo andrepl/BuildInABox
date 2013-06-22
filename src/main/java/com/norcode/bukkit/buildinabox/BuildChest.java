@@ -1,6 +1,7 @@
 package com.norcode.bukkit.buildinabox;
 
 import com.norcode.bukkit.buildinabox.events.*;
+import com.norcode.bukkit.buildinabox.landprotection.ILandProtection;
 import com.norcode.bukkit.buildinabox.util.RandomFireworksGenerator;
 import com.norcode.bukkit.schematica.Clipboard;
 import com.norcode.bukkit.schematica.ClipboardBlock;
@@ -177,18 +178,10 @@ public class BuildChest {
 
                 }
                 if (checkBuildPermissions) {
-                    BlockCanBuildEvent canBuildEvent = new BlockCanBuildEvent(loc.getBlock(), block.getType(), true);
-                    plugin.getServer().getPluginManager().callEvent(canBuildEvent);
-                    if (!canBuildEvent.isBuildable()) {
-                        cancelled = true;
-                        return;
-                    }
-                    if (player.isOnline()) {
-                        BuildInABox.getInstance().exemptPlayer(player);
-                        FakeBlockPlaceEvent event = new FakeBlockPlaceEvent(loc, player, true);
-                        plugin.getServer().getPluginManager().callEvent(event);
-                        BuildInABox.getInstance().unexemptPlayer(player);
-                        if (event.wasCancelled() || !event.canBuild()) {
+                    BuildInABox.getInstance().exemptPlayer(player);
+                    BuildInABox.getInstance().unexemptPlayer(player);
+                    for (ILandProtection lp: plugin.getLandProtection().values()) {
+                        if (!lp.playerCanBuild(player, loc)) {
                             cancelled = true;
                             return;
                         }
