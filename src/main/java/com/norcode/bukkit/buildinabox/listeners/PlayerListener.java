@@ -271,14 +271,6 @@ public class PlayerListener implements Listener {
         event.getPlayer().removeMetadata("biab-selection-session", plugin);
     }
 
-    @EventHandler(ignoreCancelled=false, priority=EventPriority.HIGHEST)
-    public void onFakeBlockPlace(final BlockPlaceEvent event) {
-        if (event instanceof FakeBlockPlaceEvent) {
-            // prevent them from getting logged.
-            ((FakeBlockPlaceEvent) event).setWasCancelled(event.isCancelled());
-            event.setCancelled(true);
-        }
-    }
 
 
     @EventHandler(ignoreCancelled=true)
