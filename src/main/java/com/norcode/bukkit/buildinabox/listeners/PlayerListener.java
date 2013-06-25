@@ -275,7 +275,7 @@ public class PlayerListener implements Listener {
 
     @EventHandler(ignoreCancelled=true)
     public void onPlayerInteractLocked(PlayerInteractEvent event) {
-        if (plugin.cfg.isLockingEnabled()) {
+        if (plugin.cfg.isLockingEnabled() && event.getClickedBlock() != null) {
             if (lockableBlockTypes.contains(event.getClickedBlock().getType())) {
                 if (event.getClickedBlock().hasMetadata("biab-block")) {
                     BuildChest bc = (BuildChest) event.getClickedBlock().getMetadata("biab-block").get(0).value();
