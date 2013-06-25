@@ -39,14 +39,11 @@ import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 
 public class BuildInABox extends JavaPlugin implements Listener {
-    public Map<String, ILandProtection> landProtectionHooks;
+    public Map<String, ILandProtection> landProtectionHooks = new HashMap<String, ILandProtection>();
     public static String LORE_PREFIX = ChatColor.DARK_GREEN + "" + ChatColor.DARK_RED + "" + ChatColor.DARK_GRAY + "" + ChatColor.DARK_BLUE;
     public static String LORE_HEADER = ChatColor.GOLD + "Build-in-a-Box";
     private static BuildInABox instance;
