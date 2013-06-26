@@ -104,10 +104,11 @@ public class BuildChest {
 
             @Override
             public void onComplete() {
-                previewing = player.getName();
+                previewing = null;
                 getBlock().removeMetadata("buildInABox", plugin);
                 getBlock().setTypeIdAndData(0, (byte) 0, false);
                 getBlock().getWorld().dropItem(getBlock().getLocation().add(0.5,0.5,0.5), data.toItemStack());
+                plugin.debug("Ending Preview");
                 data.setLocation(null);
                 data.setLastActivity(System.currentTimeMillis());
                 plugin.getDataStore().saveChest(data);
@@ -250,6 +251,7 @@ public class BuildChest {
         Block b = getBlock();
         BlockVector offset = clipboard.getOffset();
         clipboard.setOrigin(new BlockVector(b.getX() + offset.getBlockX(), b.getY() + offset.getBlockY(), b.getZ() + offset.getBlockZ()));
+        previewing = null;
         buildTask = new BuildManager.BuildTask(clipboard, clipboard.getPasteQueue(false, null), 250) {
             @Override
             public void processBlock(BlockVector clipboardPoint) {
@@ -258,7 +260,6 @@ public class BuildChest {
             }
             @Override
             public void onComplete() {
-                previewing = null;
                 buildTask = null;
                 startBuild(player);
 
@@ -327,7 +328,7 @@ public class BuildChest {
                 Location loc = clipboard.getWorldLocationFor(clipboardPoint, world);
                 if (loc.equals(getBlock().getLocation())) return; // DONT REPLACE THE ENDERCHEST
                 ClipboardBlock cb = clipboard.getBlock(clipboardPoint);
-                plugin.debug("Processing Clipboard Block " + cb);
+
                 if (clipboardPoint.getY() < -clipboard.getOffset().getBlockY()) {
                     saveReplacedBlock(clipboardPoint, loc);
                 }
