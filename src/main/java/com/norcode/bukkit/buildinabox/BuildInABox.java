@@ -129,6 +129,7 @@ public class BuildInABox extends JavaPlugin implements Listener {
     private void initializeLandProtection() {
         PluginManager pm = getServer().getPluginManager();
         Plugin plugin = pm.getPlugin("GriefPrevention");
+        landProtectionHooks = new HashMap<String, ILandProtection>();
         if (plugin != null) {
             landProtectionHooks.put(plugin.getName(), new GriefPreventionProvider(this));
         }

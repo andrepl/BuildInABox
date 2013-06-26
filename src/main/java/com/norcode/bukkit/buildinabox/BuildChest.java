@@ -158,7 +158,7 @@ public class BuildChest {
         final World world = player.getWorld();
         final long previewDuration = (plugin.cfg.getPreviewDuration() * 20)/1000; // millis to ticks.
         final boolean checkBuildPermissions = plugin.cfg.isBuildPermissionCheckEnabled();
-
+        plugin.getLogger().info("Starting preview");
         Clipboard clipboard = plan.getRotatedClipboard(getDirectional().getFacing());
         Block b = getBlock();
         BlockVector o = clipboard.getOffset();
@@ -178,8 +178,6 @@ public class BuildChest {
 
                 }
                 if (checkBuildPermissions) {
-                    BuildInABox.getInstance().exemptPlayer(player);
-                    BuildInABox.getInstance().unexemptPlayer(player);
                     for (ILandProtection lp: plugin.getLandProtection().values()) {
                         if (!lp.playerCanBuild(player, loc)) {
                             cancelled = true;
@@ -188,7 +186,6 @@ public class BuildChest {
                     }
                 }
                 player.sendBlockChange(loc, block.getType(), block.getData());
-
             }
 
             @Override

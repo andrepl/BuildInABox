@@ -37,15 +37,13 @@ public class ServerListener implements Listener {
     @EventHandler
     public void landProtectionEnabled(PluginEnableEvent event) {
         String name = event.getPlugin().getName();
-        if (!plugin.getLandProtection().containsKey(event.getPlugin().getName())) {
-            if (!plugin.getLandProtection().containsKey(name)) {
-                if (name.equals("GriefPrevention")) {
-                    plugin.getLandProtection().put(name, new GriefPreventionProvider(plugin));
-                } else if (name.equals("GriefPreventionTNG")) {
-                    plugin.getLandProtection().put(name, new GPTNGProvider(plugin));
-                } else if (name.equals("WorldGuard")) {
-                    plugin.getLandProtection().put(name, new WorldGuardProvider(plugin));
-                }
+        if (!plugin.getLandProtection().containsKey(name)) {
+            if (name.equals("GriefPrevention")) {
+                plugin.getLandProtection().put(name, new GriefPreventionProvider(plugin));
+            } else if (name.equals("GriefPreventionTNG")) {
+                plugin.getLandProtection().put(name, new GPTNGProvider(plugin));
+            } else if (name.equals("WorldGuard")) {
+                plugin.getLandProtection().put(name, new WorldGuardProvider(plugin));
             }
         }
     }
