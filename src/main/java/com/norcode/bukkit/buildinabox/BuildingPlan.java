@@ -180,6 +180,7 @@ public class BuildingPlan {
         byte[] data = null;
 
         try {
+            plugin.debug("Reading file...");
             is = new DataInputStream(new FileInputStream(this.getSchematicFile()));
             data = new byte[is.available()];
             is.readFully(data);
@@ -191,10 +192,16 @@ public class BuildingPlan {
                 try { is.close(); } catch (IOException e) {}
             }
         }
+        plugin.debug("... done reading.");
         Clipboard clipboard = null;
         try {
+            plugin.debug("Loading schematic...");
             clipboard = Clipboard.fromSchematic(data);
+            plugin.debug("... done");
+            plugin.debug("rotating...");
             clipboard.rotate2D(BuildInABox.getRotationDegrees(BlockFace.NORTH, facing));
+            plugin.debug("... done");
+
         } catch (SchematicLoadException ex) {
             plugin.getLogger().log(Level.SEVERE, "Failed to load schematic.", ex);
         }

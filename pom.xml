@@ -83,7 +83,7 @@
     <dependency>
       <groupId>com.norcode.bukkit.schematica</groupId>
         <artifactId>Schematica</artifactId>
-        <version>0.1.5</version>
+        <version>0.1.6</version>
     </dependency>
     <dependency>
         <groupId>net.milkbowl.vault</groupId>

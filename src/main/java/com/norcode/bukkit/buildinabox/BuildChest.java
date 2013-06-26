@@ -158,12 +158,14 @@ public class BuildChest {
         final World world = player.getWorld();
         final long previewDuration = (plugin.cfg.getPreviewDuration() * 20)/1000; // millis to ticks.
         final boolean checkBuildPermissions = plugin.cfg.isBuildPermissionCheckEnabled();
-        plugin.getLogger().info("Starting preview");
+        plugin.debug("Initializing Preview, rotating clipboard");
         Clipboard clipboard = plan.getRotatedClipboard(getDirectional().getFacing());
+        plugin.debug("... done");
         Block b = getBlock();
         BlockVector o = clipboard.getOffset();
         clipboard.setOrigin(new BlockVector(b.getX() + o.getBlockX(), b.getY() + o.getBlockY(), b.getZ() + o.getBlockZ()));
         previewing = player.getName();
+        plugin.debug("Creating task...");
         buildTask = new BuildManager.BuildTask(clipboard, clipboard.getPasteQueue(false, null), 250) {
             @Override
             public void processBlock(BlockVector clipboardPoint) {
@@ -205,11 +207,13 @@ public class BuildChest {
                 buildTask = null;
             }
         };
+        plugin.debug("... done");
         BIABPreviewStartEvent previewStartEvent = new BIABPreviewStartEvent(player, this);
         plugin.getServer().getPluginManager().callEvent(previewStartEvent);
         if (previewStartEvent.isCancelled()) {
             buildTask.cancelled = true;
         }
+        plugin.debug("Scheduling preview job...");
         plugin.getBuildManager().scheduleTask(buildTask);
     }
 
