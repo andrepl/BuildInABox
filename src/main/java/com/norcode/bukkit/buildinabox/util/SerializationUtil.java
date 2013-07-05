@@ -2,8 +2,8 @@ package com.norcode.bukkit.buildinabox.util;
 
 import com.norcode.bukkit.buildinabox.BuildInABox;
 import com.norcode.bukkit.schematica.ClipboardBlock;
-import net.minecraft.server.v1_5_R3.NBTCompressedStreamTools;
-import net.minecraft.server.v1_5_R3.NBTTagCompound;
+import net.minecraft.server.v1_6_R1.NBTCompressedStreamTools;
+import net.minecraft.server.v1_6_R1.NBTTagCompound;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
