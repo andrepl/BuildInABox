@@ -84,7 +84,7 @@
     <dependency>
       <groupId>com.norcode.bukkit.schematica</groupId>
         <artifactId>Schematica</artifactId>
-        <version>0.1.6</version>
+        <version>0.1.7-SNAPSHOT</version>
         <scope>compile</scope>
     </dependency>
     <dependency>
