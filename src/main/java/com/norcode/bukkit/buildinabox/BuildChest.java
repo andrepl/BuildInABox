@@ -90,6 +90,7 @@ public class BuildChest {
 
     public void endPreview(final Player player) {
         if (previewing == null) return;
+        previewing = null;
         final World world = player.getWorld();
         Clipboard clipboard = plan.getRotatedClipboard(getDirectional().getFacing());
         Block b = getBlock();
