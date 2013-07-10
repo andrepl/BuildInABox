@@ -7,7 +7,7 @@ import com.norcode.bukkit.buildinabox.ChestData;
 import com.norcode.bukkit.buildinabox.util.ConfigAccessor;
 import com.norcode.bukkit.buildinabox.util.SerializationUtil;
 import com.norcode.bukkit.schematica.ClipboardBlock;
-import net.minecraft.server.v1_6_R1.NBTTagCompound;
+import net.minecraft.server.v1_6_R2.NBTTagCompound;
 import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
