@@ -120,7 +120,6 @@ public class PlayerListener implements Listener {
                     event.setUseItemInHand(Result.DENY);
                     return;
                 }
-
                 bc.updateActivity();
                 if (bc.isPreviewing() && bc.getPreviewingPlayer().equals(player.getName())) {
                     if (event.getAction().equals(Action.LEFT_CLICK_BLOCK)) {
@@ -132,6 +131,18 @@ public class PlayerListener implements Listener {
                     }
                 } else {
                     long now = System.currentTimeMillis();
+                    if (bc.getPlan() == null) {
+                        plugin.getLogger().warning("The building plan " + bc.getData().getPlanName() + " has been deleted.  This building will be made permanent.");
+                        if (plugin.getConfig().getBoolean("protect-buildings", true)) {
+                            try {
+                                bc.unprotect();
+                            } catch (Exception ex) {
+                                plugin.getLogger().warning("You should restart the server to prevent any block protection from remaining behind.");
+                            } // swallow exceptions
+                            plugin.getDataStore().deleteChest(bc.getId());
+                        }
+                    }
+
                     if (bc.isLocking()) {
                         if (!bc.getLockingTask().lockingPlayer.equals(player.getName())) {
                             if (plugin.getConfig().getBoolean("allow-unlocking-others", true)) {
