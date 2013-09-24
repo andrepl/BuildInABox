@@ -1,7 +1,7 @@
 package com.norcode.bukkit.buildinabox;
 
 import com.norcode.bukkit.schematica.ClipboardBlock;
-import net.minecraft.server.v1_6_R2.NBTTagCompound;
+import net.minecraft.server.v1_6_R3.NBTTagCompound;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;

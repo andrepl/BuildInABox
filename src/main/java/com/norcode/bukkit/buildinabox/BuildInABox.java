@@ -2,7 +2,6 @@ package com.norcode.bukkit.buildinabox;
 
 import com.norcode.bukkit.buildinabox.datastore.DataStore;
 import com.norcode.bukkit.buildinabox.datastore.YamlDataStore;
-import com.norcode.bukkit.buildinabox.landprotection.GPTNGProvider;
 import com.norcode.bukkit.buildinabox.landprotection.GriefPreventionProvider;
 import com.norcode.bukkit.buildinabox.landprotection.ILandProtection;
 import com.norcode.bukkit.buildinabox.landprotection.WorldGuardProvider;
@@ -132,10 +131,6 @@ public class BuildInABox extends JavaPlugin implements Listener {
         landProtectionHooks = new HashMap<String, ILandProtection>();
         if (plugin != null) {
             landProtectionHooks.put(plugin.getName(), new GriefPreventionProvider(this));
-        }
-        plugin = pm.getPlugin("GriefPreventionTNG");
-        if (plugin != null) {
-            landProtectionHooks.put(plugin.getName(), new GPTNGProvider(this));
         }
         plugin = pm.getPlugin("WorldGuard");
         if (plugin != null) {

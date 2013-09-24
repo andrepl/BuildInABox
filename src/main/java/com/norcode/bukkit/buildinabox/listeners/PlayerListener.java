@@ -140,6 +140,7 @@ public class PlayerListener implements Listener {
                                 plugin.getLogger().warning("You should restart the server to prevent any block protection from remaining behind.");
                             } // swallow exceptions
                             plugin.getDataStore().deleteChest(bc.getId());
+                            return;
                         }
                     }
 
@@ -246,12 +247,14 @@ public class PlayerListener implements Listener {
     public void onBlockPlace(final BlockPlaceEvent event) {
         ChestData data = plugin.getDataStore().fromItemStack(event.getItemInHand());
         if (data != null) {
+            BuildingPlan plan = plugin.getDataStore().getBuildingPlan(data.getPlanName());
             if (!event.getPlayer().hasPermission("biab.place." + data.getPlanName().toLowerCase())) {
                 event.getPlayer().sendMessage(BuildInABox.getErrorMsg("no-permission"));
                 event.setCancelled(true);
                 event.setBuild(false);
                 return;
             }
+
             BIABPlaceEvent placeEvent = new BIABPlaceEvent(event.getPlayer(), event.getBlock().getLocation(), event.getItemInHand(), data);
             plugin.getServer().getPluginManager().callEvent(placeEvent);
             if (placeEvent.isCancelled()) {
@@ -261,6 +264,7 @@ public class PlayerListener implements Listener {
             data.setLocation(event.getBlock().getLocation());
             data.setLastActivity(System.currentTimeMillis());
             final BuildChest bc = new BuildChest(data);
+
             event.getBlock().setMetadata("buildInABox", new FixedMetadataValue(plugin, bc));
             event.getPlayer().getInventory().setItemInHand(null);
             plugin.getServer().getScheduler().runTaskLater(plugin, new Runnable() {

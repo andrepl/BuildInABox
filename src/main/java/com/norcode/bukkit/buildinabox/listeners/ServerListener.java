@@ -1,7 +1,6 @@
 package com.norcode.bukkit.buildinabox.listeners;
 
 import com.norcode.bukkit.buildinabox.BuildInABox;
-import com.norcode.bukkit.buildinabox.landprotection.GPTNGProvider;
 import com.norcode.bukkit.buildinabox.landprotection.GriefPreventionProvider;
 import com.norcode.bukkit.buildinabox.landprotection.WorldGuardProvider;
 import org.bukkit.event.EventHandler;
@@ -40,8 +39,6 @@ public class ServerListener implements Listener {
         if (!plugin.getLandProtection().containsKey(name)) {
             if (name.equals("GriefPrevention")) {
                 plugin.getLandProtection().put(name, new GriefPreventionProvider(plugin));
-            } else if (name.equals("GriefPreventionTNG")) {
-                plugin.getLandProtection().put(name, new GPTNGProvider(plugin));
             } else if (name.equals("WorldGuard")) {
                 plugin.getLandProtection().put(name, new WorldGuardProvider(plugin));
             }
